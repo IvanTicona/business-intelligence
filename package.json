@@ -1,0 +1,11 @@
+{
+  "name": "business-intelligence-course",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:front": "pnpm --filter front dev",
+    "dev:back": "pnpm --filter back dev"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
