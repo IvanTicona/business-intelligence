@@ -397,12 +397,7 @@ export default function App() {
   useEffect(() => {
     async function loadInternetDate() {
       try {
-        const response = await fetch('https://worldtimeapi.org/api/timezone/America/La_Paz', { cache: 'no-store' })
-        if (!response.ok) throw new Error('No se pudo obtener la hora global')
-
-        const data = await response.json()
-        const currentDate = data.datetime?.slice(0, 10)
-        if (!currentDate) throw new Error('Respuesta de hora inválida')
+        const currentDate = await getInternetDate()
 
         setInternetDate(currentDate)
         setTimeStatus('ready')
@@ -553,6 +548,34 @@ function buildMenuItems(currentDate) {
       }
     }),
   }))
+}
+
+async function getInternetDate() {
+  const providers = [
+    {
+      url: 'https://timeapi.io/api/Time/current/zone?timeZone=America/La_Paz',
+      parse: data => data.dateTime?.slice(0, 10),
+    },
+    {
+      url: 'https://worldtimeapi.org/api/timezone/America/La_Paz',
+      parse: data => data.datetime?.slice(0, 10),
+    },
+  ]
+
+  for (const provider of providers) {
+    try {
+      const response = await fetch(provider.url, { cache: 'no-store' })
+      if (!response.ok) continue
+
+      const data = await response.json()
+      const date = provider.parse(data)
+      if (date) return date
+    } catch {
+      // Intentamos el siguiente proveedor antes de bloquear contenido.
+    }
+  }
+
+  throw new Error('No se pudo obtener la fecha global de internet')
 }
 
 function isUnlocked(key, currentDate) {
