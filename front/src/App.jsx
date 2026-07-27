@@ -34,6 +34,7 @@ const releaseSchedule = {
 }
 
 const unlockEverythingLocally = true
+const forceDisabledKeys = new Set(['chapter-3', 'chapter-4', 'chapter-5', 'practice-2', 'practice-3', 'practice-4'])
 const practiceStatusStorageKey = 'bi-course-practice-status'
 
 const chapterOneSlides = [
@@ -332,6 +333,23 @@ const chapterTwoSlides = [
   },
 ]
 
+
+const chapterThreeSlides = [
+  { type: 'cover', eyebrow: 'Capítulo 3', title: 'DISEÑO CONCEPTUAL', text: '' },
+  {
+    type: 'objectives',
+    title: 'Objetivos',
+    image: '/slide3.png',
+    revealCount: 5,
+    items: [
+      'Modelo Entidad Relación',
+      'Entidades',
+      'Atributos',
+      'Dominio',
+      'Relaciones',
+    ],
+  },
+]
 const chapterOneRoute = [
   ...chapterOneSlides.slice(0, 12).flatMap((_, slideIndex) => routeForSlide(slideIndex, slideIndex + 1)),
   ...routeForSlide(12, 13),
@@ -355,6 +373,10 @@ const chapterTwoRoute = [
   ...chapterTwoSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterTwoSlides, slideIndex, slideIndex + 1)),
 ]
 
+const chapterThreeRoute = [
+  ...chapterThreeSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterThreeSlides, slideIndex, slideIndex + 1)),
+]
+
 const chapterDecks = {
   'chapter-1': {
     chapterNumber: 1,
@@ -365,6 +387,11 @@ const chapterDecks = {
     chapterNumber: 2,
     slides: chapterTwoSlides,
     route: chapterTwoRoute,
+  },
+  'chapter-3': {
+    chapterNumber: 3,
+    slides: chapterThreeSlides,
+    route: chapterThreeRoute,
   },
 }
 
@@ -463,35 +490,44 @@ export default function App() {
         collapsed={collapsed}
         className="course-sider"
       >
-        <div className="sidebar-top">
+        <div className="sidebar-header">
+          {!collapsed && (
+            <div className="brand">
+              <strong>Business<br />Intelligence</strong>
+            </div>
+          )}
+
           <button
             type="button"
             className="sidebar-toggle"
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
             onClick={() => setCollapsed(current => !current)}
           >
-            <span />
-            <span />
-            <span />
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 7 4-4 4 4M8 17l4 4 4-4" />
+            </svg>
           </button>
         </div>
 
-        {!collapsed && (
-          <>
-            <div className="brand">
-              <strong>Business Intelligence</strong>
-            </div>
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={menuItems}
+          onClick={({ key }) => {
+            if (isUnlocked(key, internetDate) && !isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
+          }}
+          className="course-menu"
+          inlineCollapsed={collapsed}
+        />
 
-            <Menu
-              mode="inline"
-              selectedKeys={[selectedKey]}
-              items={menuItems}
-              onClick={({ key }) => {
-                if (isUnlocked(key, internetDate) && !isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
-              }}
-              className="course-menu"
-            />
-          </>
+        {!collapsed && (
+          <div className="sidebar-footer">
+            <img src="/image1.png" alt="" />
+            <div>
+              <strong>Paul Landaeta</strong>
+              <span>Universidad Privada Boliviana</span>
+            </div>
+          </div>
         )}
       </Sider>
 
@@ -562,6 +598,7 @@ function buildMenuItems(currentDate, practiceStatus) {
       return {
         ...item,
         disabled: !unlocked || delivered,
+        icon: <CourseMenuIcon name={item.key.startsWith('chapter') ? 'book' : 'practice'} />,
         label: (
           <span className="locked-menu-label">
             <span>{item.label}</span>
@@ -576,6 +613,19 @@ function buildMenuItems(currentDate, practiceStatus) {
 
 function isPracticeDelivered(key, practiceStatus) {
   return key.startsWith('practice') && practiceStatus[key] === 'delivered'
+}
+
+function CourseMenuIcon({ name }) {
+  const icons = {
+    book: <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21V5.5Zm0 0V21M8 7h8M8 11h8" />,
+    practice: <path d="M8 3h8l3 3v15H5V3h3Zm8 0v4h4M8 12h8M8 16h6" />,
+  }
+
+  return (
+    <svg className="course-menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {icons[name]}
+    </svg>
+  )
 }
 
 function MenuStatusIcon({ name }) {
@@ -620,6 +670,7 @@ async function getInternetDate() {
 }
 
 function isUnlocked(key, currentDate) {
+  if (forceDisabledKeys.has(key)) return false
   if (unlockEverythingLocally) return true
   if (!currentDate) return false
   const releaseDate = releaseSchedule[key]

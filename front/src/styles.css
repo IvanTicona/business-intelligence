@@ -37,16 +37,28 @@ select,
 
 .app-shell {
   min-height: 100vh;
-  background: #f7f9fc;
+  background: #e5e7eb;
 }
 
 .course-sider.ant-layout-sider {
   font-family: "Rubik", system-ui, sans-serif;
+  height: 100vh;
   min-height: 100vh;
-  padding: 28px 14px;
+  max-height: 100vh;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  padding: 18px 14px;
   background: #ffffff;
   border-right: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 14px 0 40px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.course-sider .ant-layout-sider-children {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .course-sider,
@@ -57,58 +69,63 @@ select,
   font-family: "Rubik", system-ui, sans-serif !important;
 }
 
-.sidebar-top {
+.sidebar-header {
   display: flex;
-  justify-content: flex-end;
-  padding: 0 8px 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 18px 10px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-.ant-layout-sider-collapsed .sidebar-top {
+.ant-layout-sider-collapsed .sidebar-header {
   justify-content: center;
   padding-inline: 0;
-  padding-bottom: 0;
+  padding-bottom: 12px;
 }
 
 .sidebar-toggle {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: #ffffff;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .sidebar-toggle:hover {
-  background: rgba(22, 119, 255, 0.08);
-  border-color: rgba(22, 119, 255, 0.28);
+  background: #f4f4f5;
+  border-color: rgba(15, 23, 42, 0.08);
 }
 
-.sidebar-toggle span {
+.sidebar-toggle svg {
   width: 18px;
-  height: 2px;
-  border-radius: 999px;
-  background: #1677ff;
+  height: 18px;
+  fill: none;
+  stroke: #71717a;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .brand {
-  min-height: 78px;
-  padding: 10px 12px 30px;
+  min-height: auto;
+  padding: 0;
   color: #0f172a;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  border-bottom: 0;
 }
 
 .brand strong {
   display: block;
-  font-size: 34px;
-  font-weight: 400;
-  line-height: 0.95;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 0.98;
 }
 
 .ant-layout-sider-collapsed .brand {
@@ -126,34 +143,103 @@ select,
   border-inline-end: 0;
   color: #334155;
   font-family: inherit;
+  flex: 1;
+  padding-top: 14px;
+}
+
+.ant-layout-sider-collapsed .course-menu.ant-menu {
+  padding-top: 18px;
 }
 
 .course-menu .ant-menu-item-group-title {
-  padding: 20px 12px 8px;
-  color: #1677ff;
-  font-size: 14px;
-  font-weight: 400;
+  padding: 18px 12px 8px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
+.ant-layout-sider-collapsed .course-menu .ant-menu-item-group-title {
+  display: none;
+}
+
 .course-menu .ant-menu-item {
+  height: 38px;
+  min-height: 38px;
+  line-height: 38px;
+  margin: 2px 0;
+  padding-inline: 12px !important;
+  color: #27272a;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  display: flex !important;
+  align-items: center;
+}
+
+.course-menu .ant-menu-item .ant-menu-item-icon {
+  flex: 0 0 22px;
+  width: 22px;
+  min-width: 22px;
+  margin-inline-end: 0 !important;
+}
+
+.course-menu .ant-menu-item .ant-menu-title-content {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-inline-start: 22px !important;
+  overflow: hidden;
+}
+
+.ant-layout-sider-collapsed .course-menu .ant-menu-item {
+  width: 44px;
+  height: 44px;
   min-height: 44px;
-  margin: 4px 0;
-  color: #334155;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 400;
+  line-height: 44px;
+  margin: 6px auto;
+  padding-inline: 0 !important;
+  display: grid;
+  place-items: center;
+}
+
+.ant-layout-sider-collapsed .course-menu .ant-menu-item .ant-menu-item-icon {
+  margin-inline-end: 0 !important;
+}
+
+.ant-layout-sider-collapsed .course-menu .ant-menu-item .ant-menu-title-content {
+  margin-inline-start: 0 !important;
+}
+
+.course-menu-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ant-layout-sider-collapsed .course-menu-icon {
+  width: 22px;
+  height: 22px;
 }
 
 .course-menu .ant-menu-item:hover {
-  color: #1677ff;
-  background: rgba(22, 119, 255, 0.08);
+  color: #18181b;
+  background: #f4f4f5;
 }
 
 .course-menu .ant-menu-item-selected {
-  color: #1677ff;
-  background: rgba(22, 119, 255, 0.12);
-  font-weight: 400;
+  color: #18181b;
+  background: #f4f4f5;
+  font-weight: 600;
+}
+
+.course-menu .ant-menu-item-disabled {
+  color: #a1a1aa !important;
+  opacity: 1;
 }
 
 .locked-menu-label {
@@ -162,11 +248,21 @@ select,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+}
+
+.locked-menu-label > span:first-child {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-status-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
   fill: none;
   stroke: currentColor;
@@ -176,11 +272,48 @@ select,
 }
 
 .menu-status-icon-check {
-  color: #16a34a;
+  color: #22c55e;
 }
 
 .menu-status-icon-lock {
-  color: #64748b;
+  color: #a1a1aa;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 10px 2px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-footer img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f4f4f5;
+}
+
+.sidebar-footer strong,
+.sidebar-footer span {
+  display: block;
+}
+
+.sidebar-footer strong {
+  color: #18181b;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.sidebar-footer span {
+  margin-top: 2px;
+  color: #71717a;
+  font-size: 11px;
+  line-height: 1.15;
 }
 
 .course-content {
