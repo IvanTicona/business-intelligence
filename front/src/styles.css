@@ -164,6 +164,25 @@ select,
   gap: 12px;
 }
 
+.menu-status-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.menu-status-icon-check {
+  color: #16a34a;
+}
+
+.menu-status-icon-lock {
+  color: #64748b;
+}
+
 .course-content {
   min-height: 100vh;
   padding: 28px 44px;
@@ -244,26 +263,63 @@ select,
 
 .practice-hero {
   padding: 34px 40px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.07);
+  box-shadow: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 34px;
+  align-items: center;
 }
 
 .practice-title.ant-typography {
   max-width: 980px;
   margin: 12px 0 0;
   color: #132B70;
-  font-size: clamp(38px, 4vw, 64px);
-  line-height: 0.98;
+  font-size: clamp(34px, 3.7vw, 58px);
+  line-height: 1.02;
 }
 
 .practice-copy.ant-typography {
   max-width: 960px;
   margin: 18px 0 0;
-  color: #475569;
-  font-size: 22px;
-  line-height: 1.35;
+  color: #334155;
+  font-size: 20px;
+  line-height: 1.42;
+}
+
+.practice-objectives-panel {
+  padding: 22px 24px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: #fbfcfe;
+  box-shadow: none;
+}
+
+.practice-panel-label {
+  display: inline-flex;
+  margin-bottom: 16px;
+  color: #132B70;
+  font-family: "Rubik", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.practice-objective-list {
+  display: grid;
+  gap: 12px;
+}
+
+.practice-objective {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: start;
+  gap: 12px;
+  color: #334155;
+  font-size: 16px;
+  line-height: 1.25;
 }
 
 .practice-grid {
@@ -280,9 +336,10 @@ select,
 }
 
 .practice-card.ant-card {
-  border-radius: 22px;
-  border-color: rgba(15, 23, 42, 0.08);
-  box-shadow: 0 16px 45px rgba(15, 23, 42, 0.05);
+  border-radius: 16px;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: none;
+  overflow: hidden;
 }
 
 .practice-card .ant-card-head-title {
@@ -291,11 +348,112 @@ select,
   font-weight: 700;
 }
 
+.practice-card-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #132B70;
+  font-size: 21px;
+  font-weight: 700;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.practice-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.practice-objective .practice-icon {
+  color: #1C4DC1;
+  fill: rgba(28, 77, 193, 0.1);
+  stroke-width: 1.8;
+}
+
+.context-blocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.context-blocks > div {
+  padding: 18px;
+  border-left: 4px solid rgba(28, 77, 193, 0.28);
+  border-radius: 0;
+  background: #f8fafc;
+}
+
+.context-blocks strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 15px;
+  text-transform: uppercase;
+}
+
+.context-blocks p {
+  margin: 0;
+  color: #334155;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.dataset-card.ant-card {
+  background: #ffffff;
+}
+
+.dataset-copy.ant-typography {
+  color: #475569;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.dataset-button.ant-btn {
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #132B70;
+  background: #132B70;
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.dataset-button.ant-btn:hover {
+  background: #0f235c !important;
+  color: #ffffff !important;
+}
+
+.submit-card.ant-card {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.submit-practice-button.ant-btn {
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 800;
+}
+
 .practice-field {
   display: grid;
   gap: 8px;
   margin-bottom: 18px;
-  color: #0f172a;
+  color: #132B70;
   font-size: 16px;
   font-weight: 700;
 }
@@ -303,29 +461,20 @@ select,
 .practice-field textarea {
   font-size: 16px;
   line-height: 1.45;
+  border-radius: 10px;
 }
 
-.practice-prompt,
-.practice-output {
+.practice-prompt {
   margin: 0 0 16px;
   padding: 18px;
-  border-radius: 16px;
-  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  background: #fbfcfe;
   color: #0f172a;
   font-family: "Consolas", "Courier New", monospace;
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
-}
-
-.practice-output {
-  max-height: 360px;
-  overflow: auto;
-}
-
-.practice-checklist {
-  display: grid;
-  gap: 12px;
 }
 
 .slide-shell {

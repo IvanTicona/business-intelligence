@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, Input, Layout, Menu, Tag, Typography } from 'antd'
+import { Button, Card, Input, Layout, Menu, Tag, Typography } from 'antd'
 import { motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -32,6 +32,9 @@ const releaseSchedule = {
   'chapter-5': '2026-08-05',
   'practice-4': '2026-08-06',
 }
+
+const unlockEverythingLocally = true
+const practiceStatusStorageKey = 'bi-course-practice-status'
 
 const chapterOneSlides = [
   { type: 'cover', eyebrow: 'Capítulo 1', title: 'FUENTES DE DATOS Y GESTIÓN INTELIGENTE', text: '' },
@@ -386,13 +389,25 @@ export default function App() {
   const [routeIndex, setRouteIndex] = useState(0)
   const [internetDate, setInternetDate] = useState(null)
   const [timeStatus, setTimeStatus] = useState('loading')
+  const [practiceStatus, setPracticeStatus] = useState({})
 
   const selectedItem = useMemo(() => {
     return [...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
   }, [selectedKey])
 
-  const menuItems = useMemo(() => buildMenuItems(internetDate), [internetDate])
+  const menuItems = useMemo(() => buildMenuItems(internetDate, practiceStatus), [internetDate, practiceStatus])
   const selectedIsUnlocked = isUnlocked(selectedKey, internetDate)
+
+  useEffect(() => {
+    const savedStatus = window.localStorage.getItem(practiceStatusStorageKey)
+    if (!savedStatus) return
+
+    try {
+      setPracticeStatus(JSON.parse(savedStatus))
+    } catch {
+      setPracticeStatus({})
+    }
+  }, [])
 
   useEffect(() => {
     async function loadInternetDate() {
@@ -472,7 +487,7 @@ export default function App() {
               selectedKeys={[selectedKey]}
               items={menuItems}
               onClick={({ key }) => {
-                if (isUnlocked(key, internetDate)) setSelectedKey(key)
+                if (isUnlocked(key, internetDate) && !isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
               }}
               className="course-menu"
             />
@@ -507,7 +522,14 @@ export default function App() {
             onPrev={goPrevSlide}
           />
         ) : selectedKey === 'practice-1' ? (
-          <PracticeOnePlayground />
+          <PracticeOnePlayground
+            delivered={isPracticeDelivered('practice-1', practiceStatus)}
+            onSubmit={() => {
+              const nextStatus = { ...practiceStatus, 'practice-1': 'delivered' }
+              setPracticeStatus(nextStatus)
+              window.localStorage.setItem(practiceStatusStorageKey, JSON.stringify(nextStatus))
+            }}
+          />
         ) : (
           <motion.main
             key={selectedKey}
@@ -530,24 +552,43 @@ export default function App() {
   )
 }
 
-function buildMenuItems(currentDate) {
+function buildMenuItems(currentDate, practiceStatus) {
   return menuGroups.map(group => ({
     ...group,
     children: group.children.map(item => {
       const unlocked = isUnlocked(item.key, currentDate)
+      const delivered = isPracticeDelivered(item.key, practiceStatus)
 
       return {
         ...item,
-        disabled: !unlocked,
+        disabled: !unlocked || delivered,
         label: (
           <span className="locked-menu-label">
             <span>{item.label}</span>
-            {!unlocked && <span aria-label="Bloqueado">🔒</span>}
+            {!unlocked && <MenuStatusIcon name="lock" />}
+            {unlocked && delivered && <MenuStatusIcon name="check" />}
           </span>
         ),
       }
     }),
   }))
+}
+
+function isPracticeDelivered(key, practiceStatus) {
+  return key.startsWith('practice') && practiceStatus[key] === 'delivered'
+}
+
+function MenuStatusIcon({ name }) {
+  const icons = {
+    lock: <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6V10Zm6 4v2" />,
+    check: <path d="M20 6 9 17l-5-5" />,
+  }
+
+  return (
+    <svg className={`menu-status-icon menu-status-icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
+      {icons[name]}
+    </svg>
+  )
 }
 
 async function getInternetDate() {
@@ -579,6 +620,7 @@ async function getInternetDate() {
 }
 
 function isUnlocked(key, currentDate) {
+  if (unlockEverythingLocally) return true
   if (!currentDate) return false
   const releaseDate = releaseSchedule[key]
   if (!releaseDate) return false
@@ -600,45 +642,26 @@ function LockedContent({ title, text }) {
   )
 }
 
-function PracticeOnePlayground() {
+function PracticeOnePlayground({ delivered, onSubmit }) {
+  const datasetSheetUrl = 'https://docs.google.com/spreadsheets/d/1UH5uNvUW8_beBv_3LCabQUmImeYKeHzE7W814foIfFU/edit?usp=sharing'
   const [answers, setAnswers] = useState({
+    studentId: '',
     rowMeaning: '',
     businessContext: '',
     importantData: '',
     problems: '',
     aiCritique: '',
   })
-  const [checked, setChecked] = useState([])
-
-  const checklist = [
-    'Identifiqué qué representa cada fila del dataset.',
-    'Propuse un dominio o sistema que podría usar estos datos.',
-    'Seleccioné información relevante para análisis de BI.',
-    'Detecté al menos 3 problemas de calidad de datos.',
-    'Usé IA como apoyo, pero validé críticamente la respuesta.',
+  const objectives = [
+    'Entender qué representa cada fila del dataset.',
+    'Reconocer información útil para análisis de BI.',
+    'Detectar problemas de calidad antes de modelar.',
+    'Usar IA como apoyo y validar sus respuestas.',
   ]
 
   function updateAnswer(key, value) {
     setAnswers(current => ({ ...current, [key]: value }))
   }
-
-  const markdown = `# Práctica 1: Diagnóstico de datos de reclutamiento
-
-## 1. Qué representa cada fila
-${answers.rowMeaning || '_Pendiente_'}
-
-## 2. Sistema o negocio posible
-${answers.businessContext || '_Pendiente_'}
-
-## 3. Información importante del dataset
-${answers.importantData || '_Pendiente_'}
-
-## 4. Problemas detectados
-${answers.problems || '_Pendiente_'}
-
-## 5. Crítica a la ayuda de IA
-${answers.aiCritique || '_Pendiente_'}
-`
 
   return (
     <motion.main
@@ -648,50 +671,103 @@ ${answers.aiCritique || '_Pendiente_'}
       className="practice-playground"
     >
       <section className="practice-hero">
-        <Tag color="blue">Práctica 1</Tag>
-        <Title className="practice-title">Diagnóstico de datos de reclutamiento con IA</Title>
-        <Paragraph className="practice-copy">
-          Objetivo: entender el dataset, detectar problemas de calidad y usar IA como asistente crítico, no como reemplazo del criterio humano.
-        </Paragraph>
+        <div className="practice-hero-content">
+          <Tag color="blue">Práctica 1</Tag>
+          <Title className="practice-title">Diagnóstico de datos de reclutamiento con IA</Title>
+          <Paragraph className="practice-copy">
+            Actividad individual: antes de modelar o calcular KPIs, cada estudiante debe comprender el dataset y cuestionar su calidad.
+          </Paragraph>
+        </div>
+        <div className="practice-objectives-panel">
+          <span className="practice-panel-label">Objetivos</span>
+          <div className="practice-objective-list">
+            {objectives.map(item => (
+              <div className="practice-objective" key={item}>
+                <PracticeIcon name="target" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="practice-grid">
         <div className="practice-workspace">
-          <Card title="Contexto del caso" className="practice-card">
-            <Paragraph>
-              Una empresa de tecnología en Bolivia analiza candidatos de reclutamiento almacenados en un CSV exportado desde formularios.
-            </Paragraph>
-            <Paragraph>
-              Recursos Humanos quiere revisar perfiles comunes, salario esperado, experiencia, postgrados y disponibilidad.
-            </Paragraph>
+          <Card className="practice-card context-card">
+            <div className="practice-card-heading">
+              <PracticeIcon name="database" />
+              <span>Contexto del caso</span>
+            </div>
+            <div className="context-blocks">
+              <div>
+                <strong>Situación</strong>
+                <p>Una empresa de tecnología en Bolivia analiza candidatos de reclutamiento almacenados en un CSV exportado desde formularios.</p>
+              </div>
+              <div>
+                <strong>Necesidad de negocio</strong>
+                <p>Recursos Humanos quiere revisar perfiles comunes, salario esperado, experiencia, postgrados y disponibilidad.</p>
+              </div>
+            </div>
           </Card>
 
-          <Card title="Respuestas guiadas" className="practice-card">
+          <Card className="practice-card">
+            <div className="practice-card-heading">
+              <PracticeIcon name="edit" />
+              <span>Respuestas guiadas</span>
+            </div>
+            <label className="practice-field">
+              <span>Nombre completo o código de estudiante</span>
+              <Input disabled={delivered} value={answers.studentId} onChange={event => updateAnswer('studentId', event.target.value)} />
+            </label>
             <label className="practice-field">
               <span>¿Qué representa cada fila del dataset?</span>
-              <TextArea rows={3} value={answers.rowMeaning} onChange={event => updateAnswer('rowMeaning', event.target.value)} />
+              <TextArea disabled={delivered} rows={3} value={answers.rowMeaning} onChange={event => updateAnswer('rowMeaning', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué tipo de sistema o negocio podría usar estos datos?</span>
-              <TextArea rows={3} value={answers.businessContext} onChange={event => updateAnswer('businessContext', event.target.value)} />
+              <TextArea disabled={delivered} rows={3} value={answers.businessContext} onChange={event => updateAnswer('businessContext', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué información importante contiene el dataset?</span>
-              <TextArea rows={3} value={answers.importantData} onChange={event => updateAnswer('importantData', event.target.value)} />
+              <TextArea disabled={delivered} rows={3} value={answers.importantData} onChange={event => updateAnswer('importantData', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>Identificá al menos 3 problemas del CSV.</span>
-              <TextArea rows={4} value={answers.problems} onChange={event => updateAnswer('problems', event.target.value)} />
+              <TextArea disabled={delivered} rows={4} value={answers.problems} onChange={event => updateAnswer('problems', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué aceptarías, corregirías o rechazarías de una ayuda generada por IA?</span>
-              <TextArea rows={4} value={answers.aiCritique} onChange={event => updateAnswer('aiCritique', event.target.value)} />
+              <TextArea disabled={delivered} rows={4} value={answers.aiCritique} onChange={event => updateAnswer('aiCritique', event.target.value)} />
             </label>
           </Card>
         </div>
 
         <aside className="practice-sidebar">
-          <Card title="Prompt sugerido" className="practice-card">
+          <Card className="practice-card dataset-card">
+            <div className="practice-card-heading">
+              <PracticeIcon name="sheet" />
+              <span>Dataset de trabajo</span>
+            </div>
+            <Paragraph className="dataset-copy">
+              Abrí el archivo en Google Sheets y analizá columnas, valores faltantes, duplicados, formatos y consistencia.
+            </Paragraph>
+            <Button
+              type="primary"
+              size="large"
+              className="dataset-button"
+              disabled={!datasetSheetUrl}
+              onClick={() => window.open(datasetSheetUrl, '_blank', 'noopener,noreferrer')}
+            >
+              <PracticeIcon name="external" />
+              Abrir Google Sheets
+            </Button>
+          </Card>
+
+          <Card className="practice-card">
+            <div className="practice-card-heading">
+              <PracticeIcon name="spark" />
+              <span>Prompt sugerido</span>
+            </div>
             <pre className="practice-prompt">{`Actúa como analista de datos.
 
 Analiza este dataset de reclutamiento.
@@ -704,6 +780,7 @@ Primero identifica:
 No propongas soluciones todavía.`}</pre>
             <Button
               type="primary"
+              ghost
               onClick={() => navigator.clipboard?.writeText(`Actúa como analista de datos.
 
 Analiza este dataset de reclutamiento.
@@ -715,26 +792,46 @@ Primero identifica:
 
 No propongas soluciones todavía.`)}
             >
+              <PracticeIcon name="copy" />
               Copiar prompt
             </Button>
           </Card>
 
-          <Card title="Checklist de validación" className="practice-card">
-            <Checkbox.Group value={checked} onChange={setChecked}>
-              <div className="practice-checklist">
-                {checklist.map(item => (
-                  <Checkbox key={item} value={item}>{item}</Checkbox>
-                ))}
-              </div>
-            </Checkbox.Group>
-          </Card>
-
-          <Card title="Entregable Markdown" className="practice-card">
-            <pre className="practice-output">{markdown}</pre>
+          <Card className="practice-card submit-card">
+            <Button
+              type="primary"
+              size="large"
+              className="submit-practice-button"
+              disabled={delivered}
+              onClick={onSubmit}
+            >
+              <PracticeIcon name={delivered ? 'check' : 'send'} />
+              {delivered ? 'Práctica entregada' : 'Enviar práctica'}
+            </Button>
           </Card>
         </aside>
       </section>
     </motion.main>
+  )
+}
+
+function PracticeIcon({ name }) {
+  const icons = {
+    target: <path d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Zm0-4.2a4.8 4.8 0 1 0-4.8-4.8 4.8 4.8 0 0 0 4.8 4.8Zm0-3.1a1.7 1.7 0 1 0-1.7-1.7 1.7 1.7 0 0 0 1.7 1.7Z" />,
+    database: <path d="M5 7c0-2 3.1-3.5 7-3.5S19 5 19 7s-3.1 3.5-7 3.5S5 9 5 7Zm0 5c0 2 3.1 3.5 7 3.5S19 14 19 12M5 17c0 2 3.1 3.5 7 3.5S19 19 19 17V7" />,
+    edit: <path d="m4 20 4.7-1 10-10a2.2 2.2 0 0 0-3.1-3.1l-10 10L4 20Zm10.5-12.5 3 3M13 20h7" />,
+    sheet: <path d="M7 3h7l4 4v14H7V3Zm7 0v5h4M9.5 12h5M9.5 15h5M9.5 18h3" />,
+    external: <path d="M14 4h6v6M13 11l7-7M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />,
+    spark: <path d="M12 3l1.5 5L19 10l-5.5 2L12 17l-1.5-5L5 10l5.5-2L12 3Zm6 11 .7 2.2L21 17l-2.3.8L18 20l-.7-2.2L15 17l2.3-.8L18 14Z" />,
+    copy: <path d="M8 8h11v11H8V8Zm-3 8V5h11" />,
+    send: <path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z" />,
+    check: <path d="M20 6 9 17l-5-5" />,
+  }
+
+  return (
+    <svg className="practice-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {icons[name]}
+    </svg>
   )
 }
 
