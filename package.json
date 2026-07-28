@@ -3,9 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "front",
+    "back"
+  ],
   "scripts": {
-    "dev:front": "pnpm --filter front dev",
-    "dev:back": "pnpm --filter back dev"
+    "dev:front": "npm run dev --workspace front",
+    "dev:back": "npm run dev --workspace back",
+    "build:front": "npm run build --workspace front"
   },
-  "packageManager": "pnpm@11.9.0"
+  "engines": {
+    "node": ">=22"
+  }
 }
