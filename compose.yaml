@@ -1,0 +1,66 @@
+name: bi-course
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en el .env}
+      POSTGRES_DB: ${POSTGRES_DB:-bi_course}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bi} -d ${POSTGRES_DB:-bi_course}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - bi
+
+  back:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bi}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bi_course}
+      # Postgres del contenedor no habla SSL. Sin esto: "server does not support SSL connections"
+      DATABASE_SSL: "false"
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?definí ADMIN_TOKEN en el .env}
+      # nginx sirve todo desde el mismo origen, así que CORS no entra en juego
+      CORS_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "4000"
+    networks:
+      - bi
+
+  front:
+    build:
+      context: .
+      dockerfile: front/Dockerfile
+    restart: unless-stopped
+    ports:
+      # Puerto del HOST donde escucha el origen. Alto y poco usado para no
+      # chocar con lo que ya corra en la VPS (80, 8080, 3000 suelen estar
+      # tomados). Cambialo con HTTP_PORT en el .env si hiciera falta.
+      # OJO: Cloudflare en modo proxy pega al origen por 80/443. Si usás un
+      # puerto distinto necesitás un Origin Rule, un cloudflared tunnel, o un
+      # reverse proxy en la VPS que escuche en 443 y reenvíe acá.
+      - "${HTTP_PORT:-18742}:80"
+    depends_on:
+      back:
+        condition: service_healthy
+    networks:
+      - bi
+
+volumes:
+  pgdata:
+
+networks:
+  bi:
