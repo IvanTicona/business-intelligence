@@ -582,6 +582,21 @@ select,
   font-weight: 800;
 }
 
+.practice-submit-message {
+  margin: 12px 0 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.practice-submit-message-error {
+  color: #b91c1c;
+}
+
+.practice-submit-message-success {
+  color: #166534;
+}
+
 .practice-field {
   display: grid;
   gap: 8px;
@@ -608,6 +623,95 @@ select,
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
+}
+
+.admin-panel {
+  width: min(1180px, 100%);
+  min-height: calc(100vh - 96px);
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.admin-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 32px;
+  align-items: end;
+  padding: 34px 40px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.admin-title.ant-typography {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: #132B70;
+  font-family: "Rubik", system-ui, sans-serif !important;
+  font-size: clamp(42px, 4vw, 64px);
+  font-weight: 800;
+  line-height: 0.98;
+}
+
+.admin-copy.ant-typography {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: #475569;
+  font-size: 20px;
+  line-height: 1.42;
+}
+
+.admin-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-actions .ant-btn {
+  height: 44px;
+  font-weight: 700;
+}
+
+.admin-status-error {
+  margin: 0;
+  padding: 14px 18px;
+  border: 1px solid rgba(185, 28, 28, 0.2);
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.admin-submissions-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-submission-card.ant-card {
+  border-radius: 16px;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: none;
+}
+
+.admin-submission-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  color: #132B70;
+}
+
+.admin-submission-meta strong {
+  font-size: 18px;
+}
+
+.admin-submission-meta span,
+.admin-submission-card p {
+  color: #475569;
+}
+
+.admin-submission-card p {
+  margin: 8px 0 0;
+  line-height: 1.42;
 }
 
 .slide-shell {

@@ -6,6 +6,8 @@ const { Content, Sider } = Layout
 const { Title, Paragraph } = Typography
 const { TextArea } = Input
 
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
+
 const theoryItems = [
   { key: 'chapter-1', label: 'Fuentes de Datos y Gestión Inteligente' },
   { key: 'chapter-2', label: 'Modelado de Datos' },
@@ -417,6 +419,7 @@ export default function App() {
   const [internetDate, setInternetDate] = useState(null)
   const [timeStatus, setTimeStatus] = useState('loading')
   const [practiceStatus, setPracticeStatus] = useState({})
+  const isAdminRoute = window.location.pathname.startsWith('/docente/entregas')
 
   const selectedItem = useMemo(() => {
     return [...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
@@ -532,7 +535,9 @@ export default function App() {
       </Sider>
 
       <Content className="course-content">
-        {timeStatus === 'loading' ? (
+        {isAdminRoute ? (
+          <AdminSubmissionsPanel />
+        ) : timeStatus === 'loading' ? (
           <LockedContent
             title="Sincronizando fecha del curso"
             text="Estamos consultando la hora global de internet antes de desbloquear contenido."
@@ -560,7 +565,7 @@ export default function App() {
         ) : selectedKey === 'practice-1' ? (
           <PracticeOnePlayground
             delivered={isPracticeDelivered('practice-1', practiceStatus)}
-            onSubmit={() => {
+            onDelivered={() => {
               const nextStatus = { ...practiceStatus, 'practice-1': 'delivered' }
               setPracticeStatus(nextStatus)
               window.localStorage.setItem(practiceStatusStorageKey, JSON.stringify(nextStatus))
@@ -693,7 +698,7 @@ function LockedContent({ title, text }) {
   )
 }
 
-function PracticeOnePlayground({ delivered, onSubmit }) {
+function PracticeOnePlayground({ delivered, onDelivered }) {
   const datasetSheetUrl = 'https://docs.google.com/spreadsheets/d/1UH5uNvUW8_beBv_3LCabQUmImeYKeHzE7W814foIfFU/edit?usp=sharing'
   const [answers, setAnswers] = useState({
     studentId: '',
@@ -703,6 +708,7 @@ function PracticeOnePlayground({ delivered, onSubmit }) {
     problems: '',
     aiCritique: '',
   })
+  const [submitState, setSubmitState] = useState({ status: 'idle', message: '' })
   const objectives = [
     'Entender qué representa cada fila del dataset.',
     'Reconocer información útil para análisis de BI.',
@@ -712,6 +718,42 @@ function PracticeOnePlayground({ delivered, onSubmit }) {
 
   function updateAnswer(key, value) {
     setAnswers(current => ({ ...current, [key]: value }))
+    setSubmitState({ status: 'idle', message: '' })
+  }
+
+  async function submitPractice() {
+    const requiredValues = Object.values(answers).map(value => value.trim())
+    if (requiredValues.some(value => !value)) {
+      setSubmitState({ status: 'error', message: 'Completá todos los campos antes de enviar.' })
+      return
+    }
+
+    setSubmitState({ status: 'loading', message: '' })
+
+    try {
+      const response = await fetch(apiUrl('/api/submissions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          practiceId: 'practice-1',
+          studentIdentifier: answers.studentId.trim(),
+          answers: {
+            rowMeaning: answers.rowMeaning.trim(),
+            businessContext: answers.businessContext.trim(),
+            importantData: answers.importantData.trim(),
+            problems: answers.problems.trim(),
+            aiCritique: answers.aiCritique.trim(),
+          },
+        }),
+      })
+
+      if (!response.ok) throw new Error('No se pudo enviar la práctica')
+
+      setSubmitState({ status: 'success', message: 'Práctica enviada correctamente.' })
+      onDelivered()
+    } catch {
+      setSubmitState({ status: 'error', message: 'No se pudo enviar. Revisá que el backend esté disponible.' })
+    }
   }
 
   return (
@@ -768,27 +810,27 @@ function PracticeOnePlayground({ delivered, onSubmit }) {
             </div>
             <label className="practice-field">
               <span>Nombre completo o código de estudiante</span>
-              <Input disabled={delivered} value={answers.studentId} onChange={event => updateAnswer('studentId', event.target.value)} />
+              <Input disabled={delivered || submitState.status === 'loading'} value={answers.studentId} onChange={event => updateAnswer('studentId', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué representa cada fila del dataset?</span>
-              <TextArea disabled={delivered} rows={3} value={answers.rowMeaning} onChange={event => updateAnswer('rowMeaning', event.target.value)} />
+              <TextArea disabled={delivered || submitState.status === 'loading'} rows={3} value={answers.rowMeaning} onChange={event => updateAnswer('rowMeaning', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué tipo de sistema o negocio podría usar estos datos?</span>
-              <TextArea disabled={delivered} rows={3} value={answers.businessContext} onChange={event => updateAnswer('businessContext', event.target.value)} />
+              <TextArea disabled={delivered || submitState.status === 'loading'} rows={3} value={answers.businessContext} onChange={event => updateAnswer('businessContext', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué información importante contiene el dataset?</span>
-              <TextArea disabled={delivered} rows={3} value={answers.importantData} onChange={event => updateAnswer('importantData', event.target.value)} />
+              <TextArea disabled={delivered || submitState.status === 'loading'} rows={3} value={answers.importantData} onChange={event => updateAnswer('importantData', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>Identificá al menos 3 problemas del CSV.</span>
-              <TextArea disabled={delivered} rows={4} value={answers.problems} onChange={event => updateAnswer('problems', event.target.value)} />
+              <TextArea disabled={delivered || submitState.status === 'loading'} rows={4} value={answers.problems} onChange={event => updateAnswer('problems', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué aceptarías, corregirías o rechazarías de una ayuda generada por IA?</span>
-              <TextArea disabled={delivered} rows={4} value={answers.aiCritique} onChange={event => updateAnswer('aiCritique', event.target.value)} />
+              <TextArea disabled={delivered || submitState.status === 'loading'} rows={4} value={answers.aiCritique} onChange={event => updateAnswer('aiCritique', event.target.value)} />
             </label>
           </Card>
         </div>
@@ -854,16 +896,100 @@ No propongas soluciones todavía.`)}
               size="large"
               className="submit-practice-button"
               disabled={delivered}
-              onClick={onSubmit}
+              loading={submitState.status === 'loading'}
+              onClick={submitPractice}
             >
               <PracticeIcon name={delivered ? 'check' : 'send'} />
               {delivered ? 'Práctica entregada' : 'Enviar práctica'}
             </Button>
+            {submitState.message && (
+              <p className={`practice-submit-message practice-submit-message-${submitState.status}`}>
+                {submitState.message}
+              </p>
+            )}
           </Card>
         </aside>
       </section>
     </motion.main>
   )
+}
+
+function AdminSubmissionsPanel() {
+  const [token, setToken] = useState('')
+  const [submissions, setSubmissions] = useState([])
+  const [status, setStatus] = useState({ type: 'idle', message: '' })
+
+  async function loadSubmissions() {
+    setStatus({ type: 'loading', message: '' })
+
+    try {
+      const response = await fetch(apiUrl('/api/admin/submissions'), {
+        headers: token ? { 'x-admin-token': token } : {},
+      })
+
+      if (!response.ok) throw new Error('No autorizado')
+
+      const data = await response.json()
+      setSubmissions(data.submissions ?? [])
+      setStatus({ type: 'success', message: '' })
+    } catch {
+      setStatus({ type: 'error', message: 'No se pudieron cargar las entregas.' })
+    }
+  }
+
+  function downloadCsv() {
+    const url = new URL(apiUrl('/api/admin/submissions.csv'))
+    if (token) url.searchParams.set('token', token)
+    window.open(url.toString(), '_blank', 'noopener,noreferrer')
+  }
+
+  return (
+    <motion.main
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      className="admin-panel"
+    >
+      <section className="admin-panel-header">
+        <div>
+          <Tag color="blue">Docente</Tag>
+          <Title className="admin-title">Entregas de prácticas</Title>
+          <Paragraph className="admin-copy">Panel privado para revisar envíos y descargar el consolidado en CSV.</Paragraph>
+        </div>
+        <div className="admin-actions">
+          <Input.Password
+            placeholder="Token docente"
+            value={token}
+            onChange={event => setToken(event.target.value)}
+          />
+          <Button type="primary" loading={status.type === 'loading'} onClick={loadSubmissions}>Cargar entregas</Button>
+          <Button onClick={downloadCsv}>Descargar CSV</Button>
+        </div>
+      </section>
+
+      {status.message && <p className="admin-status-error">{status.message}</p>}
+
+      <section className="admin-submissions-list">
+        {submissions.map(submission => (
+          <Card className="admin-submission-card" key={submission.id}>
+            <div className="admin-submission-meta">
+              <strong>{submission.studentIdentifier}</strong>
+              <span>{submission.practiceId} · {new Date(submission.submittedAt).toLocaleString('es-BO')}</span>
+            </div>
+            <p><strong>Fila:</strong> {submission.rowMeaning}</p>
+            <p><strong>Problemas:</strong> {submission.problems}</p>
+          </Card>
+        ))}
+        {status.type === 'success' && submissions.length === 0 && (
+          <Card className="admin-submission-card">Todavía no hay entregas registradas.</Card>
+        )}
+      </section>
+    </motion.main>
+  )
+}
+
+function apiUrl(path) {
+  return `${apiBaseUrl}${path}`
 }
 
 function PracticeIcon({ name }) {
