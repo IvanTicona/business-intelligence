@@ -1,12 +1,62 @@
 import { Button, Card, Input, Layout, Menu, Tag, Typography } from 'antd'
 import { motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import PracticeIcon from './practices/PracticeIcon.jsx'
+import PracticeTwo from './practices/PracticeTwo.jsx'
+import PracticeThree from './practices/PracticeThree.jsx'
+import PracticeFour from './practices/PracticeFour.jsx'
+import { apiUrl } from './lib/api.js'
 
 const { Content, Sider } = Layout
 const { Title, Paragraph } = Typography
 const { TextArea } = Input
 
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
+const adminPracticeConfigs = {
+  'practice-1': {
+    label: 'Práctica 1',
+    csvFilename: 'practica-1-entregas.csv',
+    fields: [
+      { key: 'rowMeaning', label: '¿Qué representa cada fila del dataset?' },
+      { key: 'businessContext', label: '¿Qué tipo de sistema o negocio podría usar estos datos?' },
+      { key: 'importantData', label: '¿Qué información importante contiene el dataset?' },
+      { key: 'problems', label: 'Problemas identificados en el CSV' },
+      { key: 'aiCritique', label: 'Evaluación crítica de la ayuda generada por IA' },
+    ],
+  },
+  'practice-2': {
+    label: 'Práctica 2',
+    csvFilename: 'practica-2-entregas.csv',
+    fields: [
+      { key: 'classificationScore', label: 'Clasificación entidad / atributo' },
+      { key: 'primaryKeys', label: 'Claves primarias elegidas' },
+      { key: 'cardinalities', label: 'Cardinalidades' },
+      { key: 'diagramUrl', label: 'Diagrama en ERDPlus' },
+      { key: 'kpis', label: 'KPIs propuestos' },
+      { key: 'reflection', label: 'Reflexión' },
+    ],
+  },
+  'practice-3': {
+    label: 'Práctica 3',
+    csvFilename: 'practica-3-entregas.csv',
+    fields: [
+      { key: 'solvedCount', label: 'Retos resueltos' },
+      { key: 'queries', label: 'Consultas de los retos' },
+      { key: 'freeQuery', label: 'Consulta propia' },
+      { key: 'reflection', label: 'Reflexión' },
+    ],
+  },
+  'practice-4': {
+    label: 'Práctica 4',
+    csvFilename: 'practica-4-entregas.csv',
+    fields: [
+      { key: 'grain', label: 'Grain del hecho' },
+      { key: 'factDesign', label: 'Diseño de la estrella' },
+      { key: 'kpiDefinitions', label: 'Definición del KPI propio' },
+      { key: 'kpiQueries', label: 'Consultas de los KPIs' },
+      { key: 'reflection', label: 'Reflexión' },
+    ],
+  },
+}
 
 const theoryItems = [
   { key: 'chapter-1', label: 'Fuentes de Datos y Gestión Inteligente' },
@@ -23,21 +73,25 @@ const practiceItems = [
   { key: 'practice-4', label: 'Práctica 4' },
 ]
 
-const releaseSchedule = {
-  'chapter-1': '2026-07-27',
-  'practice-1': '2026-07-28',
-  'chapter-2': '2026-07-29',
-  'practice-2': '2026-07-30',
-  'chapter-3': '2026-07-31',
-  'chapter-4': '2026-08-03',
-  'practice-3': '2026-08-04',
-  'chapter-5': '2026-08-05',
-  'practice-4': '2026-08-06',
-}
-
-const unlockEverythingLocally = true
-const forceDisabledKeys = new Set(['chapter-3', 'chapter-4', 'chapter-5', 'practice-2', 'practice-3', 'practice-4'])
 const practiceStatusStorageKey = 'bi-course-practice-status'
+
+// Módulos bloqueados para los alumnos.
+// PARA HABILITAR UNO: borralo de esta lista y volvé a desplegar
+// (docker compose up -d --build front). No hay fechas ni calendario:
+// lo que está acá está bloqueado, lo que no está, se ve.
+const disabledKeys = new Set([
+  'chapter-2',
+  'chapter-3',
+  'chapter-4',
+  'chapter-5',
+  'practice-2',
+  'practice-3',
+  'practice-4',
+])
+
+function isDisabled(key) {
+  return disabledKeys.has(key)
+}
 
 const chapterOneSlides = [
   { type: 'cover', eyebrow: 'Capítulo 1', title: 'FUENTES DE DATOS Y GESTIÓN INTELIGENTE', text: '' },
@@ -412,12 +466,19 @@ const menuGroups = [
   },
 ]
 
+// Cada práctica es un playground independiente. Agregar una nueva es sumar
+// una entrada acá, no tocar el render.
+const PracticePlaygrounds = {
+  'practice-1': PracticeOnePlayground,
+  'practice-2': PracticeTwo,
+  'practice-3': PracticeThree,
+  'practice-4': PracticeFour,
+}
+
 export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [selectedKey, setSelectedKey] = useState(theoryItems[0].key)
   const [routeIndex, setRouteIndex] = useState(0)
-  const [internetDate, setInternetDate] = useState(null)
-  const [timeStatus, setTimeStatus] = useState('loading')
   const [practiceStatus, setPracticeStatus] = useState({})
   const isAdminRoute = window.location.pathname.startsWith('/docente/entregas')
 
@@ -425,8 +486,7 @@ export default function App() {
     return [...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
   }, [selectedKey])
 
-  const menuItems = useMemo(() => buildMenuItems(internetDate, practiceStatus), [internetDate, practiceStatus])
-  const selectedIsUnlocked = isUnlocked(selectedKey, internetDate)
+  const menuItems = useMemo(() => buildMenuItems(practiceStatus), [practiceStatus])
 
   useEffect(() => {
     const savedStatus = window.localStorage.getItem(practiceStatusStorageKey)
@@ -440,34 +500,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    async function loadInternetDate() {
-      try {
-        const currentDate = await getInternetDate()
-
-        setInternetDate(currentDate)
-        setTimeStatus('ready')
-      } catch {
-        setInternetDate(null)
-        setTimeStatus('error')
-      }
-    }
-
-    loadInternetDate()
-  }, [])
-
-  useEffect(() => {
-    if (timeStatus !== 'ready') return
-    if (isUnlocked(selectedKey, internetDate)) return
-
-    const firstUnlocked = [...theoryItems, ...practiceItems].find(item => isUnlocked(item.key, internetDate))
-    if (firstUnlocked) setSelectedKey(firstUnlocked.key)
-  }, [internetDate, selectedKey, timeStatus])
-
-  useEffect(() => {
     setRouteIndex(0)
   }, [selectedKey])
 
-  const activeDeck = selectedIsUnlocked ? chapterDecks[selectedKey] : null
+  const activeDeck = chapterDecks[selectedKey]
   const isSlideDeck = Boolean(activeDeck)
   const activeRoute = activeDeck?.route[routeIndex]
   const activeSlide = activeDeck?.slides[activeRoute?.slideIndex ?? 0]
@@ -483,6 +519,12 @@ export default function App() {
   function goPrevSlide() {
     if (!activeDeck) return
     setRouteIndex(current => Math.max(current - 1, 0))
+  }
+
+  function markDelivered(practiceKey) {
+    const nextStatus = { ...practiceStatus, [practiceKey]: 'delivered' }
+    setPracticeStatus(nextStatus)
+    window.localStorage.setItem(practiceStatusStorageKey, JSON.stringify(nextStatus))
   }
 
   return (
@@ -517,7 +559,8 @@ export default function App() {
           selectedKeys={[selectedKey]}
           items={menuItems}
           onClick={({ key }) => {
-            if (isUnlocked(key, internetDate) && !isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
+            if (isDisabled(key)) return
+            if (!isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
           }}
           className="course-menu"
           inlineCollapsed={collapsed}
@@ -537,21 +580,8 @@ export default function App() {
       <Content className="course-content">
         {isAdminRoute ? (
           <AdminSubmissionsPanel />
-        ) : timeStatus === 'loading' ? (
-          <LockedContent
-            title="Sincronizando fecha del curso"
-            text="Estamos consultando la hora global de internet antes de desbloquear contenido."
-          />
-        ) : timeStatus === 'error' ? (
-          <LockedContent
-            title="Contenido bloqueado"
-            text="No se pudo obtener la hora global de internet. Por seguridad, el contenido queda bloqueado."
-          />
-        ) : !selectedIsUnlocked ? (
-          <LockedContent
-            title="Contenido bloqueado"
-            text="Este módulo todavía no está disponible según el calendario del curso."
-          />
+        ) : isDisabled(selectedKey) ? (
+          <BlockedContent title={selectedItem?.label} />
         ) : isSlideDeck ? (
           <SlideCanvas
             slide={activeSlide}
@@ -562,15 +592,18 @@ export default function App() {
             onNext={goNextSlide}
             onPrev={goPrevSlide}
           />
-        ) : selectedKey === 'practice-1' ? (
-          <PracticeOnePlayground
-            delivered={isPracticeDelivered('practice-1', practiceStatus)}
-            onDelivered={() => {
-              const nextStatus = { ...practiceStatus, 'practice-1': 'delivered' }
-              setPracticeStatus(nextStatus)
-              window.localStorage.setItem(practiceStatusStorageKey, JSON.stringify(nextStatus))
-            }}
-          />
+        ) : PracticePlaygrounds[selectedKey] ? (
+          (() => {
+            const Playground = PracticePlaygrounds[selectedKey]
+
+            return (
+              <Playground
+                key={selectedKey}
+                delivered={isPracticeDelivered(selectedKey, practiceStatus)}
+                onDelivered={() => markDelivered(selectedKey)}
+              />
+            )
+          })()
         ) : (
           <motion.main
             key={selectedKey}
@@ -593,22 +626,22 @@ export default function App() {
   )
 }
 
-function buildMenuItems(currentDate, practiceStatus) {
+function buildMenuItems(practiceStatus) {
   return menuGroups.map(group => ({
     ...group,
     children: group.children.map(item => {
-      const unlocked = isUnlocked(item.key, currentDate)
       const delivered = isPracticeDelivered(item.key, practiceStatus)
+      const blocked = isDisabled(item.key)
 
       return {
         ...item,
-        disabled: !unlocked || delivered,
+        disabled: blocked || delivered,
         icon: <CourseMenuIcon name={item.key.startsWith('chapter') ? 'book' : 'practice'} />,
         label: (
-          <span className="locked-menu-label">
+          <span className="course-menu-label">
             <span>{item.label}</span>
-            {!unlocked && <MenuStatusIcon name="lock" />}
-            {unlocked && delivered && <MenuStatusIcon name="check" />}
+            {blocked && <MenuStatusIcon name="lock" />}
+            {!blocked && delivered && <MenuStatusIcon name="check" />}
           </span>
         ),
       }
@@ -618,6 +651,23 @@ function buildMenuItems(currentDate, practiceStatus) {
 
 function isPracticeDelivered(key, practiceStatus) {
   return key.startsWith('practice') && practiceStatus[key] === 'delivered'
+}
+
+function BlockedContent({ title }) {
+  return (
+    <motion.main
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      className="blocked-content"
+    >
+      <div className="blocked-icon">🔒</div>
+      <Title className="blocked-title">{title ?? 'Módulo bloqueado'}</Title>
+      <Paragraph className="blocked-copy">
+        Este módulo todavía no está habilitado. Se abre cuando el docente lo libere en clase.
+      </Paragraph>
+    </motion.main>
+  )
 }
 
 function CourseMenuIcon({ name }) {
@@ -635,66 +685,14 @@ function CourseMenuIcon({ name }) {
 
 function MenuStatusIcon({ name }) {
   const icons = {
-    lock: <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6V10Zm6 4v2" />,
     check: <path d="M20 6 9 17l-5-5" />,
+    lock: <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6V10Zm6 4v2" />,
   }
 
   return (
     <svg className={`menu-status-icon menu-status-icon-${name}`} viewBox="0 0 24 24" aria-hidden="true">
       {icons[name]}
     </svg>
-  )
-}
-
-async function getInternetDate() {
-  const providers = [
-    {
-      url: 'https://timeapi.io/api/Time/current/zone?timeZone=America/La_Paz',
-      parse: data => data.dateTime?.slice(0, 10),
-    },
-    {
-      url: 'https://worldtimeapi.org/api/timezone/America/La_Paz',
-      parse: data => data.datetime?.slice(0, 10),
-    },
-  ]
-
-  for (const provider of providers) {
-    try {
-      const response = await fetch(provider.url, { cache: 'no-store' })
-      if (!response.ok) continue
-
-      const data = await response.json()
-      const date = provider.parse(data)
-      if (date) return date
-    } catch {
-      // Intentamos el siguiente proveedor antes de bloquear contenido.
-    }
-  }
-
-  throw new Error('No se pudo obtener la fecha global de internet')
-}
-
-function isUnlocked(key, currentDate) {
-  if (forceDisabledKeys.has(key)) return false
-  if (unlockEverythingLocally) return true
-  if (!currentDate) return false
-  const releaseDate = releaseSchedule[key]
-  if (!releaseDate) return false
-  return currentDate >= releaseDate
-}
-
-function LockedContent({ title, text }) {
-  return (
-    <motion.main
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-      className="locked-content"
-    >
-      <div className="locked-icon">🔒</div>
-      <Title className="locked-title">{title}</Title>
-      <Paragraph className="locked-copy">{text}</Paragraph>
-    </motion.main>
   )
 }
 
@@ -916,14 +914,18 @@ No propongas soluciones todavía.`)}
 
 function AdminSubmissionsPanel() {
   const [token, setToken] = useState('')
+  const [selectedPracticeId, setSelectedPracticeId] = useState('practice-1')
   const [submissions, setSubmissions] = useState([])
   const [status, setStatus] = useState({ type: 'idle', message: '' })
+  const selectedPractice = adminPracticeConfigs[selectedPracticeId]
 
   async function loadSubmissions() {
     setStatus({ type: 'loading', message: '' })
 
     try {
-      const response = await fetch(apiUrl('/api/admin/submissions'), {
+      const url = new URL(apiUrl('/api/admin/submissions'), window.location.origin)
+      url.searchParams.set('practiceId', selectedPracticeId)
+      const response = await fetch(url.toString(), {
         headers: token ? { 'x-admin-token': token } : {},
       })
 
@@ -941,21 +943,23 @@ function AdminSubmissionsPanel() {
     setStatus({ type: 'loading', message: '' })
 
     try {
-      const response = await fetch(apiUrl('/api/admin/submissions.csv'), {
+      const downloadUrl = new URL(apiUrl('/api/admin/submissions.csv'), window.location.origin)
+      downloadUrl.searchParams.set('practiceId', selectedPracticeId)
+      const response = await fetch(downloadUrl.toString(), {
         headers: token ? { 'x-admin-token': token } : {},
       })
 
       if (!response.ok) throw new Error('No se pudo descargar el CSV')
 
       const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
+      const blobUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
-      link.download = 'entregas-practicas-bi.csv'
+      link.href = blobUrl
+      link.download = selectedPractice.csvFilename
       document.body.appendChild(link)
       link.click()
       link.remove()
-      URL.revokeObjectURL(url)
+      URL.revokeObjectURL(blobUrl)
       setStatus({ type: 'success', message: '' })
     } catch {
       setStatus({ type: 'error', message: 'No se pudo descargar el CSV.' })
@@ -976,6 +980,19 @@ function AdminSubmissionsPanel() {
           <Paragraph className="admin-copy">Panel privado para revisar envíos y descargar el consolidado en CSV.</Paragraph>
         </div>
         <div className="admin-actions">
+          <select
+            className="admin-practice-select"
+            value={selectedPracticeId}
+            onChange={event => {
+              setSelectedPracticeId(event.target.value)
+              setSubmissions([])
+              setStatus({ type: 'idle', message: '' })
+            }}
+          >
+            {Object.entries(adminPracticeConfigs).map(([practiceId, config]) => (
+              <option key={practiceId} value={practiceId}>{config.label}</option>
+            ))}
+          </select>
           <Input.Password
             placeholder="Token docente"
             value={token}
@@ -993,14 +1010,15 @@ function AdminSubmissionsPanel() {
           <Card className="admin-submission-card" key={submission.id}>
             <div className="admin-submission-meta">
               <strong>{submission.studentIdentifier}</strong>
-              <span>Práctica 1 · {new Date(submission.submittedAt).toLocaleString('es-BO')}</span>
+              <span>{adminPracticeConfigs[submission.practiceId]?.label ?? submission.practiceId} · {new Date(submission.submittedAt).toLocaleString('es-BO')}</span>
             </div>
             <div className="admin-submission-answers">
-              <p><strong>¿Qué representa cada fila del dataset?</strong>{submission.rowMeaning}</p>
-              <p><strong>¿Qué tipo de sistema o negocio podría usar estos datos?</strong>{submission.businessContext}</p>
-              <p><strong>¿Qué información importante contiene el dataset?</strong>{submission.importantData}</p>
-              <p><strong>Problemas identificados en el CSV</strong>{submission.problems}</p>
-              <p><strong>Evaluación crítica de la ayuda generada por IA</strong>{submission.aiCritique}</p>
+              {selectedPractice.fields.map(field => (
+                <p key={field.key}><strong>{field.label}</strong>{submission.answers?.[field.key] ?? ''}</p>
+              ))}
+              {selectedPractice.fields.length === 0 && (
+                <p><strong>Respuestas</strong>Esta práctica todavía no tiene estructura configurada.</p>
+              )}
             </div>
           </Card>
         ))}
@@ -1009,30 +1027,6 @@ function AdminSubmissionsPanel() {
         )}
       </section>
     </motion.main>
-  )
-}
-
-function apiUrl(path) {
-  return `${apiBaseUrl}${path}`
-}
-
-function PracticeIcon({ name }) {
-  const icons = {
-    target: <path d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Zm0-4.2a4.8 4.8 0 1 0-4.8-4.8 4.8 4.8 0 0 0 4.8 4.8Zm0-3.1a1.7 1.7 0 1 0-1.7-1.7 1.7 1.7 0 0 0 1.7 1.7Z" />,
-    database: <path d="M5 7c0-2 3.1-3.5 7-3.5S19 5 19 7s-3.1 3.5-7 3.5S5 9 5 7Zm0 5c0 2 3.1 3.5 7 3.5S19 14 19 12M5 17c0 2 3.1 3.5 7 3.5S19 19 19 17V7" />,
-    edit: <path d="m4 20 4.7-1 10-10a2.2 2.2 0 0 0-3.1-3.1l-10 10L4 20Zm10.5-12.5 3 3M13 20h7" />,
-    sheet: <path d="M7 3h7l4 4v14H7V3Zm7 0v5h4M9.5 12h5M9.5 15h5M9.5 18h3" />,
-    external: <path d="M14 4h6v6M13 11l7-7M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />,
-    spark: <path d="M12 3l1.5 5L19 10l-5.5 2L12 17l-1.5-5L5 10l5.5-2L12 3Zm6 11 .7 2.2L21 17l-2.3.8L18 20l-.7-2.2L15 17l2.3-.8L18 14Z" />,
-    copy: <path d="M8 8h11v11H8V8Zm-3 8V5h11" />,
-    send: <path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z" />,
-    check: <path d="M20 6 9 17l-5-5" />,
-  }
-
-  return (
-    <svg className="practice-icon" viewBox="0 0 24 24" aria-hidden="true">
-      {icons[name]}
-    </svg>
   )
 }
 
