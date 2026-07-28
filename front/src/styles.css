@@ -709,9 +709,25 @@ select,
   color: #475569;
 }
 
+.admin-submission-answers {
+  display: grid;
+  gap: 12px;
+}
+
 .admin-submission-card p {
   margin: 8px 0 0;
   line-height: 1.42;
+}
+
+.admin-submission-answers p {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.admin-submission-answers strong {
+  color: #132B70;
+  font-size: 14px;
 }
 
 .slide-shell {

@@ -937,10 +937,29 @@ function AdminSubmissionsPanel() {
     }
   }
 
-  function downloadCsv() {
-    const url = new URL(apiUrl('/api/admin/submissions.csv'))
-    if (token) url.searchParams.set('token', token)
-    window.open(url.toString(), '_blank', 'noopener,noreferrer')
+  async function downloadCsv() {
+    setStatus({ type: 'loading', message: '' })
+
+    try {
+      const response = await fetch(apiUrl('/api/admin/submissions.csv'), {
+        headers: token ? { 'x-admin-token': token } : {},
+      })
+
+      if (!response.ok) throw new Error('No se pudo descargar el CSV')
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'entregas-practicas-bi.csv'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      setStatus({ type: 'success', message: '' })
+    } catch {
+      setStatus({ type: 'error', message: 'No se pudo descargar el CSV.' })
+    }
   }
 
   return (
@@ -963,7 +982,7 @@ function AdminSubmissionsPanel() {
             onChange={event => setToken(event.target.value)}
           />
           <Button type="primary" loading={status.type === 'loading'} onClick={loadSubmissions}>Cargar entregas</Button>
-          <Button onClick={downloadCsv}>Descargar CSV</Button>
+          <Button loading={status.type === 'loading'} onClick={downloadCsv}>Descargar CSV</Button>
         </div>
       </section>
 
@@ -974,10 +993,15 @@ function AdminSubmissionsPanel() {
           <Card className="admin-submission-card" key={submission.id}>
             <div className="admin-submission-meta">
               <strong>{submission.studentIdentifier}</strong>
-              <span>{submission.practiceId} · {new Date(submission.submittedAt).toLocaleString('es-BO')}</span>
+              <span>Práctica 1 · {new Date(submission.submittedAt).toLocaleString('es-BO')}</span>
             </div>
-            <p><strong>Fila:</strong> {submission.rowMeaning}</p>
-            <p><strong>Problemas:</strong> {submission.problems}</p>
+            <div className="admin-submission-answers">
+              <p><strong>¿Qué representa cada fila del dataset?</strong>{submission.rowMeaning}</p>
+              <p><strong>¿Qué tipo de sistema o negocio podría usar estos datos?</strong>{submission.businessContext}</p>
+              <p><strong>¿Qué información importante contiene el dataset?</strong>{submission.importantData}</p>
+              <p><strong>Problemas identificados en el CSV</strong>{submission.problems}</p>
+              <p><strong>Evaluación crítica de la ayuda generada por IA</strong>{submission.aiCritique}</p>
+            </div>
           </Card>
         ))}
         {status.type === 'success' && submissions.length === 0 && (
