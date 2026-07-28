@@ -242,7 +242,7 @@ select,
   opacity: 1;
 }
 
-.locked-menu-label {
+.course-menu-label {
   width: 100%;
   display: inline-flex;
   align-items: center;
@@ -251,7 +251,7 @@ select,
   min-width: 0;
 }
 
-.locked-menu-label > span:first-child {
+.course-menu-label > span:first-child {
   display: block;
   flex: 1 1 auto;
   min-width: 0;
@@ -273,10 +273,6 @@ select,
 
 .menu-status-icon-check {
   color: #22c55e;
-}
-
-.menu-status-icon-lock {
-  color: #a1a1aa;
 }
 
 .sidebar-footer {
@@ -357,35 +353,6 @@ select,
   color: #475569;
 }
 
-.locked-content {
-  width: min(760px, 100%);
-  padding: 64px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 30px;
-  background: #ffffff;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
-  text-align: center;
-}
-
-.locked-icon {
-  margin-bottom: 18px;
-  font-size: 54px;
-}
-
-.locked-title.ant-typography {
-  margin: 0;
-  color: #132B70;
-  font-size: clamp(42px, 4.8vw, 72px);
-  line-height: 0.95;
-}
-
-.locked-copy.ant-typography {
-  max-width: 560px;
-  margin: 24px auto 0;
-  color: #475569;
-  font-size: 24px;
-  line-height: 1.3;
-}
 
 .practice-playground {
   width: min(1400px, 100%);
@@ -670,6 +637,23 @@ select,
 .admin-actions .ant-btn {
   height: 44px;
   font-weight: 700;
+}
+
+.admin-practice-select {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: "Rubik", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-practice-select:focus {
+  border-color: #1677ff;
+  outline: 2px solid rgba(22, 119, 255, 0.16);
 }
 
 .admin-status-error {
