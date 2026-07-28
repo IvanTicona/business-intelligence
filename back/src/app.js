@@ -9,24 +9,65 @@ const { Pool } = pg
 const app = express()
 const adminToken = process.env.ADMIN_TOKEN ?? ''
 const databaseUrl = process.env.DATABASE_URL
+const databaseSsl = process.env.DATABASE_SSL !== 'false'
+
+if (!adminToken) {
+  throw new Error('ADMIN_TOKEN es obligatorio: sin token el panel docente queda abierto a cualquiera')
+}
+const practiceConfigs = {
+  'practice-1': {
+    csvFilename: 'practica-1-entregas.csv',
+    fields: [
+      { key: 'rowMeaning', csvHeader: 'row_meaning' },
+      { key: 'businessContext', csvHeader: 'business_context' },
+      { key: 'importantData', csvHeader: 'important_data' },
+      { key: 'problems', csvHeader: 'problems' },
+      { key: 'aiCritique', csvHeader: 'ai_critique' },
+    ],
+  },
+  'practice-2': {
+    csvFilename: 'practica-2-entregas.csv',
+    fields: [
+      { key: 'classificationScore', csvHeader: 'clasificacion_entidad_atributo' },
+      { key: 'primaryKeys', csvHeader: 'claves_primarias' },
+      { key: 'cardinalities', csvHeader: 'cardinalidades' },
+      { key: 'diagramUrl', csvHeader: 'diagrama_erdplus' },
+      { key: 'kpis', csvHeader: 'kpis_propuestos' },
+      { key: 'reflection', csvHeader: 'reflexion' },
+    ],
+  },
+  'practice-3': {
+    csvFilename: 'practica-3-entregas.csv',
+    fields: [
+      { key: 'solvedCount', csvHeader: 'retos_resueltos' },
+      { key: 'queries', csvHeader: 'consultas_sql' },
+      { key: 'freeQuery', csvHeader: 'consulta_propia' },
+      { key: 'reflection', csvHeader: 'reflexion' },
+    ],
+  },
+  'practice-4': {
+    csvFilename: 'practica-4-entregas.csv',
+    fields: [
+      { key: 'grain', csvHeader: 'grain_del_hecho' },
+      { key: 'factDesign', csvHeader: 'diseno_estrella' },
+      { key: 'kpiDefinitions', csvHeader: 'definicion_kpis' },
+      { key: 'kpiQueries', csvHeader: 'consultas_kpis' },
+      { key: 'reflection', csvHeader: 'reflexion' },
+    ],
+  },
+}
 
 const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
-      ssl: databaseUrl.includes('localhost') ? false : { rejectUnauthorized: false },
+      ssl: databaseSsl ? { rejectUnauthorized: false } : false,
     })
   : null
 
 const submissionSchema = z.object({
-  practiceId: z.string().min(1).max(60),
+  practiceId: z.enum(['practice-1', 'practice-2', 'practice-3', 'practice-4']),
   studentIdentifier: z.string().min(2).max(160),
-  answers: z.object({
-    rowMeaning: z.string().min(1).max(5000),
-    businessContext: z.string().min(1).max(5000),
-    importantData: z.string().min(1).max(5000),
-    problems: z.string().min(1).max(5000),
-    aiCritique: z.string().min(1).max(5000),
-  }),
+  answers: z.record(z.string(), z.string().min(1).max(5000)),
 })
 
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }))
@@ -45,6 +86,15 @@ app.post('/api/submissions', async (req, res) => {
   try {
     await ensureDatabase()
     const submission = parsed.data
+    const config = practiceConfigs[submission.practiceId]
+    const missingFields = config.fields
+      .map(field => field.key)
+      .filter(key => !submission.answers[key]?.trim())
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ message: 'La entrega está incompleta', missingFields })
+    }
+
     const id = randomUUID()
 
     await pool.query(
@@ -60,14 +110,11 @@ app.post('/api/submissions', async (req, res) => {
   }
 })
 
-app.get('/api/admin/submissions', requireAdmin, async (_req, res) => {
+app.get('/api/admin/submissions', requireAdmin, async (req, res) => {
   try {
     await ensureDatabase()
-    const { rows } = await pool.query(
-      `SELECT id, practice_id, student_identifier, answers, created_at
-       FROM practice_submissions
-       ORDER BY created_at DESC`,
-    )
+    const practiceId = normalizePracticeId(req.query.practiceId)
+    const { rows } = await findSubmissions(practiceId)
 
     res.json({ submissions: rows.map(formatSubmission) })
   } catch (error) {
@@ -76,18 +123,16 @@ app.get('/api/admin/submissions', requireAdmin, async (_req, res) => {
   }
 })
 
-app.get('/api/admin/submissions.csv', requireAdmin, async (_req, res) => {
+app.get('/api/admin/submissions.csv', requireAdmin, async (req, res) => {
   try {
     await ensureDatabase()
-    const { rows } = await pool.query(
-      `SELECT id, practice_id, student_identifier, answers, created_at
-       FROM practice_submissions
-       ORDER BY created_at DESC`,
-    )
+    const practiceId = normalizePracticeId(req.query.practiceId)
+    const config = practiceConfigs[practiceId]
+    const { rows } = await findSubmissions(practiceId)
 
-    const csv = toCsv(rows.map(formatSubmission))
+    const csv = toCsv(rows.map(formatSubmission), config)
     res.header('Content-Type', 'text/csv; charset=utf-8')
-    res.header('Content-Disposition', 'attachment; filename="entregas-practicas-bi.csv"')
+    res.header('Content-Disposition', `attachment; filename="${config.csvFilename}"`)
     res.send(csv)
   } catch (error) {
     console.error(error)
@@ -96,14 +141,27 @@ app.get('/api/admin/submissions.csv', requireAdmin, async (_req, res) => {
 })
 
 function requireAdmin(req, res, next) {
-  if (!adminToken) return next()
-
   const providedToken = req.header('x-admin-token') ?? req.query.token
   if (providedToken !== adminToken) {
     return res.status(401).json({ message: 'Acceso docente no autorizado' })
   }
 
   next()
+}
+
+function normalizePracticeId(value) {
+  const practiceId = typeof value === 'string' ? value : 'practice-1'
+  return practiceConfigs[practiceId] ? practiceId : 'practice-1'
+}
+
+function findSubmissions(practiceId) {
+  return pool.query(
+    `SELECT id, practice_id, student_identifier, answers, created_at
+     FROM practice_submissions
+     WHERE practice_id = $1
+     ORDER BY created_at DESC`,
+    [practiceId],
+  )
 }
 
 async function ensureDatabase() {
@@ -127,25 +185,17 @@ function formatSubmission(row) {
     id: row.id,
     practiceId: row.practice_id,
     studentIdentifier: row.student_identifier,
-    rowMeaning: answers.rowMeaning ?? '',
-    businessContext: answers.businessContext ?? '',
-    importantData: answers.importantData ?? '',
-    problems: answers.problems ?? '',
-    aiCritique: answers.aiCritique ?? '',
+    answers,
     submittedAt: row.created_at,
   }
 }
 
-function toCsv(rows) {
+function toCsv(rows, config) {
   const headers = [
     'id',
     'practice_id',
     'student_identifier',
-    'row_meaning',
-    'business_context',
-    'important_data',
-    'problems',
-    'ai_critique',
+    ...config.fields.map(field => field.csvHeader),
     'submitted_at',
   ]
 
@@ -153,11 +203,7 @@ function toCsv(rows) {
     row.id,
     row.practiceId,
     row.studentIdentifier,
-    row.rowMeaning,
-    row.businessContext,
-    row.importantData,
-    row.problems,
-    row.aiCritique,
+    ...config.fields.map(field => row.answers[field.key] ?? ''),
     row.submittedAt,
   ].map(escapeCsv).join(','))
 
