@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import 'antd/dist/reset.css'
 import './styles.css'
+import './slides-layouts.css'
 import './practices/playgrounds.css'
 import App from './App.jsx'
 

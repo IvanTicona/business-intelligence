@@ -751,6 +751,9 @@ select,
   justify-content: space-between;
   align-items: center;
   padding: 0 76px;
+  /* Trazo dorado que cruza el slide de lado a lado: el header ya va de
+     left:0 a right:0, asi que el borde llega hasta los bordes del slide. */
+  border-bottom: 4px solid #e8b22b;
   color: #0f172a;
   font-size: 23px;
   font-weight: 400;
@@ -840,29 +843,32 @@ select,
   gap: 72px;
 }
 
+/* Entre el header y el footer del slide hay ~423px utiles. Con los tamanos
+   anteriores (titulo 126px, items 56px, imagen 470px) la lista se salia por
+   abajo y pisaba el pie en los cuatro capitulos. */
 .objectives-layout img {
   width: 100%;
-  max-height: 470px;
+  max-height: 300px;
   object-fit: contain;
 }
 
 .objectives-title.ant-typography {
   color: #132B70;
-  font-size: clamp(82px, 8vw, 126px);
-  margin-bottom: 42px;
+  font-size: clamp(46px, 4.8vw, 72px);
+  margin-bottom: 22px;
   text-transform: uppercase;
 }
 
 .objectives-list {
   margin: 0;
-  padding-left: 34px;
+  padding-left: 30px;
   color: #000000;
-  font-size: clamp(38px, 4vw, 56px);
-  line-height: 1.16;
+  font-size: clamp(22px, 2.4vw, 34px);
+  line-height: 1.18;
 }
 
 .objectives-list li {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .title-image-layout {
