@@ -30,7 +30,6 @@ const adminPracticeConfigs = {
       { key: 'classificationScore', label: 'Clasificación entidad / atributo' },
       { key: 'primaryKeys', label: 'Claves primarias elegidas' },
       { key: 'cardinalities', label: 'Cardinalidades' },
-      { key: 'diagramUrl', label: 'Diagrama en ERDPlus' },
       { key: 'kpis', label: 'KPIs propuestos' },
       { key: 'reflection', label: 'Reflexión' },
     ],
@@ -80,11 +79,8 @@ const practiceStatusStorageKey = 'bi-course-practice-status'
 // (docker compose up -d --build front). No hay fechas ni calendario:
 // lo que está acá está bloqueado, lo que no está, se ve.
 const disabledKeys = new Set([
-  'chapter-2',
-  'chapter-3',
   'chapter-4',
   'chapter-5',
-  'practice-2',
   'practice-3',
   'practice-4',
 ])
@@ -405,7 +401,184 @@ const chapterThreeSlides = [
       'Relaciones',
     ],
   },
+  { type: 'title-text-image', title: 'Modelo Entidad-Relación (MER)', image: '/slide50.png', revealCount: 2 },
+  {
+    type: 'feature-cards',
+    text: 'Un esquema conceptual es una descripción de alto nivel de la estructura de la BD, independiente del SGBD.',
+    revealCount: 5,
+    cards: [
+      { label: 'EXPRESIVIDAD', image: '/slide51.1.png' },
+      { label: 'SIMPLICIDAD', image: '/slide51.2.png' },
+      { label: 'MINIMALIDAD', image: '/slide51.3.png' },
+      { label: 'FORMALIDAD', image: '/slide51.4.png' },
+    ],
+  },
+  {
+    type: 'symbol-list',
+    title: 'Notación Chen: los seis símbolos',
+    revealCount: 7,
+    items: [
+      { image: '/slide52.1.png', text: 'Entidad — objeto distinguible, con existencia propia' },
+      { image: '/slide52.2.png', text: 'Atributo — propiedad de una entidad o de una relación' },
+      { image: '/slide52.3.png', text: 'Entidad débil — no existe sin su entidad padre' },
+      { image: '/slide52.4.png', text: 'Relación — asocia dos o más entidades' },
+      { image: '/slide52.5.png', text: 'Identificador — único y sin nulos; se subraya' },
+      { image: '/slide52.6.png', text: 'Relación identificadora — vincula la débil con su padre' },
+    ],
+  },
+  { type: 'title-image', title: 'Notación Pata de Gallo', image: '/slide53.png', revealCount: 1 },
+  {
+    type: 'title-text-image',
+    title: 'ENTIDAD',
+    text: 'Una entidad se define como cualquier cosa u objeto del mundo real que puede ser DISTINGUIBLE y posea existencia propia. La existencia puede ser física o abstracta.',
+    image: '/slide54.png',
+    revealCount: 3,
+  },
+  {
+    type: 'two-images-text',
+    title: 'CLASES DE ENTIDAD',
+    images: ['/slide55.1.png', '/slide55.2.png'],
+    text: 'Las entidades fuertes existen sin depender de la existencia de otro ejemplar; las entidades débiles dependen de la existencia de otro ejemplar de otra entidad.',
+    revealCount: 4,
+  },
+  {
+    type: 'importance',
+    variant: 'compact',
+    title: 'IDENTIFICACIÓN DE ENTIDADES',
+    revealCount: 3,
+    items: [
+      'Identificar los sustantivos en el Universo del discurso.',
+      'Cada entidad identificada debe representar información relevante en el problema.',
+      'Cada ejemplar de la entidad debe diferenciarse de otros ejemplares.',
+    ],
+  },
+  {
+    type: 'title-text-image',
+    title: 'ATRIBUTOS',
+    text: 'Son las propiedades o características que describen una entidad o relación.',
+    image: '/slide56.png',
+    revealCount: 3,
+  },
+  {
+    type: 'title-text-image',
+    title: 'ATRIBUTOS COMPUESTOS',
+    text: 'Atributos que poseen varios componentes.',
+    image: '/slide57.png',
+    revealCount: 3,
+  },
+  {
+    type: 'title-text-image',
+    title: 'ATRIBUTO MULTIVALUADO',
+    text: 'Los atributos multivaluados permiten almacenar varios valores para un ejemplar.',
+    image: '/slide58.png',
+    revealCount: 3,
+  },
+  {
+    type: 'title-text-image',
+    title: 'IDENTIFICADORES',
+    text: 'Atributo capaz de garantizar una ocurrencia única en dicha entidad.',
+    image: '/slide59.png',
+    revealCount: 5,
+    items: [
+      'No deben existir dos ejemplares de la entidad con el mismo valor.',
+      'No deben tener valores nulos.',
+    ],
+  },
+  { type: 'title-image', title: 'Dominio: los valores que un atributo puede tomar', image: '/slide60.png', revealCount: 1 },
+  {
+    type: 'image-text-under-title',
+    variant: 'media-wide',
+    title: 'Relación: asociación entre dos o más entidades',
+    image: '/slide61.png',
+    text: 'Doble borde = entidad DÉBIL y relación IDENTIFICADORA. Una línea de venta no existe sin su venta: se identifica por (id_venta + nro_línea).',
+    revealCount: 2,
+  },
+  { type: 'title-image', title: 'GRADO DE UNA RELACIÓN', image: '/slide62.png', revealCount: 1 },
+  {
+    type: 'statement',
+    title: 'El MER con la mirada puesta en Business Intelligence',
+    text: 'Las decisiones que se toman aquí deciden qué KPIs serán posibles.',
+    revealCount: 2,
+  },
+  {
+    type: 'image-text-under-title',
+    variant: 'media-wide',
+    title: 'Un MER real: la cadena de tiendas SurModa',
+    image: '/slide63.png',
+    text: '«incluye» es N:M y tiene atributos propios: cantidad y precio cobrado.',
+    revealCount: 2,
+  },
+  { type: 'title-image', title: 'Del MER al análisis: qué será hecho y qué será dimensión', image: '/slide64.png', revealCount: 1 },
+  { type: 'title-image', title: 'Decisiones del MER que deciden tus KPIs', image: '/slide65.png', revealCount: 1 },
+  { type: 'title-image', title: 'Atributos que conviene prever si después habrá BI', image: '/slide66.png', revealCount: 1 },
+  { type: 'title-image', title: 'El mismo patrón, en otros dominios', image: '/slide67.png', revealCount: 1 },
+  {
+    type: 'statement',
+    title: 'Un KPI imposible casi nunca es un problema del tablero.\nEs un dato que el MER no previó.',
+    revealCount: 1,
+  },
 ]
+const chapterFourSlides = [
+  { type: 'cover', eyebrow: 'Capítulo 4', title: 'MODELO RELACIONAL', text: '' },
+  {
+    type: 'objectives',
+    title: 'Objetivos',
+    image: '/slide3.png',
+    revealCount: 4,
+    items: [
+      'Definir los conceptos del MR',
+      'Establecer restricciones',
+      'Clave primaria, clave foránea y clave alternativa',
+      'De MER a MR',
+    ],
+  },
+  {
+    type: 'image-text-under-title',
+    variant: 'media-wide',
+    title: 'Relación',
+    image: '/slide70.png',
+    text: 'La relación o vínculo se representa a través de una tabla; esa tabla representa lo que en el modelo entidad-relación se designa como entidad.',
+    revealCount: 2,
+  },
+  { type: 'title-text-image', title: 'Relación', image: '/slide71.png', revealCount: 2 },
+  {
+    type: 'concept-pair',
+    title: 'Restricciones',
+    revealCount: 3,
+    items: [
+      { heading: 'UNICIDAD', text: 'Los valores no se repiten cuando el atributo es marcado como único.' },
+      { heading: 'OBLIGATORIEDAD', text: 'Los valores no deben ser nulos si el atributo es marcado como obligatorio.' },
+    ],
+  },
+  {
+    type: 'importance',
+    variant: 'compact',
+    title: 'Restricciones de integridad referencial',
+    revealCount: 4,
+    items: [
+      'No hacer nada: no podremos eliminar y/o modificar la fila.',
+      'Cascada: se modifican o eliminan todas las claves secundarias relacionadas.',
+      'Poner nulos: las claves secundarias se ponen con valor nulo.',
+      'Valor por defecto: las claves secundarias se marcan con un valor por defecto.',
+    ],
+  },
+  {
+    type: 'importance',
+    variant: 'compact dense',
+    title: 'Inherentes',
+    revealCount: 6,
+    items: [
+      'Cada tabla tiene un nombre distinto.',
+      'Cada atributo de la tabla toma un solo valor en cada fila.',
+      'Cada atributo tiene un nombre distinto en cada tabla (aunque puede coincidir en tablas distintas).',
+      'Cada fila es única.',
+      'El orden de los atributos no importa.',
+      'El orden de las filas no importa.',
+    ],
+  },
+  { type: 'title-text-image', title: 'Claves', image: '/slide72.png', revealCount: 2 },
+]
+
 const chapterOneRoute = [
   ...chapterOneSlides.slice(0, 12).flatMap((_, slideIndex) => routeForSlide(slideIndex, slideIndex + 1)),
   ...routeForSlide(12, 13),
@@ -433,6 +606,10 @@ const chapterThreeRoute = [
   ...chapterThreeSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterThreeSlides, slideIndex, slideIndex + 1)),
 ]
 
+const chapterFourRoute = [
+  ...chapterFourSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterFourSlides, slideIndex, slideIndex + 1)),
+]
+
 const chapterDecks = {
   'chapter-1': {
     chapterNumber: 1,
@@ -448,6 +625,11 @@ const chapterDecks = {
     chapterNumber: 3,
     slides: chapterThreeSlides,
     route: chapterThreeRoute,
+  },
+  'chapter-4': {
+    chapterNumber: 4,
+    slides: chapterFourSlides,
+    route: chapterFourRoute,
   },
 }
 
@@ -1385,8 +1567,10 @@ function SlideBody({ slide, revealStep, focusIndex }) {
   }
 
   if (slide.type === 'image-text-under-title') {
+    // `variant` permite agrandar la imagen y achicar el texto en un slide
+    // puntual sin alterar el layout que usan los demás capítulos.
     return (
-      <div className="image-text-under-title-layout">
+      <div className={`image-text-under-title-layout ${slide.variant ?? ''}`.trim()}>
         <RevealItem show={revealStep >= 1}>
           <Title className="slide-title image-text-under-title-heading">{slide.title}</Title>
         </RevealItem>
@@ -1518,8 +1702,10 @@ function SlideBody({ slide, revealStep, focusIndex }) {
   }
 
   if (slide.type === 'importance') {
+    // `variant` permite achicar tipografia cuando los items son largos, sin
+    // tocar el layout que ya usaban los otros capitulos.
     return (
-      <div className="importance-layout">
+      <div className={`importance-layout ${slide.variant ?? ''}`.trim()}>
         <Title className="slide-title importance-title">{slide.title}</Title>
         <ul className="importance-list">
           {slide.items.map((item, index) => (
@@ -1600,6 +1786,143 @@ function SlideBody({ slide, revealStep, focusIndex }) {
             />
           )}
         </div>
+      </div>
+    )
+  }
+
+  // Texto arriba y tarjetas de imagen + etiqueta abajo, apareciendo de a una.
+  if (slide.type === 'feature-cards') {
+    return (
+      <div className="feature-cards-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Paragraph className="slide-copy feature-cards-intro">{slide.text}</Paragraph>
+        </RevealItem>
+        <div className="feature-cards-grid">
+          {slide.cards.map((card, index) => (
+            <RevealItem key={card.label} show={revealStep >= index + 2}>
+              <figure className="feature-card">
+                <img src={card.image} alt="" />
+                <figcaption>{card.label}</figcaption>
+              </figure>
+            </RevealItem>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Catálogo de símbolos en dos columnas: cada fila es icono + descripción.
+  if (slide.type === 'symbol-list') {
+    return (
+      <div className="symbol-list-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Title className="slide-title symbol-list-title">{slide.title}</Title>
+        </RevealItem>
+        <div className="symbol-list-grid">
+          {slide.items.map((item, index) => (
+            <RevealItem key={item.text} show={revealStep >= index + 2}>
+              <div className="symbol-list-item">
+                <img src={item.image} alt="" />
+                <span>{item.text}</span>
+              </div>
+            </RevealItem>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Título, texto y una imagen debajo. Con `items` agrega una lista final.
+  // Sin texto, la imagen se adelanta un paso para no dejar un paso vacío.
+  if (slide.type === 'title-text-image') {
+    const imageStep = slide.text ? 3 : 2
+    const listOffset = imageStep + 1
+
+    return (
+      <div className="title-text-image-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Title className="slide-title title-text-image-heading">{slide.title}</Title>
+        </RevealItem>
+        {slide.text && (
+          <RevealItem show={revealStep >= 2}>
+            <Paragraph className="slide-copy title-text-image-text">{slide.text}</Paragraph>
+          </RevealItem>
+        )}
+        <RevealItem show={revealStep >= imageStep} className="title-text-image-media-wrap">
+          <img className="title-text-image-media" src={slide.image} alt="" />
+        </RevealItem>
+        {slide.items && (
+          <ul className="title-text-image-list">
+            {slide.items.map((item, index) => (
+              <motion.li
+                key={item}
+                initial={false}
+                animate={revealStep >= index + listOffset ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+                transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {item}
+              </motion.li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  // Dos imágenes comparadas y un texto que las cierra.
+  if (slide.type === 'two-images-text') {
+    return (
+      <div className="two-images-text-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Title className="slide-title two-images-text-heading">{slide.title}</Title>
+        </RevealItem>
+        <div className="two-images-text-grid">
+          {slide.images.map((image, index) => (
+            <RevealItem key={image} show={revealStep >= index + 2}>
+              <img src={image} alt="" />
+            </RevealItem>
+          ))}
+        </div>
+        <RevealItem show={revealStep >= slide.images.length + 2}>
+          <Paragraph className="slide-copy two-images-text-copy">{slide.text}</Paragraph>
+        </RevealItem>
+      </div>
+    )
+  }
+
+  // Dos conceptos enfrentados: cada uno con su rótulo y su definición.
+  if (slide.type === 'concept-pair') {
+    return (
+      <div className="concept-pair-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Title className="slide-title concept-pair-heading">{slide.title}</Title>
+        </RevealItem>
+        <div className="concept-pair-grid">
+          {slide.items.map((item, index) => (
+            <RevealItem key={item.heading} show={revealStep >= index + 2}>
+              <div className="concept-pair-card">
+                <strong>{item.heading}</strong>
+                <p>{item.text}</p>
+              </div>
+            </RevealItem>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Cierre conceptual: solo tipografía, sin imagen. Respeta los saltos de línea.
+  if (slide.type === 'statement') {
+    return (
+      <div className="statement-layout">
+        <RevealItem show={revealStep >= 1}>
+          <Title className="slide-title statement-title">{slide.title}</Title>
+        </RevealItem>
+        {slide.text && (
+          <RevealItem show={revealStep >= 2}>
+            <Paragraph className="slide-copy statement-copy">{slide.text}</Paragraph>
+          </RevealItem>
+        )}
       </div>
     )
   }
