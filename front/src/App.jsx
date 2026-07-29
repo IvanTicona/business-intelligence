@@ -79,7 +79,6 @@ const practiceStatusStorageKey = 'bi-course-practice-status'
 // (docker compose up -d --build front). No hay fechas ni calendario:
 // lo que está acá está bloqueado, lo que no está, se ve.
 const disabledKeys = new Set([
-  'chapter-4',
   'chapter-5',
   'practice-3',
   'practice-4',
