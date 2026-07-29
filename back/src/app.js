@@ -31,7 +31,6 @@ const practiceConfigs = {
       { key: 'classificationScore', csvHeader: 'clasificacion_entidad_atributo' },
       { key: 'primaryKeys', csvHeader: 'claves_primarias' },
       { key: 'cardinalities', csvHeader: 'cardinalidades' },
-      { key: 'diagramUrl', csvHeader: 'diagrama_erdplus' },
       { key: 'kpis', csvHeader: 'kpis_propuestos' },
       { key: 'reflection', csvHeader: 'reflexion' },
     ],

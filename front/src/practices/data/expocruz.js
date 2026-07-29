@@ -22,6 +22,58 @@ export const conceptCards = [
   { id: 'nivel-patrocinio', label: 'Nivel de patrocinio', description: 'Clasificación del aporte del patrocinador (oro, plata, bronce).', answer: 'atributo', why: 'Clasifica al Patrocinador. Atributo.' },
 ]
 
+/**
+ * Posiciones fijas de cada concepto en el lienzo del MER.
+ * La POSICIÓN es fija; la FORMA depende de lo que responda el alumno:
+ * rectángulo si lo clasificó como entidad, óvalo si lo clasificó como
+ * atributo. Así el diagrama que se arma es el suyo, errores incluidos.
+ * `parent` solo se usa para dibujar el conector cuando ambos ya están.
+ */
+export const diagramNodes = {
+  pabellon: { x: 175, y: 58 },
+  stand: { x: 175, y: 258 },
+  expositor: { x: 175, y: 478 },
+  sector: { x: 175, y: 612 },
+  edicion: { x: 600, y: 58 },
+  'dia-feria': { x: 600, y: 258 },
+  entrada: { x: 600, y: 430 },
+  visitante: { x: 600, y: 612 },
+  evento: { x: 1010, y: 58 },
+  patrocinador: { x: 1010, y: 258 },
+
+  'razon-social': { x: 392, y: 420, parent: 'expositor' },
+  nit: { x: 392, y: 478, parent: 'expositor' },
+  ciudad: { x: 392, y: 536, parent: 'expositor' },
+  ubicacion: { x: 392, y: 258, parent: 'stand' },
+  'precio-entrada': { x: 830, y: 402, parent: 'entrada' },
+  'forma-pago': { x: 830, y: 460, parent: 'entrada' },
+  'nivel-patrocinio': { x: 1010, y: 378, parent: 'patrocinador' },
+}
+
+/**
+ * Rombos de relación: aparecen recién cuando el alumno define su cardinalidad.
+ * `orient` decide dónde van las cardinalidades: 'v' arriba y abajo,
+ * 'h' a izquierda y derecha. Sin esto, en las relaciones horizontales las
+ * etiquetas se iban fuera del lienzo.
+ */
+export const diagramRelations = {
+  'card-pabellon-stand': { x: 175, y: 158, label: 'tiene', from: 'pabellon', to: 'stand', orient: 'v' },
+  // OJO: `from`/`to` DEBEN respetar el orden left/right de cardinalityQuestions.
+  // Si se invierten, el diagrama dibuja la cardinalidad al revés de la regla.
+  'card-expositor-stand': { x: 175, y: 368, label: 'contrata', from: 'expositor', to: 'stand', orient: 'v' },
+  'card-edicion-dia': { x: 600, y: 158, label: 'agrupa', from: 'edicion', to: 'dia-feria', orient: 'v' },
+  'card-visitante-entrada': { x: 600, y: 521, label: 'compra', from: 'visitante', to: 'entrada', orient: 'v' },
+  'card-edicion-evento': { x: 805, y: 58, label: 'programa', from: 'edicion', to: 'evento', orient: 'h' },
+}
+
+/** Dónde se subraya la clave primaria una vez elegida. */
+export const primaryKeyTargets = {
+  'pk-expositor': { kind: 'node', id: 'expositor' },
+  'pk-dia': { kind: 'node', id: 'dia-feria' },
+  'pk-entrada': { kind: 'node', id: 'entrada' },
+  'pk-contrato': { kind: 'relation', id: 'card-expositor-stand' },
+}
+
 export const primaryKeyQuestions = [
   {
     id: 'pk-expositor',

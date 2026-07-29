@@ -1,6 +1,7 @@
-import { Button, Card, Input, Typography } from 'antd'
+import { Card, Input, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
+import MerCanvas from './MerCanvas.jsx'
 import {
   PracticeHero,
   PracticeLayout,
@@ -12,7 +13,6 @@ import {
   cardinalityQuestions,
   conceptCards,
   primaryKeyQuestions,
-  relationalSchema,
 } from './data/expocruz.js'
 
 const { Paragraph } = Typography
@@ -30,7 +30,6 @@ export default function PracticeTwo({ delivered, onDelivered }) {
   const [classifications, setClassifications] = useState({})
   const [pkAnswers, setPkAnswers] = useState({})
   const [cardAnswers, setCardAnswers] = useState({})
-  const [diagramUrl, setDiagramUrl] = useState('')
   const [kpis, setKpis] = useState('')
   const [reflection, setReflection] = useState('')
 
@@ -51,7 +50,7 @@ export default function PracticeTwo({ delivered, onDelivered }) {
     { id: 'clasificar', label: 'Entidad o atributo', complete: Object.keys(classifications).length === conceptCards.length },
     { id: 'claves', label: 'Claves primarias', complete: Object.keys(pkAnswers).length === primaryKeyQuestions.length },
     { id: 'cardinalidad', label: 'Cardinalidades', complete: Object.keys(cardAnswers).length === cardinalityQuestions.length },
-    { id: 'kpis', label: 'Diagrama y KPIs', complete: Boolean(diagramUrl.trim() && kpis.trim()) },
+    { id: 'kpis', label: 'KPIs del equipo', complete: Boolean(kpis.trim()) },
   ]
 
   const submit = {
@@ -60,7 +59,6 @@ export default function PracticeTwo({ delivered, onDelivered }) {
       if (!stages[0].complete) return { error: 'Clasificá los 17 conceptos antes de enviar.' }
       if (!stages[1].complete) return { error: 'Respondé las 4 preguntas de claves primarias.' }
       if (!stages[2].complete) return { error: 'Definí las 5 cardinalidades.' }
-      if (!diagramUrl.trim()) return { error: 'Pegá el enlace de tu diagrama en ERDPlus.' }
       if (!kpis.trim()) return { error: 'Escribí al menos 2 KPIs.' }
       if (!reflection.trim()) return { error: 'Completá la reflexión final.' }
 
@@ -76,7 +74,6 @@ export default function PracticeTwo({ delivered, onDelivered }) {
           cardinalities: cardinalityQuestions
             .map(q => `${q.left}→${q.right}: ${cardAnswers[q.id]} ${cardAnswers[q.id] === q.answer ? '[correcta]' : '[incorrecta]'}`)
             .join(' | '),
-          diagramUrl: diagramUrl.trim(),
           kpis: kpis.trim(),
           reflection: reflection.trim(),
         },
@@ -92,6 +89,8 @@ export default function PracticeTwo({ delivered, onDelivered }) {
         description="Actividad grupal. Antes de dibujar nada, hay que decidir qué es entidad, qué es atributo y cómo se relacionan. El diagrama es la consecuencia, no el punto de partida."
         objectives={objectives}
       />
+
+      <MerCanvas classifications={classifications} pkAnswers={pkAnswers} cardAnswers={cardAnswers} />
 
       <StageTracker stages={stages} activeStage={stage} onSelect={setStage} />
 
@@ -127,8 +126,6 @@ export default function PracticeTwo({ delivered, onDelivered }) {
           )}
           {stage === 3 && (
             <DeliverableStage
-              diagramUrl={diagramUrl}
-              setDiagramUrl={setDiagramUrl}
               kpis={kpis}
               setKpis={setKpis}
               reflection={reflection}
@@ -141,40 +138,25 @@ export default function PracticeTwo({ delivered, onDelivered }) {
         <aside className="practice-sidebar">
           <Card className="practice-card">
             <div className="practice-card-heading">
-              <PracticeIcon name="database" />
-              <span>Modelo relacional objetivo</span>
+              <PracticeIcon name="brain" />
+              <span>Cómo leer tu diagrama</span>
             </div>
             <Paragraph className="dataset-copy">
-              Así queda el modelo si las decisiones son correctas. En la Práctica 3 vas a consultar exactamente estas tablas.
+              El lienzo de arriba dibuja <strong>tus</strong> decisiones, no la respuesta. Un rectángulo donde debía ir un óvalo se nota a simple vista.
             </Paragraph>
-            <div className="schema-list">
-              {relationalSchema.map(item => (
-                <div className="schema-table" key={item.table}>
-                  <strong>{item.table}</strong>
-                  <span>{item.columns.join(', ')}</span>
-                </div>
-              ))}
+            <div className="mer-guide">
+              <div><strong>Rectángulo</strong><span>lo clasificaste como entidad</span></div>
+              <div><strong>Óvalo</strong><span>lo clasificaste como atributo</span></div>
+              <div><strong>Rombo</strong><span>relación, con su cardinalidad a cada lado</span></div>
+              <div><strong>Texto subrayado</strong><span>la clave primaria que elegiste</span></div>
+              <div><strong>Trazo rojo</strong><span>esa decisión no coincide con el modelo correcto</span></div>
             </div>
-          </Card>
-
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="link" />
-              <span>Herramienta</span>
-            </div>
-            <Paragraph className="dataset-copy">
-              Dibujá el MER en ERDPlus con cardinalidades y participación, y pegá el enlace en la entrega.
-            </Paragraph>
-            <Button type="primary" size="large" className="dataset-button" onClick={() => window.open('https://erdplus.com/', '_blank', 'noopener,noreferrer')}>
-              <PracticeIcon name="external" />
-              Abrir ERDPlus
-            </Button>
           </Card>
 
           <SubmitCard
             delivered={delivered}
             submit={submit}
-            hint="Se guarda tu puntaje por etapa junto al diagrama y los KPIs."
+            hint="Se guarda tu puntaje por etapa junto a los KPIs. El diagrama queda reflejado en esas respuestas."
           />
         </aside>
       </section>
@@ -319,21 +301,16 @@ function CardinalityStage({ answers, onAnswer, score }) {
   )
 }
 
-function DeliverableStage({ diagramUrl, setDiagramUrl, kpis, setKpis, reflection, setReflection, disabled }) {
+function DeliverableStage({ kpis, setKpis, reflection, setReflection, disabled }) {
   return (
     <Card className="practice-card">
       <div className="practice-card-heading">
         <PracticeIcon name="edit" />
-        <span>Diagrama y KPIs del equipo</span>
+        <span>KPIs del equipo</span>
       </div>
       <Paragraph className="stage-intro">
-        Un KPI sirve solo si el modelo puede calcularlo. Antes de escribirlo, preguntate: ¿de qué tabla sale el numerador? ¿y el denominador?
+        Mirá el diagrama que armaste arriba: un KPI sirve solo si ese modelo puede calcularlo. Antes de escribirlo, preguntate de qué entidad sale el numerador y de cuál el denominador.
       </Paragraph>
-
-      <label className="practice-field">
-        <span>Enlace al diagrama MER en ERDPlus</span>
-        <Input disabled={disabled} placeholder="https://erdplus.com/edit-diagram/..." value={diagramUrl} onChange={event => setDiagramUrl(event.target.value)} />
-      </label>
 
       <label className="practice-field">
         <span>2 KPIs por integrante — nombre, objetivo y fórmula</span>

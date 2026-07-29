@@ -38,6 +38,213 @@
   color: #a1a1aa;
 }
 
+/* ============================================================
+   Lienzo del MER — se arma con las respuestas del alumno
+   ============================================================ */
+
+.mer-canvas {
+  margin-bottom: 26px;
+  padding: 20px 22px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.mer-canvas-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mer-canvas-counter {
+  color: #64748b;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mer-canvas-stage {
+  position: relative;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
+    #fbfcfe;
+  overflow: hidden;
+}
+
+.mer-canvas-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mer-canvas-empty {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  color: #94a3b8;
+  font-size: 17px;
+  text-align: center;
+}
+
+/* --- Formas --- */
+
+.mer-entity {
+  fill: #ffffff;
+  stroke: #132B70;
+  stroke-width: 2.4;
+}
+
+.mer-entity-text {
+  fill: #132B70;
+  font-size: 20px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.mer-attribute {
+  fill: #eef2ff;
+  stroke: #1677ff;
+  stroke-width: 2;
+}
+
+.mer-attribute-text {
+  fill: #1e3a8a;
+  font-size: 17px;
+  text-anchor: middle;
+}
+
+.mer-diamond {
+  fill: #dbeafe;
+  stroke: #1677ff;
+  stroke-width: 2.2;
+}
+
+.mer-diamond-text {
+  fill: #1e3a8a;
+  font-size: 17px;
+  text-anchor: middle;
+}
+
+.mer-link {
+  stroke: rgba(22, 119, 255, 0.45);
+  stroke-width: 1.8;
+}
+
+.mer-rel-line {
+  stroke: #132B70;
+  stroke-width: 2.2;
+}
+
+.mer-card-label {
+  fill: #b91c1c;
+  font-size: 19px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.mer-pk {
+  fill: #0f172a;
+  font-size: 15px;
+  text-anchor: middle;
+  text-decoration: underline;
+}
+
+/* La clave compuesta de la relación N:M no entra centrada bajo el rombo:
+   va al costado, alineada a la izquierda. */
+.mer-pk-left {
+  text-anchor: start;
+}
+
+/* Cualquier decisión que no coincide con el modelo correcto */
+.mer-entity.mer-wrong,
+.mer-attribute.mer-wrong,
+.mer-diamond.mer-wrong {
+  stroke: #ef4444;
+  stroke-dasharray: 7 5;
+  fill: rgba(239, 68, 68, 0.06);
+}
+
+.mer-rel-line.mer-wrong {
+  stroke: #ef4444;
+  stroke-dasharray: 7 5;
+}
+
+.mer-wrong-text {
+  fill: #b91c1c;
+}
+
+/* --- Leyenda --- */
+
+.mer-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+.mer-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mer-chip {
+  width: 18px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 2px solid #132B70;
+  background: #ffffff;
+}
+
+.mer-chip-attribute {
+  border-color: #1677ff;
+  border-radius: 999px;
+  background: #eef2ff;
+}
+
+.mer-chip-relation {
+  border-color: #1677ff;
+  background: #dbeafe;
+  transform: rotate(45deg) scale(0.82);
+}
+
+.mer-chip-error {
+  border-color: #ef4444;
+  border-style: dashed;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* --- Guía lateral --- */
+
+.mer-guide {
+  display: grid;
+  gap: 12px;
+}
+
+.mer-guide div {
+  display: grid;
+  gap: 2px;
+}
+
+.mer-guide strong {
+  color: #132B70;
+  font-size: 15px;
+}
+
+.mer-guide span {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .stage-tracker {
   display: flex;
   flex-wrap: wrap;
