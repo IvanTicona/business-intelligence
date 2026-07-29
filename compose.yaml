@@ -4,6 +4,14 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    # En hosts con kernel y Docker viejos (CentOS 7), el perfil seccomp por
+    # defecto bloquea syscalls que usa Postgres 17 y initdb muere con
+    # "could not write to file ...: Operation not permitted".
+    # Acotado a este servicio a proposito: la base no publica ningun puerto,
+    # solo la alcanza el backend por la red interna del compose.
+    # En un host moderno se puede borrar esta linea sin consecuencias.
+    security_opt:
+      - seccomp:unconfined
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en el .env}
