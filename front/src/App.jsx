@@ -57,6 +57,10 @@ const adminPracticeConfigs = {
   },
 }
 
+const aboutItems = [
+  { key: 'teacher', label: 'Paul W. Landaeta' },
+]
+
 const theoryItems = [
   { key: 'chapter-1', label: 'Fuentes de Datos y Gestión Inteligente' },
   { key: 'chapter-2', label: 'Modelado de Datos' },
@@ -78,9 +82,7 @@ const practiceStatusStorageKey = 'bi-course-practice-status'
 // PARA HABILITAR UNO: bórralo de esta lista y vuelve a desplegar
 // (docker compose up -d --build front). No hay fechas ni calendario:
 // lo que está aquí está bloqueado, lo que no está, se ve.
-const disabledKeys = new Set([
-  'chapter-5',
-])
+const disabledKeys = new Set([])
 
 function isDisabled(key) {
   return disabledKeys.has(key)
@@ -576,6 +578,116 @@ const chapterFourSlides = [
   { type: 'title-text-image', title: 'Claves', image: '/slide72.png', revealCount: 2 },
 ]
 
+const chapterFiveSlides = [
+  { type: 'cover', eyebrow: 'Capítulo 5', title: 'NORMALIZACIÓN', text: '' },
+  { type: 'image-stack', images: ['/slide80.png'], revealCount: 1 },
+  {
+    // El recorrido de la materia en tres pasos: primero se modela el mundo,
+    // después se lo lleva a tablas y recién entonces se lo normaliza.
+    type: 'concept-flow',
+    revealCount: 3,
+    nodes: [
+      { label: 'Modelo Entidad-Relación' },
+      { label: 'Modelo Relacional' },
+      { label: 'Normalización' },
+    ],
+  },
+  {
+    type: 'quote',
+    revealCount: 1,
+    text: 'Proceso de organizar los datos de una BD para poder tener una BD flexible a cambios y eliminación de la redundancia y dependencia incoherente.',
+  },
+  {
+    type: 'title-text-image',
+    title: 'Formas de la Normalización',
+    image: '/slide81.png',
+    imageClassName: 'media-capped',
+    revealCount: 2,
+  },
+  {
+    type: 'bullet-notes',
+    title: 'Redundancias',
+    revealCount: 1,
+    items: [
+      { heading: 'Repetición', text: 'Mismos atributos y valores se encuentran en varias relaciones.' },
+    ],
+  },
+  {
+    type: 'image-stack',
+    images: ['/slide82.1.png', '/slide82.2.png', '/slide82.3.png'],
+    revealCount: 3,
+  },
+  {
+    type: 'bullet-notes',
+    title: 'Anomalías',
+    revealCount: 3,
+    items: [
+      { heading: 'Integridad', text: 'Consistencia de información.' },
+      { heading: 'Eliminación', text: 'Pérdida de información útil para la BD.' },
+      { heading: 'Inserción y modificación', text: 'Obtención de datos erróneos.' },
+    ],
+  },
+  { type: 'statement', title: '1ra. Forma Normal', revealCount: 1 },
+  {
+    type: 'importance',
+    variant: 'compact dense',
+    title: 'Pasos para hallar la 1ra FN',
+    revealCount: 6,
+    items: [
+      'Identifique las claves candidatas.',
+      'Identifique la clave principal y alternativas.',
+      'Cada valor de un atributo debe ser atómico.',
+      'Verificar dependencia funcional.',
+      'Eliminar redundancias y anomalías.',
+      'No existe orden vertical ni horizontal.',
+    ],
+  },
+  {
+    type: 'statement',
+    variant: 'compact',
+    title: 'Dependencia Funcional',
+    revealCount: 2,
+    text: 'En una relación R se dice que un atributo Y tiene dependencia funcional con un conjunto de atributos X\n(X → Y)\nsi y solo si cada valor de Y está asociado con exactamente un conjunto de valores de X.',
+  },
+  { type: 'statement', title: '2da. Forma Normal', revealCount: 1 },
+  {
+    type: 'importance',
+    variant: 'compact',
+    title: 'Pasos para llegar a la 2da FN',
+    revealCount: 3,
+    items: [
+      'Debemos estar en 1ra Forma Normal.',
+      'Verificar si existe una llave primaria compuesta.',
+      'Todos los atributos dependen de la llave primaria compuesta.',
+    ],
+  },
+  { type: 'statement', title: '3ra. Forma Normal', revealCount: 1 },
+  {
+    type: 'importance',
+    variant: 'compact',
+    title: 'Pasos para llegar a la 3ra FN',
+    revealCount: 2,
+    items: [
+      'Debemos estar en 2da FN.',
+      'Eliminar todas las dependencias transitivas.',
+    ],
+  },
+]
+
+// Sección de presentación: un único slide con quién dicta la materia.
+const teacherSlides = [
+  {
+    type: 'speaker',
+    name: 'Paul W. Landaeta',
+    image: '/slide00.png',
+    roles: 'Líder Proyecto – Ganatech SRL YoloPago, Senior Developer – Coderoad SRL, Docente Pregrado UPB',
+    contacts: [
+      { label: 'correo', value: 'paullandaeta@upb.edu' },
+      { label: 'cel', value: '76517816' },
+    ],
+  },
+]
+
 const chapterOneRoute = [
   ...chapterOneSlides.slice(0, 12).flatMap((_, slideIndex) => routeForSlide(slideIndex, slideIndex + 1)),
   ...routeForSlide(12, 13),
@@ -607,7 +719,21 @@ const chapterFourRoute = [
   ...chapterFourSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterFourSlides, slideIndex, slideIndex + 1)),
 ]
 
+const chapterFiveRoute = [
+  ...chapterFiveSlides.flatMap((_, slideIndex) => routeForSlideFrom(chapterFiveSlides, slideIndex, slideIndex + 1)),
+]
+
+const teacherRoute = [
+  ...teacherSlides.flatMap((_, slideIndex) => routeForSlideFrom(teacherSlides, slideIndex, slideIndex + 1)),
+]
+
 const chapterDecks = {
+  teacher: {
+    // Sin número de capítulo: el encabezado del slide muestra este rótulo.
+    chapterLabel: 'DOCENTE',
+    slides: teacherSlides,
+    route: teacherRoute,
+  },
   'chapter-1': {
     chapterNumber: 1,
     slides: chapterOneSlides,
@@ -628,9 +754,20 @@ const chapterDecks = {
     slides: chapterFourSlides,
     route: chapterFourRoute,
   },
+  'chapter-5': {
+    chapterNumber: 5,
+    slides: chapterFiveSlides,
+    route: chapterFiveRoute,
+  },
 }
 
 const menuGroups = [
+  {
+    key: 'about',
+    label: 'Docente',
+    type: 'group',
+    children: aboutItems,
+  },
   {
     key: 'theory',
     label: 'Teoría',
@@ -662,7 +799,7 @@ export default function App() {
   const isAdminRoute = window.location.pathname.startsWith('/docente/entregas')
 
   const selectedItem = useMemo(() => {
-    return [...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
+    return [...aboutItems, ...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
   }, [selectedKey])
 
   const menuItems = useMemo(() => buildMenuItems(practiceStatus), [practiceStatus])
@@ -768,6 +905,7 @@ export default function App() {
             focusIndex={activeFocusIndex}
             displayNumber={activeDisplayNumber}
             chapterNumber={activeDeck.chapterNumber}
+            chapterLabel={activeDeck.chapterLabel}
             onNext={goNextSlide}
             onPrev={goPrevSlide}
           />
@@ -815,7 +953,7 @@ function buildMenuItems(practiceStatus) {
       return {
         ...item,
         disabled: blocked || delivered,
-        icon: <CourseMenuIcon name={item.key.startsWith('chapter') ? 'book' : 'practice'} />,
+        icon: <CourseMenuIcon name={menuIconFor(item.key)} />,
         label: (
           <span className="course-menu-label">
             <span>{item.label}</span>
@@ -849,10 +987,17 @@ function BlockedContent({ title }) {
   )
 }
 
+function menuIconFor(key) {
+  if (key.startsWith('chapter')) return 'book'
+  if (key.startsWith('practice')) return 'practice'
+  return 'person'
+}
+
 function CourseMenuIcon({ name }) {
   const icons = {
     book: <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21V5.5Zm0 0V21M8 7h8M8 11h8" />,
     practice: <path d="M8 3h8l3 3v15H5V3h3Zm8 0v4h4M8 12h8M8 16h6" />,
+    person: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />,
   }
 
   return (
@@ -1233,7 +1378,7 @@ function routeForTimelineFocus(focusIndex, displayNumber) {
   ]
 }
 
-function SlideCanvas({ slide, revealStep, focusIndex, displayNumber, chapterNumber, onNext, onPrev }) {
+function SlideCanvas({ slide, revealStep, focusIndex, displayNumber, chapterNumber, chapterLabel, onNext, onPrev }) {
   const slideRef = useRef(null)
 
   useEffect(() => {
@@ -1268,7 +1413,7 @@ function SlideCanvas({ slide, revealStep, focusIndex, displayNumber, chapterNumb
   return (
     <section className="slide-shell" ref={slideRef}>
       <header className="slide-header">
-        <span>CAPÍTULO {chapterNumber}</span>
+        <span>{chapterLabel ?? `CAPÍTULO ${chapterNumber}`}</span>
         <span>{displayNumber}</span>
       </header>
 
@@ -1846,7 +1991,7 @@ function SlideBody({ slide, revealStep, focusIndex }) {
           </RevealItem>
         )}
         <RevealItem show={revealStep >= imageStep} className="title-text-image-media-wrap">
-          <img className="title-text-image-media" src={slide.image} alt="" />
+          <img className={`title-text-image-media ${slide.imageClassName ?? ''}`.trim()} src={slide.image} alt="" />
         </RevealItem>
         {slide.items && (
           <ul className="title-text-image-list">
@@ -1908,10 +2053,111 @@ function SlideBody({ slide, revealStep, focusIndex }) {
     )
   }
 
+  // Una o varias imágenes apiladas, sin título: la lámina es la explicación.
+  // Cada imagen entra en su propio paso para poder comentarlas de a una.
+  if (slide.type === 'image-stack') {
+    // La cantidad viaja como clase: con tres láminas el alto disponible se
+    // reparte y cada una necesita un tope propio para no pisar el pie.
+    return (
+      <div className={`image-stack-layout image-stack-${slide.images.length}`}>
+        {slide.images.map((image, index) => (
+          <RevealItem key={image} show={revealStep >= index + 1}>
+            <img src={image} alt="" />
+          </RevealItem>
+        ))}
+      </div>
+    )
+  }
+
+  // Definición citada: sin título, la cita ES el slide.
+  if (slide.type === 'quote') {
+    return (
+      <div className="quote-layout">
+        <RevealItem show={revealStep >= 1}>
+          <blockquote className="quote-text">{slide.text}</blockquote>
+        </RevealItem>
+      </div>
+    )
+  }
+
+  // Progresión de conceptos encadenados: cada nodo aparece con su flecha.
+  if (slide.type === 'concept-flow') {
+    return (
+      <div className="concept-flow-layout">
+        {slide.title && (
+          <RevealItem show={revealStep >= 1}>
+            <Title className="slide-title concept-flow-heading">{slide.title}</Title>
+          </RevealItem>
+        )}
+        <ol className="concept-flow-track">
+          {slide.nodes.map((node, index) => (
+            <motion.li
+              key={node.label}
+              initial={false}
+              animate={revealStep >= index + 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <span className="concept-flow-step">{index + 1}</span>
+              <span className="concept-flow-label">{node.label}</span>
+            </motion.li>
+          ))}
+        </ol>
+      </div>
+    )
+  }
+
+  // Título y viñetas con rótulo propio, una debajo de la otra. El título queda
+  // fijo y los pasos son los items, igual que en `importance`: revelarlo
+  // gastaba un paso en el que el slide se veía vacío.
+  if (slide.type === 'bullet-notes') {
+    return (
+      <div className="bullet-notes-layout">
+        <Title className="slide-title bullet-notes-heading">{slide.title}</Title>
+        <ul className="bullet-notes-list">
+          {slide.items.map((item, index) => (
+            <motion.li
+              key={item.heading}
+              initial={false}
+              animate={revealStep >= index + 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 14 }}
+              transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <strong>{item.heading}</strong>
+              <span>{item.text}</span>
+            </motion.li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  // Presentación del docente: datos a la izquierda, retrato a la derecha.
+  // Sin pasos: es una tarjeta de presentación, se muestra entera de una.
+  if (slide.type === 'speaker') {
+    return (
+      <div className="speaker-layout">
+        <div className="speaker-copy">
+          <Title className="slide-title speaker-name">{slide.name}</Title>
+          <Paragraph className="slide-copy speaker-roles">{slide.roles}</Paragraph>
+          <ul className="speaker-contacts">
+            {slide.contacts.map(contact => (
+              <li key={contact.label}>
+                <span>{contact.label}</span>
+                <strong>{contact.value}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="speaker-portrait">
+          <img src={slide.image} alt={`Retrato de ${slide.name}`} />
+        </div>
+      </div>
+    )
+  }
+
   // Cierre conceptual: solo tipografía, sin imagen. Respeta los saltos de línea.
   if (slide.type === 'statement') {
     return (
-      <div className="statement-layout">
+      <div className={`statement-layout ${slide.variant ?? ''}`.trim()}>
         <RevealItem show={revealStep >= 1}>
           <Title className="slide-title statement-title">{slide.title}</Title>
         </RevealItem>
