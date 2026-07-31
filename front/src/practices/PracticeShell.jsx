@@ -16,7 +16,7 @@ export function usePracticeSubmit({ practiceId, onDelivered }) {
 
   async function send(buildAnswers) {
     if (!studentId.trim()) {
-      setState({ status: 'error', message: 'Escribí tu nombre o código de estudiante.' })
+      setState({ status: 'error', message: 'Escribe tu nombre o código de estudiante.' })
       return
     }
 
@@ -46,7 +46,7 @@ export function PracticeHero({ practiceLabel, title, description, objectives }) 
       <div className="practice-hero-content">
         <Tag color="blue">{practiceLabel}</Tag>
         <Title className="practice-title">{title}</Title>
-        <Paragraph className="practice-copy">{description}</Paragraph>
+        {description && <Paragraph className="practice-copy">{description}</Paragraph>}
       </div>
       <div className="practice-objectives-panel">
         <span className="practice-panel-label">Objetivos</span>
@@ -119,6 +119,41 @@ export function SubmitCard({ delivered, submit, hint }) {
         <p className={`practice-submit-message practice-submit-message-${state.status}`}>{state.message}</p>
       )}
     </Card>
+  )
+}
+
+/**
+ * Entrega compacta, pensada para vivir DENTRO de la tarjeta de trabajo:
+ * una línea divisoria, el nombre y el botón. Evita una tarjeta aparte que
+ * empujaba la página fuera de pantalla.
+ */
+export function InlineSubmit({ delivered, submit, hint }) {
+  const { studentId, setStudentId, state, send } = submit.controls
+  const disabled = delivered || state.status === 'loading'
+
+  return (
+    <div className="inline-submit">
+      <div className="inline-submit-row">
+        <label className="inline-submit-field">
+          <span>Nombre completo o código de estudiante</span>
+          <Input disabled={disabled} value={studentId} onChange={event => setStudentId(event.target.value)} />
+        </label>
+        <Button
+          type="primary"
+          size="large"
+          className="inline-submit-button"
+          disabled={delivered}
+          loading={state.status === 'loading'}
+          onClick={() => send(submit.buildAnswers)}
+        >
+          <PracticeIcon name={delivered ? 'check' : 'send'} />
+          {delivered ? 'Entregada' : 'Enviar práctica'}
+        </Button>
+      </div>
+      {state.message
+        ? <p className={`practice-submit-message practice-submit-message-${state.status}`}>{state.message}</p>
+        : hint && <p className="inline-submit-hint">{hint}</p>}
+    </div>
   )
 }
 

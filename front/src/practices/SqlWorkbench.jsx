@@ -1,6 +1,7 @@
 import { Button } from 'antd'
 import { useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
+import SqlEditor from './SqlEditor.jsx'
 import { compareResults, runQuery } from '../lib/sqlEngine.js'
 
 /**
@@ -27,7 +28,7 @@ export default function SqlWorkbench({
     setVerdict(null)
 
     if (!value.trim()) {
-      setError('Escribí una consulta antes de ejecutar.')
+      setError('Escribe una consulta antes de ejecutar.')
       setResult(null)
       return
     }
@@ -53,14 +54,7 @@ export default function SqlWorkbench({
 
   return (
     <div className="sql-workbench">
-      <textarea
-        className="sql-editor"
-        spellCheck={false}
-        rows={rows}
-        disabled={disabled}
-        value={value}
-        onChange={event => onChange(event.target.value)}
-      />
+      <SqlEditor value={value} onChange={onChange} disabled={disabled} rows={rows} />
 
       <div className="sql-actions">
         <Button type="primary" onClick={execute} disabled={disabled}>
@@ -110,7 +104,7 @@ export function ResultTable({ result }) {
         </table>
       </div>
       <span className="sql-result-count">
-        {result.rows.length} fila(s){result.rows.length > visibleRows.length ? ` — mostrando las primeras ${visibleRows.length}` : ''}
+        {result.rows.length} fila(s){result.rows.length > visibleRows.length ? `, mostrando las primeras ${visibleRows.length}` : ''}
       </span>
     </div>
   )
@@ -134,19 +128,19 @@ export function SchemaExplorer({ tables, title = 'Esquema disponible' }) {
 // para que el alumno sepa qué corregir en vez de googlear el mensaje.
 function traducirError(message) {
   if (/no such column/i.test(message)) {
-    return `${message} — esa columna no existe. Revisá el nombre en el esquema de la derecha, o el alias de la tabla.`
+    return `${message}. Esa columna no existe. Revisa el nombre en el esquema de la derecha, o el alias de la tabla.`
   }
   if (/no such table/i.test(message)) {
-    return `${message} — esa tabla no existe. Fijate en el esquema los nombres exactos.`
+    return `${message}. Esa tabla no existe. Fíjate en el esquema los nombres exactos.`
   }
   if (/syntax error/i.test(message)) {
-    return `${message} — error de sintaxis. Suele ser una coma de más, un paréntesis sin cerrar o una palabra clave mal escrita.`
+    return `${message}. Error de sintaxis: Suele ser una coma de más, un paréntesis sin cerrar o una palabra clave mal escrita.`
   }
   if (/ambiguous column name/i.test(message)) {
-    return `${message} — la columna existe en más de una tabla del JOIN. Prefijala con el alias, por ejemplo e.id_sector.`
+    return `${message}. La columna existe en más de una tabla del JOIN. Prefíjala con el alias, por ejemplo e.id_sector.`
   }
   if (/misuse of aggregate/i.test(message)) {
-    return `${message} — no podés usar una función de agregación ahí. Para filtrar por un agregado se usa HAVING, no WHERE.`
+    return `${message}. No puedes usar una función de agregación ahí. Para filtrar por un agregado se usa HAVING, no WHERE.`
   }
   return message
 }

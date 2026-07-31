@@ -314,7 +314,7 @@ select,
 
 .course-content {
   min-height: 100vh;
-  padding: 28px 44px;
+  padding: 16px 26px;
   display: grid;
   place-items: center;
 }
@@ -355,7 +355,9 @@ select,
 
 
 .practice-playground {
-  width: min(1400px, 100%);
+  /* Sin tope real: el ancho lo manda el area disponible, asi el diagrama
+     aprovecha tambien lo que se libera al colapsar el sidebar. */
+  width: min(2100px, 100%);
   min-height: calc(100vh - 96px);
   display: grid;
   gap: 28px;

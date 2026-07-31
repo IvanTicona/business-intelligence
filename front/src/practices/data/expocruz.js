@@ -1,4 +1,4 @@
-// Caso ExpoCruz — usado por la Práctica 2 (MER) y la Práctica 3 (SQL).
+// Caso ExpoCruz: usado por la Práctica 2 (MER) y la Práctica 3 (SQL).
 // El mismo dominio recorre las dos prácticas a propósito: el alumno primero
 // lo modela y después consulta el modelo ya implementado.
 
@@ -6,7 +6,7 @@ export const conceptCards = [
   { id: 'expositor', label: 'Expositor', description: 'Persona u organización que muestra productos o servicios en la feria.', answer: 'entidad', why: 'Tiene identidad propia, atributos (NIT, razón social) y participa en relaciones. Es una entidad.' },
   { id: 'razon-social', label: 'Razón social', description: 'Nombre legal registrado de la empresa.', answer: 'atributo', why: 'No existe por sí sola: describe a un Expositor. Es un atributo.' },
   { id: 'nit', label: 'NIT / RUC', description: 'Identificador fiscal de la empresa.', answer: 'atributo', why: 'Describe al Expositor y además es candidato a clave. Sigue siendo un atributo.' },
-  { id: 'ciudad', label: 'Ciudad', description: 'Localidad de procedencia del expositor.', answer: 'atributo', why: 'Acá alcanza con un atributo. Solo sería entidad si necesitáramos guardar datos propios de la ciudad (departamento, población).' },
+  { id: 'ciudad', label: 'Ciudad', description: 'Localidad de procedencia del expositor.', answer: 'atributo', why: 'Aquí alcanza con un atributo. Solo sería entidad si necesitáramos guardar datos propios de la ciudad (departamento, población).' },
   { id: 'sector', label: 'Sector económico', description: 'Categoría de actividad de un expositor.', answer: 'entidad', why: 'Es un catálogo reutilizable: muchos expositores comparten el mismo sector. Modelarlo como entidad evita repetir texto y permite agrupar KPIs.' },
   { id: 'stand', label: 'Stand', description: 'Espacio físico asignado dentro de un pabellón.', answer: 'entidad', why: 'Tiene identidad propia y se relaciona con Pabellón y con Expositor. Entidad.' },
   { id: 'ubicacion', label: 'Ubicación', description: 'Posición del stand dentro del pabellón.', answer: 'atributo', why: 'Describe al Stand. Atributo.' },
@@ -30,24 +30,24 @@ export const conceptCards = [
  * `parent` solo se usa para dibujar el conector cuando ambos ya están.
  */
 export const diagramNodes = {
-  pabellon: { x: 175, y: 58 },
-  stand: { x: 175, y: 258 },
-  expositor: { x: 175, y: 478 },
-  sector: { x: 175, y: 612 },
-  edicion: { x: 600, y: 58 },
-  'dia-feria': { x: 600, y: 258 },
-  entrada: { x: 600, y: 430 },
-  visitante: { x: 600, y: 612 },
-  evento: { x: 1010, y: 58 },
-  patrocinador: { x: 1010, y: 258 },
+  pabellon: { x: 175, y: 40 },
+  stand: { x: 175, y: 470 },
+  expositor: { x: 175, y: 943 },
+  sector: { x: 175, y: 1231 },
+  edicion: { x: 600, y: 40 },
+  'dia-feria': { x: 600, y: 470 },
+  entrada: { x: 600, y: 840 },
+  visitante: { x: 600, y: 1231 },
+  evento: { x: 1010, y: 40 },
+  patrocinador: { x: 1010, y: 470 },
 
-  'razon-social': { x: 392, y: 420, parent: 'expositor' },
-  nit: { x: 392, y: 478, parent: 'expositor' },
-  ciudad: { x: 392, y: 536, parent: 'expositor' },
-  ubicacion: { x: 392, y: 258, parent: 'stand' },
-  'precio-entrada': { x: 830, y: 402, parent: 'entrada' },
-  'forma-pago': { x: 830, y: 460, parent: 'entrada' },
-  'nivel-patrocinio': { x: 1010, y: 378, parent: 'patrocinador' },
+  'razon-social': { x: 392, y: 818, parent: 'expositor' },
+  nit: { x: 392, y: 943, parent: 'expositor' },
+  ciudad: { x: 392, y: 1068, parent: 'expositor' },
+  ubicacion: { x: 392, y: 470, parent: 'stand' },
+  'precio-entrada': { x: 830, y: 780, parent: 'entrada' },
+  'forma-pago': { x: 830, y: 904, parent: 'entrada' },
+  'nivel-patrocinio': { x: 1010, y: 728, parent: 'patrocinador' },
 }
 
 /**
@@ -57,13 +57,13 @@ export const diagramNodes = {
  * etiquetas se iban fuera del lienzo.
  */
 export const diagramRelations = {
-  'card-pabellon-stand': { x: 175, y: 158, label: 'tiene', from: 'pabellon', to: 'stand', orient: 'v' },
+  'card-pabellon-stand': { x: 175, y: 255, label: 'tiene', from: 'pabellon', to: 'stand', orient: 'v' },
   // OJO: `from`/`to` DEBEN respetar el orden left/right de cardinalityQuestions.
   // Si se invierten, el diagrama dibuja la cardinalidad al revés de la regla.
-  'card-expositor-stand': { x: 175, y: 368, label: 'contrata', from: 'expositor', to: 'stand', orient: 'v' },
-  'card-edicion-dia': { x: 600, y: 158, label: 'agrupa', from: 'edicion', to: 'dia-feria', orient: 'v' },
-  'card-visitante-entrada': { x: 600, y: 521, label: 'compra', from: 'visitante', to: 'entrada', orient: 'v' },
-  'card-edicion-evento': { x: 805, y: 58, label: 'programa', from: 'edicion', to: 'evento', orient: 'h' },
+  'card-expositor-stand': { x: 175, y: 707, label: 'contrata', from: 'expositor', to: 'stand', orient: 'v' },
+  'card-edicion-dia': { x: 600, y: 255, label: 'agrupa', from: 'edicion', to: 'dia-feria', orient: 'v' },
+  'card-visitante-entrada': { x: 600, y: 1035, label: 'compra', from: 'visitante', to: 'entrada', orient: 'v' },
+  'card-edicion-evento': { x: 805, y: 40, label: 'programa', from: 'edicion', to: 'evento', orient: 'h' },
 }
 
 /** Dónde se subraya la clave primaria una vez elegida. */
@@ -80,7 +80,7 @@ export const primaryKeyQuestions = [
     entity: 'Expositor',
     options: [
       { id: 'razon_social', label: 'razon_social', correct: false, why: 'Dos empresas distintas pueden registrarse con nombres muy parecidos, y el nombre legal puede cambiar. Una PK nunca debería cambiar.' },
-      { id: 'nit', label: 'nit', correct: false, why: 'Es único y buen candidato… pero es una clave natural externa: si el SIN cambia el formato, arrastrás el cambio a todas las FKs. Sirve como UNIQUE, no como PK.' },
+      { id: 'nit', label: 'nit', correct: false, why: 'Es único y buen candidato… pero es una clave natural externa: si el SIN cambia el formato, arrastras el cambio a todas las FKs. Sirve como UNIQUE, no como PK.' },
       { id: 'id_expositor', label: 'id_expositor (surrogate)', correct: true, why: 'Clave surrogate: estable, corta, sin significado de negocio. El nit queda como UNIQUE. Este es el patrón estándar.' },
       { id: 'nit_ciudad', label: 'nit + ciudad', correct: false, why: 'Clave compuesta innecesaria: si el nit ya es único, agregarle ciudad solo complica las FKs.' },
     ],
@@ -162,6 +162,118 @@ export const cardinalityQuestions = [
     options: ['1:1', '1:N', 'N:M'],
     answer: '1:N',
     why: 'Un evento pertenece a una sola edición. FK id_edicion en evento.',
+  },
+]
+
+/**
+ * Esquema relacional dibujado en la Práctica 3.
+ * `x`/`y` son la esquina superior izquierda de cada tabla; el alto se calcula
+ * a partir de la cantidad de columnas. `ref` marca a qué tabla apunta la FK:
+ * de ahí salen las líneas del diagrama.
+ */
+export const schemaTables = [
+  {
+    table: 'pabellon', x: 60, y: 30,
+    // Tres columnas: x = 30 / 340 / 650. El alto de cada tabla es
+    // 28 + columnas*20, y entre tablas quedan 20px de aire.
+    columns: [
+      { name: 'id_pabellon', key: 'pk' },
+      { name: 'nombre' },
+      { name: 'superficie_m2' },
+    ],
+  },
+  {
+    table: 'stand', x: 60, y: 320,
+    columns: [
+      { name: 'id_stand', key: 'pk' },
+      { name: 'id_pabellon', key: 'fk', ref: 'pabellon' },
+      { name: 'codigo' },
+      { name: 'ubicacion' },
+      { name: 'superficie_m2' },
+    ],
+  },
+  {
+    table: 'expositor', x: 60, y: 620,
+    columns: [
+      { name: 'id_expositor', key: 'pk' },
+      { name: 'razon_social' },
+      { name: 'nit', key: 'uq' },
+      { name: 'id_sector', key: 'fk', ref: 'sector_economico' },
+      { name: 'ciudad' },
+    ],
+  },
+  {
+    table: 'sector_economico', x: 60, y: 920,
+    columns: [
+      { name: 'id_sector', key: 'pk' },
+      { name: 'nombre' },
+    ],
+  },
+  {
+    table: 'edicion', x: 360, y: 30,
+    columns: [
+      { name: 'id_edicion', key: 'pk' },
+      { name: 'anio' },
+      { name: 'tema' },
+    ],
+  },
+  {
+    table: 'dia_feria', x: 360, y: 300,
+    columns: [
+      { name: 'id_dia', key: 'pk' },
+      { name: 'id_edicion', key: 'fk', ref: 'edicion' },
+      { name: 'fecha' },
+    ],
+  },
+  {
+    table: 'contrato_stand', x: 360, y: 570,
+    columns: [
+      { name: 'id_contrato', key: 'pk' },
+      { name: 'id_expositor', key: 'fk', ref: 'expositor' },
+      { name: 'id_stand', key: 'fk', ref: 'stand' },
+      { name: 'id_edicion', key: 'fk', ref: 'edicion' },
+      { name: 'monto' },
+    ],
+  },
+  {
+    table: 'visitante', x: 660, y: 720,
+    columns: [
+      { name: 'id_visitante', key: 'pk' },
+      { name: 'nombre' },
+      { name: 'ciudad' },
+      { name: 'anio_nacimiento' },
+    ],
+  },
+  {
+    table: 'entrada', x: 660, y: 30,
+    columns: [
+      { name: 'id_entrada', key: 'pk' },
+      { name: 'id_visitante', key: 'fk', ref: 'visitante' },
+      { name: 'id_dia', key: 'fk', ref: 'dia_feria' },
+      { name: 'precio' },
+      { name: 'forma_pago' },
+    ],
+  },
+  {
+    table: 'evento', x: 360, y: 880,
+    columns: [
+      { name: 'id_evento', key: 'pk' },
+      { name: 'id_edicion', key: 'fk', ref: 'edicion' },
+      { name: 'id_pabellon', key: 'fk', ref: 'pabellon' },
+      { name: 'nombre' },
+      { name: 'tipo' },
+      { name: 'fecha_hora' },
+    ],
+  },
+  {
+    table: 'patrocinador', x: 660, y: 380,
+    columns: [
+      { name: 'id_patrocinador', key: 'pk' },
+      { name: 'id_edicion', key: 'fk', ref: 'edicion' },
+      { name: 'razon_social' },
+      { name: 'nivel_patrocinio' },
+      { name: 'aporte' },
+    ],
   },
 ]
 
@@ -401,8 +513,8 @@ export const sqlChallenges = [
   {
     id: 'q1',
     concept: 'SELECT + WHERE',
-    title: 'Reto 1 — Filtrar filas',
-    prompt: 'Traé la razón social y la ciudad de los expositores de Santa Cruz.',
+    title: 'Reto 1: Filtrar filas',
+    prompt: 'Trae la razón social y la ciudad de los expositores de Santa Cruz.',
     hint: 'SELECT columnas FROM tabla WHERE condicion. Las cadenas van entre comillas simples.',
     starter: 'SELECT razon_social, ciudad\nFROM expositor\nWHERE ...;',
     expectedSql: "SELECT razon_social, ciudad FROM expositor WHERE ciudad = 'Santa Cruz';",
@@ -411,8 +523,8 @@ export const sqlChallenges = [
   {
     id: 'q2',
     concept: 'ORDER BY + LIMIT',
-    title: 'Reto 2 — Ordenar y recortar',
-    prompt: 'Mostrá el código y la superficie de los 3 stands más grandes, del más grande al más chico.',
+    title: 'Reto 2: Ordenar y recortar',
+    prompt: 'Muestra el código y la superficie de los 3 stands más grandes, del más grande al más chico.',
     hint: 'ORDER BY columna DESC ordena de mayor a menor. LIMIT corta el resultado.',
     starter: 'SELECT codigo, superficie_m2\nFROM stand\nORDER BY ...\nLIMIT ...;',
     expectedSql: 'SELECT codigo, superficie_m2 FROM stand ORDER BY superficie_m2 DESC LIMIT 3;',
@@ -421,8 +533,8 @@ export const sqlChallenges = [
   {
     id: 'q3',
     concept: 'INNER JOIN',
-    title: 'Reto 3 — Unir dos tablas',
-    prompt: 'Listá la razón social de cada expositor junto al nombre de su sector económico.',
+    title: 'Reto 3: Unir dos tablas',
+    prompt: 'Lista la razón social de cada expositor junto al nombre de su sector económico.',
     hint: 'El JOIN se hace por la FK: expositor.id_sector = sector_economico.id_sector.',
     starter: 'SELECT e.razon_social, s.nombre\nFROM expositor e\nJOIN sector_economico s ON ...;',
     expectedSql: 'SELECT e.razon_social, s.nombre FROM expositor e JOIN sector_economico s ON e.id_sector = s.id_sector;',
@@ -431,9 +543,9 @@ export const sqlChallenges = [
   {
     id: 'q4',
     concept: 'JOIN múltiple',
-    title: 'Reto 4 — Recorrer el modelo',
-    prompt: 'Para la edición 2025, mostrá la razón social del expositor, el código del stand y el nombre del pabellón donde está ese stand.',
-    hint: 'Encadená: contrato_stand → expositor, contrato_stand → stand → pabellon, y filtrá contrato_stand por la edición cuyo anio sea 2025 (o id_edicion = 2).',
+    title: 'Reto 4: Recorrer el modelo',
+    prompt: 'Para la edición 2025, muestra la razón social del expositor, el código del stand y el nombre del pabellón donde está ese stand.',
+    hint: 'Encadena: contrato_stand → expositor, contrato_stand → stand → pabellon, y filtrá contrato_stand por la edición cuyo anio sea 2025 (o id_edicion = 2).',
     starter: 'SELECT ex.razon_social, st.codigo, pa.nombre\nFROM contrato_stand c\nJOIN expositor ex ON ...\nJOIN stand st ON ...\nJOIN pabellon pa ON ...\nWHERE ...;',
     expectedSql: `SELECT ex.razon_social, st.codigo, pa.nombre
       FROM contrato_stand c
@@ -447,8 +559,8 @@ export const sqlChallenges = [
   {
     id: 'q5',
     concept: 'GROUP BY + agregación',
-    title: 'Reto 5 — Primer KPI real',
-    prompt: 'Calculá el ingreso total por entradas para cada forma de pago. Devolvé la forma de pago y la suma del precio.',
+    title: 'Reto 5: Primer KPI real',
+    prompt: 'Calcula el ingreso total por entradas para cada forma de pago. Devolvé la forma de pago y la suma del precio.',
     hint: 'SUM(precio) con GROUP BY forma_pago. Todo lo que no esté agregado va en el GROUP BY.',
     starter: 'SELECT forma_pago, SUM(precio)\nFROM entrada\nGROUP BY ...;',
     expectedSql: 'SELECT forma_pago, SUM(precio) FROM entrada GROUP BY forma_pago;',
@@ -457,9 +569,9 @@ export const sqlChallenges = [
   {
     id: 'q6',
     concept: 'GROUP BY + HAVING + JOIN',
-    title: 'Reto 6 — Filtrar después de agrupar',
-    prompt: 'Mostrá el nombre del sector económico y cuántos expositores tiene, pero solo los sectores con 2 o más expositores.',
-    hint: 'WHERE filtra filas ANTES de agrupar; HAVING filtra grupos DESPUÉS. Acá necesitás HAVING COUNT(*) >= 2.',
+    title: 'Reto 6: Filtrar después de agrupar',
+    prompt: 'Muestra el nombre del sector económico y cuántos expositores tiene, pero solo los sectores con 2 o más expositores.',
+    hint: 'WHERE filtra filas ANTES de agrupar; HAVING filtra grupos DESPUÉS. Aquí necesitas HAVING COUNT(*) >= 2.',
     starter: 'SELECT s.nombre, COUNT(*)\nFROM expositor e\nJOIN sector_economico s ON ...\nGROUP BY ...\nHAVING ...;',
     expectedSql: `SELECT s.nombre, COUNT(*)
       FROM expositor e

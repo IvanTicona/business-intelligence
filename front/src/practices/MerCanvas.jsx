@@ -10,7 +10,7 @@ import {
 } from './data/expocruz.js'
 
 const VIEW_W = 1300
-const VIEW_H = 660
+const VIEW_H = 1300   // lienzo alto: la columna del diagrama ocupa toda la pantalla
 const RECT_W = 196
 const RECT_H = 58
 const ELLIPSE_RX = 84
@@ -252,8 +252,9 @@ export default function MerCanvas({ classifications, pkAnswers, cardAnswers }) {
       <p className="mer-canvas-legend">
         <span className="mer-legend-item"><i className="mer-chip mer-chip-entity" /> entidad</span>
         <span className="mer-legend-item"><i className="mer-chip mer-chip-attribute" /> atributo</span>
-        <span className="mer-legend-item"><i className="mer-chip mer-chip-relation" /> relación</span>
-        <span className="mer-legend-item"><i className="mer-chip mer-chip-error" /> revisá esta decisión</span>
+        <span className="mer-legend-item"><i className="mer-chip mer-chip-relation" /> relación, con su cardinalidad</span>
+        <span className="mer-legend-item"><u className="mer-legend-pk">texto</u> clave primaria que elegiste</span>
+        <span className="mer-legend-item"><i className="mer-chip mer-chip-error" /> revisa esta decisión</span>
       </p>
     </div>
   )
@@ -274,12 +275,22 @@ function posCardinalidad(rel, lado, porId) {
       : { x: rel.geo.x + 22, y: rel.geo.y + (lado === 'A' ? -DIAMOND_R * 0.62 - 10 : DIAMOND_R * 0.62 + 22) }
   }
 
-  const medioX = (extremo.pos.x + rel.geo.x) / 2
-  const medioY = (extremo.pos.y + rel.geo.y) / 2
+  // Punto medio entre los BORDES, no entre los centros: con los centros la
+  // etiqueta caía sobre la caja (196px de ancho) y quedaba medio tapada.
+  const mitadAncho = extremo.forma === 'rect' ? RECT_W / 2 : ELLIPSE_RX
+  const mitadAlto = extremo.forma === 'rect' ? RECT_H / 2 : ELLIPSE_RY
 
-  return horizontal
-    ? { x: medioX, y: medioY - 12 }
-    : { x: medioX + 20, y: medioY + 6 }
+  if (horizontal) {
+    const aLaDerecha = extremo.pos.x > rel.geo.x
+    const bordeCaja = extremo.pos.x + (aLaDerecha ? -mitadAncho : mitadAncho)
+    const bordeRombo = rel.geo.x + (aLaDerecha ? DIAMOND_R : -DIAMOND_R)
+    return { x: (bordeCaja + bordeRombo) / 2, y: rel.geo.y - 14 }
+  }
+
+  const abajo = extremo.pos.y > rel.geo.y
+  const bordeCaja = extremo.pos.y + (abajo ? -mitadAlto : mitadAlto)
+  const bordeRombo = rel.geo.y + (abajo ? DIAMOND_R * 0.62 : -DIAMOND_R * 0.62)
+  return { x: rel.geo.x + 20, y: (bordeCaja + bordeRombo) / 2 + 6 }
 }
 
 function rombo(x, y) {

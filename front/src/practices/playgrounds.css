@@ -1,4 +1,4 @@
-/* Estilos de los playgrounds interactivos — Prácticas 2, 3 y 4.
+/* Estilos de los playgrounds interactivos: Prácticas 2, 3 y 4.
    Reutilizan las clases base de styles.css (.practice-card, .practice-grid…)
    y agregan solo lo propio de las etapas interactivas. */
 
@@ -39,15 +39,692 @@
 }
 
 /* ============================================================
-   Lienzo del MER — se arma con las respuestas del alumno
+   Práctica 3: diagrama del esquema + wizard
    ============================================================ */
 
-.mer-canvas {
-  margin-bottom: 26px;
-  padding: 20px 22px 16px;
+/* Dos contenedores: consola a la IZQUIERDA con ancho acotado (un JOIN entra
+   comodo y no necesita mas) y diagrama a la DERECHA quedandose con todo el
+   espacio extra, que es lo que gana con mas lugar. */
+.practice-grid-schema {
+  grid-template-columns: minmax(540px, 690px) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+/* Titulo y objetivos integrados al tope de la tarjeta: ya no hay hero aparte. */
+.wizard-card-head {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.wizard-card-titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.wizard-card-title {
+  margin: 0;
+  color: #132B70;
+  font-size: clamp(19px, 1.6vw, 25px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.wizard-card-goals {
+  margin-top: 12px;
+}
+
+.wizard-card-goals .practice-panel-label {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.wizard-card-objectives {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.wizard-card-objectives li {
+  position: relative;
+  padding-left: 20px;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.32;
+}
+
+.wizard-card-objectives li::before {
+  content: "";
+  position: absolute;
+  top: 0.52em;
+  left: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1677ff;
+}
+
+
+/* Mismo techo de alto que el diagrama, pero como max-height: si el contenido
+   es mas corto la tarjeta no se estira, y si crece no empuja fuera de pantalla. */
+.wizard-column {
+  max-height: calc(100vh - 32px);
+  min-height: 0;
+}
+
+.wizard-card.ant-card {
+  display: grid;
+  align-content: start;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+/* Alto atado al viewport, descontando el padding vertical de .course-content
+   (16px arriba + 16px abajo). Así usa todo el alto disponible y NO cambia al
+   colapsar el sidebar, que solo afecta el ancho. */
+.schema-column {
+  height: calc(100vh - 32px);
+  align-self: start;
+  display: grid;
+  min-height: 0;
+}
+
+.wizard-column {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+/* Los 7 pasos en UNA sola fila: con flex-wrap el septimo caia solo abajo.
+   El margen inferior separa los pasos del titulo del reto, que quedaban
+   pegados uno encima del otro. */
+.wizard-column .stage-tracker {
+  display: grid;
+  /* Una columna por paso, sean 4 u 8: con un numero fijo de columnas, las
+     practicas con menos etapas truncaban sus etiquetas en chips angostos.
+     Las columnas son `auto` y no `1fr` porque con anchos iguales un paso de
+     etiqueta larga se cortaba mientras el de al lado desperdiciaba espacio;
+     asi cada chip toma lo que su texto necesita y el sobrante se reparte. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, auto);
+  gap: 7px;
+  margin-bottom: 22px;
+}
+
+.wizard-column .stage-chip {
+  padding: 7px 7px;
+  gap: 5px;
+  font-size: 12.5px;
+  justify-content: center;
+  min-width: 0;
+}
+
+.wizard-column .stage-chip-index {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  flex: none;
+}
+
+.wizard-column .stage-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El encabezado de la practica ocupa lo minimo: la meta es que diagrama,
+   wizard y editor entren en pantalla sin scroll. El diagrama NO se toca,
+   asi que los pixeles salen de aqui. */
+.practice-playground {
+  gap: 12px;
+  /* Sin min-height forzado: la fila mide lo que mide su contenido. Si no, al
+     quedar un solo bloque el diagrama se estiraba a toda la ventana. */
+  min-height: 0;
+}
+
+/* El titulo no llena su columna, asi que el panel de objetivos se lleva mas
+   ancho y sus items se acomodan en dos columnas (2 arriba, 1 abajo). */
+.practice-playground .practice-hero {
+  padding: 14px 22px;
+  gap: 22px;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  border-radius: 14px;
+}
+
+.practice-playground .practice-objective-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.practice-playground .practice-title.ant-typography {
+  font-size: clamp(22px, 1.9vw, 30px);
+  line-height: 1.08;
+}
+
+.practice-playground .practice-hero-content .ant-tag {
+  margin-bottom: 6px;
+}
+
+.practice-playground .practice-objectives-panel {
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+.practice-playground .practice-objective span {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.practice-playground .practice-objective-list {
+  gap: 7px;
+}
+
+.practice-playground .practice-objective .practice-icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Entrega integrada al pie de la tarjeta de trabajo, separada por una linea.
+   Antes era una tarjeta aparte que empujaba la pagina fuera de pantalla. */
+.inline-submit {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.inline-submit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.inline-submit-field {
+  display: grid;
+  gap: 6px;
+  color: #132B70;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.inline-submit-button.ant-btn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.inline-submit-hint {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.inline-submit .practice-submit-message {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+}
+
+.schema-diagram {
+  padding: 16px 16px 12px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 16px;
   background: #ffffff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+/* Leyenda del diagrama */
+.schema-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.schema-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.schema-legend-item svg {
+  width: 34px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #475569;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.schema-legend-key {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.schema-legend-key.schema-key-pk { color: #b45309; }
+.schema-legend-key.schema-key-fk { color: #1677ff; }
+.schema-legend-key.schema-key-uq { color: #7c3aed; }
+
+.schema-legend-chip {
+  width: 16px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  background: #1677ff;
+}
+
+.schema-diagram-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.schema-diagram-hint {
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+/* Mismo fondo punteado que el lienzo de la Práctica 2. */
+.schema-diagram-stage {
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
+    #fbfcfe;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* El SVG llena la caja; preserveAspectRatio lo escala y centra sin deformar. */
+.schema-diagram-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* --- Tablas --- */
+
+.schema-box {
+  fill: #ffffff;
+  stroke: rgba(15, 23, 42, 0.22);
+  stroke-width: 1.6;
+}
+
+.schema-box-header {
+  fill: #eef2f8;
+}
+
+.schema-table-name {
+  fill: #132B70;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.schema-col {
+  fill: #475569;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 13px;
+}
+
+.schema-col-pk {
+  fill: #0f172a;
+  text-decoration: underline;
+}
+
+.schema-key {
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.schema-key-pk { fill: #b45309; }
+.schema-key-fk { fill: #1677ff; }
+.schema-key-uq { fill: #7c3aed; }
+
+/* --- Relaciones --- */
+
+.schema-edge {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.26);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transition: stroke 0.25s ease, stroke-width 0.25s ease;
+}
+
+/* Extremos: pata de gallo del lado FK, barra del lado PK */
+.schema-foot {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.4);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transition: stroke 0.25s ease;
+}
+
+.schema-edge-live {
+  stroke: #1677ff;
+  stroke-width: 2.4;
+}
+
+/* La relación resaltada se dibuja por encima de las apagadas */
+.schema-edge-group.is-live {
+  filter: drop-shadow(0 0 3px rgba(22, 119, 255, 0.35));
+}
+
+/* --- Iluminado según la consulta --- */
+
+.schema-table-node {
+  transition: opacity 0.25s ease;
+}
+
+.schema-table-node.is-dim {
+  opacity: 0.34;
+}
+
+.schema-table-node.is-live .schema-box {
+  stroke: #1677ff;
+  stroke-width: 2.6;
+}
+
+.schema-table-node.is-live .schema-box-header {
+  fill: #1677ff;
+}
+
+.schema-table-node.is-live .schema-table-name {
+  fill: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .practice-grid-schema {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .schema-column {
+    position: static;
+  }
+}
+
+/* ============================================================
+   Lienzo del MER: se arma con las respuestas del alumno
+   ============================================================ */
+
+/* Igual que el diagrama de la Práctica 3: llena su columna a lo alto. */
+.mer-canvas {
+  padding: 16px 16px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+/* ============================================================
+   Práctica 4 — estrella que se arma con las decisiones del alumno
+   ============================================================ */
+
+.star-canvas {
+  padding: 16px 16px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.star-canvas-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.star-canvas-counter {
+  color: #64748b;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.star-canvas-stage {
+  position: relative;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
+    #fbfcfe;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.star-canvas-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.star-canvas-empty {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 28px;
+  color: #94a3b8;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* El hecho manda: borde mas fuerte y cabecera llena. */
+.star-fact {
+  fill: #ffffff;
+  stroke: #132B70;
+  stroke-width: 2.6;
+}
+
+.star-fact-header { fill: #132B70; }
+
+.star-fact-name {
+  fill: #ffffff;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.star-dim {
+  fill: #ffffff;
+  stroke: #1677ff;
+  stroke-width: 1.8;
+}
+
+.star-dim-header { fill: #dbeafe; }
+
+.star-dim-name {
+  fill: #1e3a8a;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.star-col {
+  fill: #475569;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 12.5px;
+}
+
+.star-col-pk { fill: #0f172a; text-decoration: underline; }
+.star-row-fk { fill: #1677ff; }
+.star-row-metric { fill: #0f766e; font-weight: 700; }
+
+.star-spoke {
+  stroke: rgba(22, 119, 255, 0.5);
+  stroke-width: 2;
+}
+
+.star-grain {
+  fill: #64748b;
+  font-size: 14px;
+  text-anchor: middle;
+}
+
+/* Decisiones que no coinciden con el modelo correcto */
+.star-fact.star-wrong,
+.star-dim.star-wrong {
+  stroke: #ef4444;
+  stroke-dasharray: 7 5;
+  fill: rgba(239, 68, 68, 0.05);
+}
+
+.star-wrong-fill { fill: #fecaca; }
+.star-spoke.star-wrong { stroke: #ef4444; stroke-dasharray: 7 5; }
+.star-wrong-text { fill: #b91c1c; }
+
+.star-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.star-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.star-chip {
+  width: 16px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  border: 2px solid #132B70;
+  background: #132B70;
+}
+
+.star-chip-dim { border-color: #1677ff; background: #dbeafe; }
+.star-chip-error { border-color: #ef4444; border-style: dashed; background: rgba(239, 68, 68, 0.08); }
+
+/* Metas de negocio y OLTP de origen, en la columna de trabajo */
+.goals-block .wizard-card-objectives {
+  margin-bottom: 12px;
+}
+
+.oltp-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.oltp-list div {
+  display: grid;
+  gap: 2px;
+}
+
+.oltp-list strong {
+  color: #132B70;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 13px;
+}
+
+.oltp-list span {
+  color: #64748b;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Práctica 1: el panel de respuestas ocupa el lugar del diagrama. */
+.answers-panel {
+  padding: 16px 16px 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.answers-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.answers-panel-counter {
+  color: #64748b;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Si las cinco preguntas no entran a lo alto, scrollea el panel, no la página. */
+.answers-panel-body {
+  overflow: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+/* Dataset al pie de las preguntas, separado por una línea. */
+.answers-panel-dataset {
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.answers-panel-dataset .practice-card-heading {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+}
+
+.answers-panel-dataset .dataset-copy.ant-typography {
+  margin-bottom: 14px;
+}
+
+/* Las etapas viven dentro de la tarjeta de trabajo, sin tarjeta propia. */
+.stage-block {
+  display: block;
+}
+
+.stage-block + .stage-block {
+  margin-top: 22px;
+}
+
+/* Con la consola mas angosta, las tarjetas de concepto entran igual. */
+.practice-grid-mer .concept-grid {
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 12px;
+}
+
+.practice-grid-mer .concept-card {
+  padding: 12px;
+}
+
+.practice-grid-mer .concept-card p {
+  font-size: 13px;
 }
 
 .mer-canvas-head {
@@ -71,13 +748,21 @@
   background:
     radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
     #fbfcfe;
+  display: grid;
+  min-height: 0;
   overflow: hidden;
 }
 
 .mer-canvas-svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.mer-legend-pk {
+  color: #0f172a;
+  font-size: 12.5px;
 }
 
 .mer-canvas-empty {
@@ -315,41 +1000,6 @@
   color: #92400e;
   font-size: 15px;
   line-height: 1.45;
-}
-
-/* Barra de puntaje */
-
-.score-bar {
-  margin-bottom: 22px;
-}
-
-.score-bar-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.score-bar-head strong {
-  color: #132B70;
-  font-size: 16px;
-}
-
-.score-bar-track {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.08);
-  overflow: hidden;
-}
-
-.score-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #1677ff, #22c55e);
-  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Clasificador entidad / atributo */
@@ -646,18 +1296,80 @@
   gap: 14px;
 }
 
-.sql-editor {
-  width: 100%;
-  padding: 16px;
+/* El editor son DOS capas superpuestas: <pre> con el SQL coloreado y el
+   <textarea> encima con el texto transparente. Todo lo que afecte la posicion
+   del glifo (fuente, tamano, interlineado, padding, ajuste de linea) tiene que
+   ser identico en ambas, o el cursor se desalinea del texto que se ve. */
+.sql-editor-shell {
+  position: relative;
   border: 1px solid rgba(15, 23, 42, 0.16);
   border-radius: 10px;
   background: #0f172a;
-  color: #e2e8f0;
-  font-family: "Consolas", "Courier New", monospace;
-  font-size: 14.5px;
-  line-height: 1.6;
-  resize: vertical;
+  overflow: hidden;
+}
+
+.sql-editor,
+.sql-editor-layer {
+  margin: 0;
+  padding: 16px 18px;
+  border: 0;
+  font-family: "JetBrains Mono", "Cascadia Code", "Consolas", "Courier New", monospace !important;
+  font-size: 15px;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
   tab-size: 2;
+}
+
+.sql-editor-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #e2e8f0;
+  pointer-events: none;
+}
+
+.sql-editor {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: transparent;
+  /* Texto invisible: lo que se lee es la capa de abajo. El cursor sí se ve. */
+  color: transparent;
+  caret-color: #e2e8f0;
+  resize: vertical;
+}
+
+.sql-editor:focus {
+  outline: none;
+}
+
+.sql-editor-shell:focus-within {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.18);
+}
+
+.sql-editor:disabled {
+  opacity: 0.7;
+}
+
+.sql-editor::selection {
+  background: rgba(22, 119, 255, 0.38);
+}
+
+/* Paleta de tokens */
+.sql-tk-keyword  { color: #7dd3fc; font-weight: 700; }
+.sql-tk-function { color: #c4b5fd; }
+.sql-tk-string   { color: #86efac; }
+.sql-tk-number   { color: #fdba74; }
+.sql-tk-comment  { color: #64748b; font-style: italic; }
+.sql-tk-punct    { color: #94a3b8; }
+
+.sql-editor-placeholder {
+  color: #64748b;
+  font-style: italic;
 }
 
 .sql-editor:focus {

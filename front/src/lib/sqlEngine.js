@@ -64,8 +64,8 @@ export function compareResults(actual, expected, orderMatters = false) {
     return {
       ok: false,
       reason: orderMatters
-        ? `La fila ${mismatch + 1} no coincide. Revisá el ORDER BY y los valores.`
-        : 'Los valores no coinciden. Revisá filtros, joins y agregaciones.',
+        ? `La fila ${mismatch + 1} no coincide. Revisa el ORDER BY y los valores.`
+        : 'Los valores no coinciden. Revisa filtros, joins y agregaciones.',
     }
   }
 

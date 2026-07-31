@@ -1,12 +1,11 @@
-import { Card, Input, Typography } from 'antd'
+import { Card, Input, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
 import MerCanvas from './MerCanvas.jsx'
 import {
-  PracticeHero,
+  InlineSubmit,
   PracticeLayout,
   StageTracker,
-  SubmitCard,
   usePracticeSubmit,
 } from './PracticeShell.jsx'
 import {
@@ -37,30 +36,22 @@ export default function PracticeTwo({ delivered, onDelivered }) {
     () => conceptCards.filter(card => classifications[card.id] === card.answer).length,
     [classifications],
   )
-  const pkScore = useMemo(
-    () => primaryKeyQuestions.filter(q => q.options.find(o => o.id === pkAnswers[q.id])?.correct).length,
-    [pkAnswers],
-  )
-  const cardScore = useMemo(
-    () => cardinalityQuestions.filter(q => cardAnswers[q.id] === q.answer).length,
-    [cardAnswers],
-  )
 
   const stages = [
     { id: 'clasificar', label: 'Entidad o atributo', complete: Object.keys(classifications).length === conceptCards.length },
     { id: 'claves', label: 'Claves primarias', complete: Object.keys(pkAnswers).length === primaryKeyQuestions.length },
     { id: 'cardinalidad', label: 'Cardinalidades', complete: Object.keys(cardAnswers).length === cardinalityQuestions.length },
-    { id: 'kpis', label: 'KPIs del equipo', complete: Boolean(kpis.trim()) },
+    { id: 'kpis', label: 'KPIs', complete: Boolean(kpis.trim()) },
   ]
 
   const submit = {
     controls: usePracticeSubmit({ practiceId: 'practice-2', onDelivered }),
     buildAnswers() {
-      if (!stages[0].complete) return { error: 'Clasificá los 17 conceptos antes de enviar.' }
-      if (!stages[1].complete) return { error: 'Respondé las 4 preguntas de claves primarias.' }
-      if (!stages[2].complete) return { error: 'Definí las 5 cardinalidades.' }
-      if (!kpis.trim()) return { error: 'Escribí al menos 2 KPIs.' }
-      if (!reflection.trim()) return { error: 'Completá la reflexión final.' }
+      if (!stages[0].complete) return { error: 'Clasifica los 17 conceptos antes de enviar.' }
+      if (!stages[1].complete) return { error: 'Responde las 4 preguntas de claves primarias.' }
+      if (!stages[2].complete) return { error: 'Define las 5 cardinalidades.' }
+      if (!kpis.trim()) return { error: 'Escribe al menos 2 KPIs.' }
+      if (!reflection.trim()) return { error: 'Completa la reflexión final.' }
 
       return {
         answers: {
@@ -68,7 +59,7 @@ export default function PracticeTwo({ delivered, onDelivered }) {
           primaryKeys: primaryKeyQuestions
             .map(q => {
               const chosen = q.options.find(o => o.id === pkAnswers[q.id])
-              return `${q.entity}: ${chosen?.label ?? '—'} ${chosen?.correct ? '[correcta]' : '[incorrecta]'}`
+              return `${q.entity}: ${chosen?.label ?? 'sin responder'} ${chosen?.correct ? '[correcta]' : '[incorrecta]'}`
             })
             .join(' | '),
           cardinalities: cardinalityQuestions
@@ -83,29 +74,35 @@ export default function PracticeTwo({ delivered, onDelivered }) {
 
   return (
     <PracticeLayout>
-      <PracticeHero
-        practiceLabel="Práctica 2"
-        title="Del caso ExpoCruz al Modelo Entidad-Relación"
-        description="Actividad grupal. Antes de dibujar nada, hay que decidir qué es entidad, qué es atributo y cómo se relacionan. El diagrama es la consecuencia, no el punto de partida."
-        objectives={objectives}
-      />
+      {/* Mismo esqueleto que la Práctica 3: dos contenedores, titulo dentro de
+          la tarjeta de trabajo y el diagrama fijo a la derecha. */}
+      <section className="practice-grid practice-grid-schema practice-grid-mer">
+        <div className="wizard-column">
+          <Card className="practice-card wizard-card">
+            <header className="wizard-card-head">
+              <div className="wizard-card-titles">
+                <Tag color="blue">Práctica 2</Tag>
+                <h2 className="wizard-card-title">Del caso ExpoCruz al Modelo Entidad-Relación</h2>
+              </div>
+              <div className="wizard-card-goals">
+                <span className="practice-panel-label">Objetivos</span>
+                <ul className="wizard-card-objectives">
+                  {objectives.map(item => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </header>
 
-      <MerCanvas classifications={classifications} pkAnswers={pkAnswers} cardAnswers={cardAnswers} />
+            <StageTracker stages={stages} activeStage={stage} onSelect={setStage} />
 
-      <StageTracker stages={stages} activeStage={stage} onSelect={setStage} />
-
-      <section className="practice-grid">
-        <div className="practice-workspace">
-          {stage === 0 && (
+            {stage === 0 && (
             <ClassificationStage
               classifications={classifications}
               onClassify={(id, value) => setClassifications(current => ({ ...current, [id]: value }))}
-              score={classificationScore}
             />
           )}
-          {stage === 1 && (
+            {stage === 1 && (
             <QuizStage
-              heading="Elegí la clave primaria"
+              heading="Elige la clave primaria"
               intro="Una PK mala no se nota el primer día. Se nota dos años después, cuando cambiarla implica tocar quince tablas."
               questions={primaryKeyQuestions.map(q => ({
                 id: q.id,
@@ -114,67 +111,50 @@ export default function PracticeTwo({ delivered, onDelivered }) {
               }))}
               answers={pkAnswers}
               onAnswer={(questionId, optionId) => setPkAnswers(current => ({ ...current, [questionId]: optionId }))}
-              score={pkScore}
             />
           )}
-          {stage === 2 && (
+            {stage === 2 && (
             <CardinalityStage
               answers={cardAnswers}
               onAnswer={(id, value) => setCardAnswers(current => ({ ...current, [id]: value }))}
-              score={cardScore}
             />
           )}
-          {stage === 3 && (
-            <DeliverableStage
-              kpis={kpis}
-              setKpis={setKpis}
-              reflection={reflection}
-              setReflection={setReflection}
-              disabled={delivered}
+            {stage === 3 && (
+              <DeliverableStage
+                kpis={kpis}
+                setKpis={setKpis}
+                reflection={reflection}
+                setReflection={setReflection}
+                disabled={delivered}
+              />
+            )}
+
+            <InlineSubmit
+              delivered={delivered}
+              submit={submit}
+              hint="Se guarda tu puntaje por etapa junto a los KPIs. El diagrama queda reflejado en esas respuestas."
             />
-          )}
+          </Card>
         </div>
 
-        <aside className="practice-sidebar">
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="brain" />
-              <span>Cómo leer tu diagrama</span>
-            </div>
-            <Paragraph className="dataset-copy">
-              El lienzo de arriba dibuja <strong>tus</strong> decisiones, no la respuesta. Un rectángulo donde debía ir un óvalo se nota a simple vista.
-            </Paragraph>
-            <div className="mer-guide">
-              <div><strong>Rectángulo</strong><span>lo clasificaste como entidad</span></div>
-              <div><strong>Óvalo</strong><span>lo clasificaste como atributo</span></div>
-              <div><strong>Rombo</strong><span>relación, con su cardinalidad a cada lado</span></div>
-              <div><strong>Texto subrayado</strong><span>la clave primaria que elegiste</span></div>
-              <div><strong>Trazo rojo</strong><span>esa decisión no coincide con el modelo correcto</span></div>
-            </div>
-          </Card>
-
-          <SubmitCard
-            delivered={delivered}
-            submit={submit}
-            hint="Se guarda tu puntaje por etapa junto a los KPIs. El diagrama queda reflejado en esas respuestas."
-          />
+        <aside className="schema-column">
+          <MerCanvas classifications={classifications} pkAnswers={pkAnswers} cardAnswers={cardAnswers} />
         </aside>
       </section>
     </PracticeLayout>
   )
 }
 
-function ClassificationStage({ classifications, onClassify, score }) {
+function ClassificationStage({ classifications, onClassify }) {
   return (
-    <Card className="practice-card">
+    <section className="stage-block">
       <div className="practice-card-heading">
         <PracticeIcon name="ruler" />
         <span>¿Entidad o atributo?</span>
       </div>
       <Paragraph className="stage-intro">
-        La pregunta que decide: <strong>¿esto tiene identidad propia y vida independiente, o solo describe a otra cosa?</strong> Clasificá los {conceptCards.length} conceptos del caso. Vas a ver la explicación al instante.
+        La pregunta que decide: <strong>¿esto tiene identidad propia y vida independiente, o solo describe a otra cosa?</strong> Clasifica los {conceptCards.length} conceptos del caso. Verás la explicación al instante.
       </Paragraph>
-      <ScoreBar label="Aciertos" value={score} total={conceptCards.length} />
 
       <div className="concept-grid">
         {conceptCards.map(card => {
@@ -203,19 +183,18 @@ function ClassificationStage({ classifications, onClassify, score }) {
           )
         })}
       </div>
-    </Card>
+    </section>
   )
 }
 
-function QuizStage({ heading, intro, questions, answers, onAnswer, score }) {
+function QuizStage({ heading, intro, questions, answers, onAnswer }) {
   return (
-    <Card className="practice-card">
+    <section className="stage-block">
       <div className="practice-card-heading">
         <PracticeIcon name="brain" />
         <span>{heading}</span>
       </div>
       <Paragraph className="stage-intro">{intro}</Paragraph>
-      <ScoreBar label="Aciertos" value={score} total={questions.length} />
 
       <div className="quiz-list">
         {questions.map(question => {
@@ -247,21 +226,20 @@ function QuizStage({ heading, intro, questions, answers, onAnswer, score }) {
           )
         })}
       </div>
-    </Card>
+    </section>
   )
 }
 
-function CardinalityStage({ answers, onAnswer, score }) {
+function CardinalityStage({ answers, onAnswer }) {
   return (
-    <Card className="practice-card">
+    <section className="stage-block">
       <div className="practice-card-heading">
         <PracticeIcon name="layers" />
         <span>Reglas de negocio → cardinalidades</span>
       </div>
       <Paragraph className="stage-intro">
-        Cada regla escrita en castellano tiene una única traducción correcta al modelo. Leé la regla completa antes de responder: la trampa suele estar en el lado que <em>no</em> te mencionan.
+        Cada regla escrita en castellano tiene una única traducción correcta al modelo. Lee la regla completa antes de responder: la trampa suele estar en el lado que <em>no</em> te mencionan.
       </Paragraph>
-      <ScoreBar label="Aciertos" value={score} total={cardinalityQuestions.length} />
 
       <div className="quiz-list">
         {cardinalityQuestions.map(question => {
@@ -297,23 +275,23 @@ function CardinalityStage({ answers, onAnswer, score }) {
           )
         })}
       </div>
-    </Card>
+    </section>
   )
 }
 
 function DeliverableStage({ kpis, setKpis, reflection, setReflection, disabled }) {
   return (
-    <Card className="practice-card">
+    <section className="stage-block">
       <div className="practice-card-heading">
         <PracticeIcon name="edit" />
-        <span>KPIs del equipo</span>
+        <span>KPIs propuestos</span>
       </div>
       <Paragraph className="stage-intro">
-        Mirá el diagrama que armaste arriba: un KPI sirve solo si ese modelo puede calcularlo. Antes de escribirlo, preguntate de qué entidad sale el numerador y de cuál el denominador.
+        Mira el diagrama que armaste arriba: un KPI sirve solo si ese modelo puede calcularlo. Antes de escribirlo, pregúntate de qué entidad sale el numerador y de cuál el denominador.
       </Paragraph>
 
       <label className="practice-field">
-        <span>2 KPIs por integrante — nombre, objetivo y fórmula</span>
+        <span>2 KPIs: nombre, objetivo y fórmula</span>
         <TextArea
           disabled={disabled}
           rows={7}
@@ -324,25 +302,10 @@ function DeliverableStage({ kpis, setKpis, reflection, setReflection, disabled }
       </label>
 
       <label className="practice-field">
-        <span>¿Qué decisión de modelado les costó más y por qué?</span>
+        <span>¿Qué decisión de modelado te costó más y por qué?</span>
         <TextArea disabled={disabled} rows={4} value={reflection} onChange={event => setReflection(event.target.value)} />
       </label>
-    </Card>
+    </section>
   )
 }
 
-export function ScoreBar({ label, value, total }) {
-  const percent = total === 0 ? 0 : Math.round((value / total) * 100)
-
-  return (
-    <div className="score-bar">
-      <div className="score-bar-head">
-        <span>{label}</span>
-        <strong>{value} / {total}</strong>
-      </div>
-      <div className="score-bar-track">
-        <div className="score-bar-fill" style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  )
-}

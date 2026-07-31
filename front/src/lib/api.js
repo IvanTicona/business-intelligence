@@ -10,7 +10,7 @@ export function apiUrl(path) {
  * Envía una entrega al backend. Todas las prácticas comparten este contrato:
  * el backend rechaza valores vacíos, así que recortamos y filtramos antes.
  */
-// Espejo de las reglas del backend (zod). Validamos acá también para dar un
+// Espejo de las reglas del backend (zod). Validamos aquí también para dar un
 // mensaje que diga QUÉ corregir, en vez del "Datos de entrega inválidos".
 const MAX_ANSWER_LENGTH = 5000
 const MIN_STUDENT_LENGTH = 2
@@ -33,7 +33,7 @@ export async function submitPractice({ practiceId, studentIdentifier, answers })
 
   const tooLong = Object.entries(cleanAnswers).find(([, value]) => value.length > MAX_ANSWER_LENGTH)
   if (tooLong) {
-    throw new Error(`El campo "${tooLong[0]}" tiene ${tooLong[1].length} caracteres y el máximo es ${MAX_ANSWER_LENGTH}. Acortá el contenido.`)
+    throw new Error(`El campo "${tooLong[0]}" tiene ${tooLong[1].length} caracteres y el máximo es ${MAX_ANSWER_LENGTH}. Acorta el contenido.`)
   }
 
   const response = await fetch(apiUrl('/api/submissions'), {

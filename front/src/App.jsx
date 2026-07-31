@@ -75,13 +75,11 @@ const practiceItems = [
 const practiceStatusStorageKey = 'bi-course-practice-status'
 
 // Módulos bloqueados para los alumnos.
-// PARA HABILITAR UNO: borralo de esta lista y volvé a desplegar
+// PARA HABILITAR UNO: bórralo de esta lista y vuelve a desplegar
 // (docker compose up -d --build front). No hay fechas ni calendario:
-// lo que está acá está bloqueado, lo que no está, se ve.
+// lo que está aquí está bloqueado, lo que no está, se ve.
 const disabledKeys = new Set([
   'chapter-5',
-  'practice-3',
-  'practice-4',
 ])
 
 function isDisabled(key) {
@@ -417,12 +415,12 @@ const chapterThreeSlides = [
     title: 'Notación Chen: los seis símbolos',
     revealCount: 7,
     items: [
-      { image: '/slide52.1.png', text: 'Entidad — objeto distinguible, con existencia propia' },
-      { image: '/slide52.2.png', text: 'Atributo — propiedad de una entidad o de una relación' },
-      { image: '/slide52.3.png', text: 'Entidad débil — no existe sin su entidad padre' },
-      { image: '/slide52.4.png', text: 'Relación — asocia dos o más entidades' },
-      { image: '/slide52.5.png', text: 'Identificador — único y sin nulos; se subraya' },
-      { image: '/slide52.6.png', text: 'Relación identificadora — vincula la débil con su padre' },
+      { image: '/slide52.1.png', text: 'Entidad: objeto distinguible, con existencia propia' },
+      { image: '/slide52.2.png', text: 'Atributo: propiedad de una entidad o de una relación' },
+      { image: '/slide52.3.png', text: 'Entidad débil: no existe sin su entidad padre' },
+      { image: '/slide52.4.png', text: 'Relación: asocia dos o más entidades' },
+      { image: '/slide52.5.png', text: 'Identificador: único y sin nulos; se subraya' },
+      { image: '/slide52.6.png', text: 'Relación identificadora: vincula la débil con su padre' },
     ],
   },
   { type: 'title-image', title: 'Notación Pata de Gallo', image: '/slide53.png', revealCount: 1 },
@@ -648,7 +646,7 @@ const menuGroups = [
 ]
 
 // Cada práctica es un playground independiente. Agregar una nueva es sumar
-// una entrada acá, no tocar el render.
+// una entrada aquí, no tocar el render.
 const PracticePlaygrounds = {
   'practice-1': PracticeOnePlayground,
   'practice-2': PracticeTwo,
@@ -877,6 +875,17 @@ function MenuStatusIcon({ name }) {
   )
 }
 
+const PROMPT_PRACTICA_UNO = `Actúa como analista de datos.
+
+Analiza este dataset de reclutamiento.
+Primero identifica:
+1. Qué representa cada fila.
+2. Columnas relevantes para BI.
+3. Problemas de calidad.
+4. Preguntas que faltan antes de modelar.
+
+No propongas soluciones todavía.`
+
 function PracticeOnePlayground({ delivered, onDelivered }) {
   const datasetSheetUrl = 'https://docs.google.com/spreadsheets/d/1UH5uNvUW8_beBv_3LCabQUmImeYKeHzE7W814foIfFU/edit?usp=sharing'
   const [answers, setAnswers] = useState({
@@ -895,6 +904,10 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
     'Usar IA como apoyo y validar sus respuestas.',
   ]
 
+  // Solo para el contador del panel: el nombre no cuenta como respuesta.
+  const respondidas = ['rowMeaning', 'businessContext', 'importantData', 'problems', 'aiCritique']
+    .filter(clave => answers[clave].trim()).length
+
   function updateAnswer(key, value) {
     setAnswers(current => ({ ...current, [key]: value }))
     setSubmitState({ status: 'idle', message: '' })
@@ -903,7 +916,7 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
   async function submitPractice() {
     const requiredValues = Object.values(answers).map(value => value.trim())
     if (requiredValues.some(value => !value)) {
-      setSubmitState({ status: 'error', message: 'Completá todos los campos antes de enviar.' })
+      setSubmitState({ status: 'error', message: 'Completa todos los campos antes de enviar.' })
       return
     }
 
@@ -931,7 +944,7 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
       setSubmitState({ status: 'success', message: 'Práctica enviada correctamente.' })
       onDelivered()
     } catch {
-      setSubmitState({ status: 'error', message: 'No se pudo enviar. Revisá que el backend esté disponible.' })
+      setSubmitState({ status: 'error', message: 'No se pudo enviar. Revisa que el backend esté disponible.' })
     }
   }
 
@@ -942,55 +955,92 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
       transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
       className="practice-playground"
     >
-      <section className="practice-hero">
-        <div className="practice-hero-content">
-          <Tag color="blue">Práctica 1</Tag>
-          <Title className="practice-title">Diagnóstico de datos de reclutamiento con IA</Title>
-          <Paragraph className="practice-copy">
-            Actividad individual: antes de modelar o calcular KPIs, cada estudiante debe comprender el dataset y cuestionar su calidad.
-          </Paragraph>
-        </div>
-        <div className="practice-objectives-panel">
-          <span className="practice-panel-label">Objetivos</span>
-          <div className="practice-objective-list">
-            {objectives.map(item => (
-              <div className="practice-objective" key={item}>
-                <PracticeIcon name="target" />
-                <span>{item}</span>
+      {/* Misma distribución que las prácticas 2 y 3: dos contenedores, con el
+          panel de respuestas ocupando el lugar del diagrama. */}
+      <section className="practice-grid practice-grid-schema practice-grid-uno">
+        <div className="wizard-column">
+          <Card className="practice-card wizard-card">
+            <header className="wizard-card-head">
+              <div className="wizard-card-titles">
+                <Tag color="blue">Práctica 1</Tag>
+                <h2 className="wizard-card-title">Diagnóstico de datos de reclutamiento con IA</h2>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <div className="wizard-card-goals">
+                <span className="practice-panel-label">Objetivos</span>
+                <ul className="wizard-card-objectives">
+                  {objectives.map(item => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </header>
 
-      <section className="practice-grid">
-        <div className="practice-workspace">
-          <Card className="practice-card context-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="database" />
-              <span>Contexto del caso</span>
-            </div>
-            <div className="context-blocks">
-              <div>
-                <strong>Situación</strong>
-                <p>Una empresa de tecnología en Bolivia analiza candidatos de reclutamiento almacenados en un CSV exportado desde formularios.</p>
+            <section className="stage-block context-card">
+              <div className="practice-card-heading">
+                <PracticeIcon name="database" />
+                <span>Contexto del caso</span>
               </div>
-              <div>
-                <strong>Necesidad de negocio</strong>
-                <p>Recursos Humanos quiere revisar perfiles comunes, salario esperado, experiencia, postgrados y disponibilidad.</p>
+              <div className="context-blocks">
+                <div>
+                  <strong>Situación</strong>
+                  <p>Una empresa de tecnología en Bolivia analiza candidatos de reclutamiento almacenados en un CSV exportado desde formularios.</p>
+                </div>
+                <div>
+                  <strong>Necesidad de negocio</strong>
+                  <p>Recursos Humanos quiere revisar perfiles comunes, salario esperado, experiencia, postgrados y disponibilidad.</p>
+                </div>
               </div>
+            </section>
+
+            <section className="stage-block">
+              <div className="practice-card-heading">
+                <PracticeIcon name="spark" />
+                <span>Prompt sugerido</span>
+              </div>
+              <pre className="practice-prompt">{PROMPT_PRACTICA_UNO}</pre>
+              <Button type="primary" ghost onClick={() => navigator.clipboard?.writeText(PROMPT_PRACTICA_UNO)}>
+                <PracticeIcon name="copy" />
+                Copiar prompt
+              </Button>
+            </section>
+
+            <div className="inline-submit">
+              <div className="inline-submit-row">
+                <label className="inline-submit-field">
+                  <span>Nombre completo o código de estudiante</span>
+                  <Input
+                    disabled={delivered || submitState.status === 'loading'}
+                    value={answers.studentId}
+                    onChange={event => updateAnswer('studentId', event.target.value)}
+                  />
+                </label>
+                <Button
+                  type="primary"
+                  size="large"
+                  className="inline-submit-button"
+                  disabled={delivered}
+                  loading={submitState.status === 'loading'}
+                  onClick={submitPractice}
+                >
+                  <PracticeIcon name={delivered ? 'check' : 'send'} />
+                  {delivered ? 'Entregada' : 'Enviar práctica'}
+                </Button>
+              </div>
+              {submitState.message && (
+                <p className={`practice-submit-message practice-submit-message-${submitState.status}`}>
+                  {submitState.message}
+                </p>
+              )}
             </div>
           </Card>
+        </div>
 
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="edit" />
-              <span>Respuestas guiadas</span>
+        <aside className="schema-column">
+          <div className="answers-panel">
+            <div className="answers-panel-head">
+              <span className="practice-panel-label">Respuestas guiadas</span>
+              <span className="answers-panel-counter">{respondidas}/5 respondidas</span>
             </div>
-            <label className="practice-field">
-              <span>Nombre completo o código de estudiante</span>
-              <Input disabled={delivered || submitState.status === 'loading'} value={answers.studentId} onChange={event => updateAnswer('studentId', event.target.value)} />
-            </label>
+
+            <div className="answers-panel-body">
             <label className="practice-field">
               <span>¿Qué representa cada fila del dataset?</span>
               <TextArea disabled={delivered || submitState.status === 'loading'} rows={3} value={answers.rowMeaning} onChange={event => updateAnswer('rowMeaning', event.target.value)} />
@@ -1004,89 +1054,37 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
               <TextArea disabled={delivered || submitState.status === 'loading'} rows={3} value={answers.importantData} onChange={event => updateAnswer('importantData', event.target.value)} />
             </label>
             <label className="practice-field">
-              <span>Identificá al menos 3 problemas del CSV.</span>
+              <span>Identifica al menos 3 problemas del CSV.</span>
               <TextArea disabled={delivered || submitState.status === 'loading'} rows={4} value={answers.problems} onChange={event => updateAnswer('problems', event.target.value)} />
             </label>
             <label className="practice-field">
               <span>¿Qué aceptarías, corregirías o rechazarías de una ayuda generada por IA?</span>
               <TextArea disabled={delivered || submitState.status === 'loading'} rows={4} value={answers.aiCritique} onChange={event => updateAnswer('aiCritique', event.target.value)} />
             </label>
-          </Card>
-        </div>
 
-        <aside className="practice-sidebar">
-          <Card className="practice-card dataset-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="sheet" />
-              <span>Dataset de trabajo</span>
+            {/* El dataset vive junto a las preguntas: es la fuente que hay que
+                mirar para responderlas. */}
+            <div className="answers-panel-dataset">
+              <div className="practice-card-heading">
+                <PracticeIcon name="sheet" />
+                <span>Dataset de trabajo</span>
+              </div>
+              <Paragraph className="dataset-copy">
+                Abre el archivo en Google Sheets y analiza columnas, valores faltantes, duplicados, formatos y consistencia.
+              </Paragraph>
+              <Button
+                type="primary"
+                size="large"
+                className="dataset-button"
+                disabled={!datasetSheetUrl}
+                onClick={() => window.open(datasetSheetUrl, '_blank', 'noopener,noreferrer')}
+              >
+                <PracticeIcon name="external" />
+                Abrir Google Sheets
+              </Button>
             </div>
-            <Paragraph className="dataset-copy">
-              Abrí el archivo en Google Sheets y analizá columnas, valores faltantes, duplicados, formatos y consistencia.
-            </Paragraph>
-            <Button
-              type="primary"
-              size="large"
-              className="dataset-button"
-              disabled={!datasetSheetUrl}
-              onClick={() => window.open(datasetSheetUrl, '_blank', 'noopener,noreferrer')}
-            >
-              <PracticeIcon name="external" />
-              Abrir Google Sheets
-            </Button>
-          </Card>
-
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="spark" />
-              <span>Prompt sugerido</span>
             </div>
-            <pre className="practice-prompt">{`Actúa como analista de datos.
-
-Analiza este dataset de reclutamiento.
-Primero identifica:
-1. Qué representa cada fila.
-2. Columnas relevantes para BI.
-3. Problemas de calidad.
-4. Preguntas que faltan antes de modelar.
-
-No propongas soluciones todavía.`}</pre>
-            <Button
-              type="primary"
-              ghost
-              onClick={() => navigator.clipboard?.writeText(`Actúa como analista de datos.
-
-Analiza este dataset de reclutamiento.
-Primero identifica:
-1. Qué representa cada fila.
-2. Columnas relevantes para BI.
-3. Problemas de calidad.
-4. Preguntas que faltan antes de modelar.
-
-No propongas soluciones todavía.`)}
-            >
-              <PracticeIcon name="copy" />
-              Copiar prompt
-            </Button>
-          </Card>
-
-          <Card className="practice-card submit-card">
-            <Button
-              type="primary"
-              size="large"
-              className="submit-practice-button"
-              disabled={delivered}
-              loading={submitState.status === 'loading'}
-              onClick={submitPractice}
-            >
-              <PracticeIcon name={delivered ? 'check' : 'send'} />
-              {delivered ? 'Práctica entregada' : 'Enviar práctica'}
-            </Button>
-            {submitState.message && (
-              <p className={`practice-submit-message practice-submit-message-${submitState.status}`}>
-                {submitState.message}
-              </p>
-            )}
-          </Card>
+          </div>
         </aside>
       </section>
     </motion.main>

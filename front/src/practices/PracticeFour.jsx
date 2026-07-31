@@ -1,9 +1,9 @@
 import { Card, Input, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
-import SqlWorkbench, { SchemaExplorer } from './SqlWorkbench.jsx'
-import { PracticeHero, PracticeLayout, StageTracker, SubmitCard, usePracticeSubmit } from './PracticeShell.jsx'
-import { ScoreBar } from './PracticeTwo.jsx'
+import SqlWorkbench from './SqlWorkbench.jsx'
+import StarCanvas from './StarCanvas.jsx'
+import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit } from './PracticeShell.jsx'
 import { createDatabase } from '../lib/sqlEngine.js'
 import {
   businessGoals,
@@ -13,7 +13,6 @@ import {
   metricOptions,
   oltpTables,
   spazioGymSeedSql,
-  starSchema,
 } from './data/spaziogym.js'
 
 const { Paragraph } = Typography
@@ -33,12 +32,13 @@ export default function PracticeFour({ delivered, onDelivered }) {
   const [grain, setGrain] = useState('')
   const [metrics, setMetrics] = useState({})
   const [dimensions, setDimensions] = useState({})
+  // Editor vacío a propósito: el esqueleto resolvía medio KPI.
   const [queries, setQueries] = useState(() =>
-    Object.fromEntries(kpiChallenges.map(kpi => [kpi.id, kpi.starter])),
+    Object.fromEntries(kpiChallenges.map(kpi => [kpi.id, ''])),
   )
   const [solved, setSolved] = useState({})
   const [ownKpi, setOwnKpi] = useState('')
-  const [ownQuery, setOwnQuery] = useState('SELECT * FROM hecho_reserva LIMIT 10;')
+  const [ownQuery, setOwnQuery] = useState('')
   const [reflection, setReflection] = useState('')
 
   useEffect(() => {
@@ -65,24 +65,24 @@ export default function PracticeFour({ delivered, onDelivered }) {
   const stages = [
     { id: 'grain', label: 'Grain', complete: Boolean(grain) },
     { id: 'metricas', label: 'Métricas', complete: metricScore.decided },
-    { id: 'dimensiones', label: 'Dimensiones', complete: dimensionScore.decided },
+    { id: 'dimensiones', label: 'Dims', complete: dimensionScore.decided },
     ...kpiChallenges.map((kpi, index) => ({
       id: kpi.id,
       label: `KPI ${index + 1}`,
       complete: Boolean(solved[kpi.id]),
     })),
-    { id: 'propio', label: 'KPI propio', complete: Boolean(ownKpi.trim()) },
+    { id: 'propio', label: 'Propio', complete: Boolean(ownKpi.trim()) },
   ]
 
   const submit = {
     controls: usePracticeSubmit({ practiceId: 'practice-4', onDelivered }),
     buildAnswers() {
-      if (!grain) return { error: 'Elegí el grain del hecho antes de enviar.' }
-      if (!metricScore.decided) return { error: 'Marcá qué columnas del pool son métricas del hecho.' }
-      if (!dimensionScore.decided) return { error: 'Marcá qué tablas del pool son dimensiones de la estrella.' }
-      if (solvedKpis < 3) return { error: `Resolvé al menos 3 de los ${kpiChallenges.length} KPIs en SQL. Llevás ${solvedKpis}.` }
-      if (!ownKpi.trim()) return { error: 'Definí tu quinto KPI (nombre, objetivo y fórmula).' }
-      if (!reflection.trim()) return { error: 'Completá la reflexión final.' }
+      if (!grain) return { error: 'Elige el grain del hecho antes de enviar.' }
+      if (!metricScore.decided) return { error: 'Marca qué columnas del pool son métricas del hecho.' }
+      if (!dimensionScore.decided) return { error: 'Marca qué tablas del pool son dimensiones de la estrella.' }
+      if (solvedKpis < 3) return { error: `Resuelve al menos 3 de los ${kpiChallenges.length} KPIs en SQL. Llevas ${solvedKpis}.` }
+      if (!ownKpi.trim()) return { error: 'Define tu quinto KPI (nombre, objetivo y fórmula).' }
+      if (!reflection.trim()) return { error: 'Completa la reflexión final.' }
 
       const chosenGrain = grainOptions.find(option => option.id === grain)
 
@@ -119,25 +119,58 @@ export default function PracticeFour({ delivered, onDelivered }) {
 
   return (
     <PracticeLayout>
-      <PracticeHero
-        practiceLabel="Práctica 4"
-        title="De OLTP a OLAP: el data mart en estrella de SpazioGym"
-        description="El modelo transaccional ya existe y funciona. El problema es que responder una pregunta de negocio ahí adentro cuesta cinco JOINs. Vamos a diseñar una estrella única que las responda todas."
-        objectives={objectives}
-      />
+      {/* Misma distribución que las prácticas 1, 2 y 3. */}
+      <section className="practice-grid practice-grid-schema">
+        <div className="wizard-column">
+          <Card className="practice-card wizard-card">
+            <header className="wizard-card-head">
+              <div className="wizard-card-titles">
+                <Tag color="blue">Práctica 4</Tag>
+                <h2 className="wizard-card-title">De OLTP a OLAP: el data mart en estrella de SpazioGym</h2>
+              </div>
+              <div className="wizard-card-goals">
+                <span className="practice-panel-label">Objetivos</span>
+                <ul className="wizard-card-objectives">
+                  {objectives.map(item => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </header>
 
-      <StageTracker stages={stages} activeStage={stage} onSelect={setStage} />
+            <StageTracker stages={stages} activeStage={stage} onSelect={setStage} />
 
-      <section className="practice-grid">
-        <div className="practice-workspace">
+            {/* Las metas y el OLTP son el contexto de las tres etapas de
+                diseño; en las de SQL ya no hacen falta y ceden el alto. */}
+            {stage <= 2 && (
+              <section className="stage-block goals-block">
+                <div className="practice-card-heading">
+                  <PracticeIcon name="target" />
+                  <span>Metas del negocio</span>
+                </div>
+                <ul className="wizard-card-objectives">
+                  {businessGoals.map(goal => <li key={goal}>{goal}</li>)}
+                </ul>
+                <details className="practice-hint">
+                  <summary>Ver el modelo OLTP de origen</summary>
+                  <div className="oltp-list">
+                    {oltpTables.map(t => (
+                      <div key={t.table}>
+                        <strong>{t.table}</strong>
+                        <span>{t.columns.join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </section>
+            )}
+
           {stage === 0 && (
-            <Card className="practice-card">
+            <section className="stage-block">
               <div className="practice-card-heading">
                 <PracticeIcon name="ruler" />
-                <span>Paso 1 — Definir el grain</span>
+                <span>Paso 1: Definir el grain</span>
               </div>
               <Paragraph className="stage-intro">
-                El grain responde una sola pregunta: <strong>¿qué representa exactamente una fila de la tabla de hechos?</strong> Se define ANTES de elegir métricas y dimensiones. Si te equivocás acá, todo lo demás se cae, por más prolijo que lo hagas.
+                El grain responde una sola pregunta: <strong>¿qué representa exactamente una fila de la tabla de hechos?</strong> Se define ANTES de elegir métricas y dimensiones. Si te equivocas aquí, todo lo demás se cae, por más prolijo que lo hagas.
               </Paragraph>
               <div className="option-stack">
                 {grainOptions.map(option => {
@@ -159,17 +192,17 @@ export default function PracticeFour({ delivered, onDelivered }) {
               </div>
               {grain && !grainIsCorrect && (
                 <p className="stage-warning">
-                  Podés seguir, pero ojo: las etapas siguientes asumen el grain de reserva. Volvé a leer las metas de negocio del panel derecho.
+                  Puedes seguir, pero ojo: las etapas siguientes asumen el grain de reserva. Vuelve a leer las metas de negocio de arriba.
                 </p>
               )}
-            </Card>
+            </section>
           )}
 
           {stage === 1 && (
             <SelectionStage
               icon="star"
-              heading="Paso 2 — Métricas del hecho"
-              intro="Una métrica vive en el hecho solo si es ADITIVA en el grain elegido: si sumarla por cualquier corte da un número con sentido. Marcá las que correspondan; hay trampas."
+              heading="Paso 2: Métricas del hecho"
+              intro="Una métrica vive en el hecho solo si es ADITIVA en el grain elegido: si sumarla por cualquier corte da un número con sentido. Marca las que correspondan; hay trampas."
               options={metricOptions}
               selection={metrics}
               onToggle={id => setMetrics(current => toggle(current, id))}
@@ -181,8 +214,8 @@ export default function PracticeFour({ delivered, onDelivered }) {
           {stage === 2 && (
             <SelectionStage
               icon="layers"
-              heading="Paso 3 — Dimensiones de la estrella"
-              intro="Las dimensiones son los ejes por los que vas a cortar las métricas: el «por qué», «quién», «cuándo» y «dónde». Marcá las que tengan sentido en esta estrella."
+              heading="Paso 3: Dimensiones de la estrella"
+              intro="Las dimensiones son los ejes por los que vas a cortar las métricas: el «por qué», «quién», «cuándo» y «dónde». Marca las que tengan sentido en esta estrella."
               options={dimensionOptions}
               selection={dimensions}
               onToggle={id => setDimensions(current => toggle(current, id))}
@@ -192,7 +225,7 @@ export default function PracticeFour({ delivered, onDelivered }) {
           )}
 
           {activeKpi && (
-            <Card className="practice-card">
+            <section className="stage-block">
               {!db ? (
                 <Paragraph className="stage-intro">Iniciando el motor SQL…</Paragraph>
               ) : (
@@ -202,7 +235,6 @@ export default function PracticeFour({ delivered, onDelivered }) {
                     <span>{activeKpi.name}</span>
                     <Tag className="concept-tag">KPI {kpiIndex + 1}</Tag>
                   </div>
-                  <ScoreBar label="KPIs resueltos" value={solvedKpis} total={kpiChallenges.length} />
                   <div className="kpi-meta">
                     <div>
                       <strong>Objetivo</strong>
@@ -218,7 +250,10 @@ export default function PracticeFour({ delivered, onDelivered }) {
                     <summary>Ver pista</summary>
                     <p>{activeKpi.hint}</p>
                   </details>
+                  {/* `key` por KPI: al cambiar de etapa el workbench se remonta
+                      y el resultado anterior no queda colgado. */}
                   <SqlWorkbench
+                    key={activeKpi.id}
                     db={db}
                     value={queries[activeKpi.id]}
                     onChange={value => setQueries(current => ({ ...current, [activeKpi.id]: value }))}
@@ -229,17 +264,17 @@ export default function PracticeFour({ delivered, onDelivered }) {
                   />
                 </>
               )}
-            </Card>
+            </section>
           )}
 
           {stage === stages.length - 1 && (
-            <Card className="practice-card">
+            <section className="stage-block">
               <div className="practice-card-heading">
                 <PracticeIcon name="spark" />
-                <span>Paso 5 — Tu quinto KPI</span>
+                <span>Paso 5: Tu quinto KPI</span>
               </div>
               <Paragraph className="stage-intro">
-                El Proyecto Final pide 5 KPIs sobre una estrella única. Cuatro ya los escribiste. El quinto lo definís vos: tiene que responderse con esta misma estrella, sin agregar tablas.
+                El Proyecto Final pide 5 KPIs sobre una estrella única. Cuatro ya los escribiste. El quinto lo defines tú: tiene que responderse con esta misma estrella, sin agregar tablas.
               </Paragraph>
               <label className="practice-field">
                 <span>Nombre, objetivo y fórmula del KPI</span>
@@ -256,44 +291,19 @@ export default function PracticeFour({ delivered, onDelivered }) {
                 <span>¿Cuántos JOINs te habría costado este mismo KPI sobre el OLTP? ¿Qué ganaste con la estrella?</span>
                 <TextArea disabled={delivered} rows={4} value={reflection} onChange={event => setReflection(event.target.value)} />
               </label>
-            </Card>
+            </section>
           )}
+
+            <InlineSubmit
+              delivered={delivered}
+              submit={submit}
+              hint="Se envía tu diseño de estrella junto a las consultas de los KPIs."
+            />
+          </Card>
         </div>
 
-        <aside className="practice-sidebar">
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="target" />
-              <span>Metas del negocio</span>
-            </div>
-            <div className="practice-objective-list">
-              {businessGoals.map(goal => (
-                <div className="practice-objective" key={goal}>
-                  <PracticeIcon name="target" />
-                  <span>{goal}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="practice-card">
-            <div className="practice-card-heading">
-              <PracticeIcon name="database" />
-              <span>{stage >= 3 ? 'Estrella implementada' : 'Modelo OLTP de origen'}</span>
-            </div>
-            <Paragraph className="dataset-copy">
-              {stage >= 3
-                ? 'La estrella ya poblada con 103 reservas de 3 meses. Consultá acá los nombres exactos.'
-                : 'Este es el transaccional que ya existe. Mirá cuántos saltos hay entre una reserva y el nombre de la sucursal.'}
-            </Paragraph>
-            <SchemaExplorer tables={stage >= 3 ? starSchema : oltpTables} title="" />
-          </Card>
-
-          <SubmitCard
-            delivered={delivered}
-            submit={submit}
-            hint="Se envía tu diseño de estrella junto a las consultas de los KPIs."
-          />
+        <aside className="schema-column">
+          <StarCanvas grain={grain} metrics={metrics} dimensions={dimensions} />
         </aside>
       </section>
     </PracticeLayout>
@@ -308,10 +318,9 @@ function SelectionStage({ icon, heading, intro, options, selection, onToggle, sc
         <span>{heading}</span>
       </div>
       <Paragraph className="stage-intro">{intro}</Paragraph>
-      <ScoreBar label="Correctas encontradas" value={score.hits} total={score.totalCorrect} />
       {score.falsePositives > 0 && (
         <p className="stage-warning">
-          Marcaste {score.falsePositives} opción(es) que no corresponden. Leé la explicación en rojo: ahí está el concepto.
+          Marcaste {score.falsePositives} opción(es) que no corresponden. Lee la explicación en rojo: ahí está el concepto.
         </p>
       )}
 

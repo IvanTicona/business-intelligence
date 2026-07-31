@@ -1,4 +1,4 @@
-// Caso SpazioGym — Práctica 4 (OLTP → OLAP, data mart en estrella única).
+// Caso SpazioGym: Práctica 4 (OLTP → OLAP, data mart en estrella única).
 // El OLTP se muestra como punto de partida; el alumno diseña la estrella y
 // después consulta una estrella ya poblada para escribir los KPIs.
 
@@ -29,13 +29,13 @@ export const grainOptions = [
     id: 'socio',
     label: 'Una fila por socio',
     correct: false,
-    why: 'Demasiado grueso. Perdés la clase, la fecha y la disciplina: no podés responder ni ocupación ni evolución mensual. Un hecho no es un maestro de socios.',
+    why: 'Demasiado grueso. Perdés la clase, la fecha y la disciplina: no puedes responder ni ocupación ni evolución mensual. Un hecho no es un maestro de socios.',
   },
   {
     id: 'reserva',
     label: 'Una fila por reserva de un socio a una clase',
     correct: true,
-    why: 'Correcto. Es el evento transaccional más atómico del negocio. Desde acá se agregan las 4 metas: asistencia, ocupación, sucursal y evolución. Regla de oro: elegí SIEMPRE el grain más fino que el negocio necesite, agregar es fácil, desagregar es imposible.',
+    why: 'Correcto. Es el evento transaccional más atómico del negocio. Desde aquí se agregan las 4 metas: asistencia, ocupación, sucursal y evolución. Regla de oro: elige SIEMPRE el grain más fino que el negocio necesite, agregar es fácil, desagregar es imposible.',
   },
   {
     id: 'clase',
@@ -47,31 +47,69 @@ export const grainOptions = [
     id: 'mes-sucursal',
     label: 'Una fila por mes y sucursal',
     correct: false,
-    why: 'Es una tabla pre-agregada, no un hecho. Te deja sin drill-down: el día que pidan "¿y por disciplina?" tenés que rehacer el data mart entero.',
+    why: 'Es una tabla pre-agregada, no un hecho. Te deja sin drill-down: el día que pidan "¿y por disciplina?" tienes que rehacer el data mart entero.',
   },
 ]
 
+/*
+ * El orden de estas listas NO es casual y no debe reagruparse por correctas.
+ * Con las correctas al principio, marcar de arriba hacia abajo resolvia el
+ * ejercicio antes de terminar de leer, que es justo lo contrario de lo que se
+ * evalua. Van intercaladas y la ultima opcion de cada lista es incorrecta,
+ * asi que hay que evaluar todas.
+ */
 export const metricOptions = [
+  { id: 'cupo_clase', label: 'cupo_clase', correct: false, why: 'TRAMPA CLÁSICA. El cupo pertenece a la clase, no a la reserva: si lo pones en el hecho, se repite en cada fila y cualquier SUM lo multiplica. Va como atributo de dim_clase y se usa con MAX o AVG.' },
   { id: 'cantidad_reserva', label: 'cantidad_reserva', correct: true, why: 'El contador clásico: 1 por fila. Permite COUNT aditivo en cualquier corte.' },
-  { id: 'asistio', label: 'asistio (0/1)', correct: true, why: 'Flag aditivo: SUM(asistio) da asistencias reales y, dividido por las reservas, la tasa de asistencia.' },
-  { id: 'ingreso_prorrateado', label: 'ingreso_prorrateado', correct: true, why: 'Reparte la mensualidad entre las reservas del período. Es aditivo en el grain elegido, que es la condición para vivir en el hecho.' },
-  { id: 'cupo_clase', label: 'cupo_clase', correct: false, why: 'TRAMPA CLÁSICA. El cupo pertenece a la clase, no a la reserva: si lo ponés en el hecho, se repite en cada fila y cualquier SUM lo multiplica. Va como atributo de dim_clase y se usa con MAX o AVG.' },
   { id: 'precio_plan', label: 'precio_plan', correct: false, why: 'Es un atributo de dim_plan. Sumarlo por reserva infla el ingreso.' },
-  { id: 'nombre_socio', label: 'nombre_socio', correct: false, why: 'Un texto descriptivo nunca es métrica. Va en dim_socio.' },
   { id: 'promedio_asistencia', label: 'promedio_asistencia', correct: false, why: 'Los promedios NO son aditivos: el promedio de promedios miente. Se guardan numerador y denominador, y el promedio se calcula al consultar.' },
-  { id: 'total_socios_activos', label: 'total_socios_activos', correct: false, why: 'Métrica ya agregada a otro grain. Meterla acá rompe la coherencia del hecho.' },
+  { id: 'asistio', label: 'asistio (0/1)', correct: true, why: 'Flag aditivo: SUM(asistio) da asistencias reales y, dividido por las reservas, la tasa de asistencia.' },
+  { id: 'nombre_socio', label: 'nombre_socio', correct: false, why: 'Un texto descriptivo nunca es métrica. Va en dim_socio.' },
+  { id: 'ingreso_prorrateado', label: 'ingreso_prorrateado', correct: true, why: 'Reparte la mensualidad entre las reservas del período. Es aditivo en el grain elegido, que es la condición para vivir en el hecho.' },
+  { id: 'total_socios_activos', label: 'total_socios_activos', correct: false, why: 'Métrica ya agregada a otro grain. Meterla aquí rompe la coherencia del hecho.' },
 ]
 
 export const dimensionOptions = [
   { id: 'dim_tiempo', label: 'dim_tiempo', correct: true, why: 'Sin dimensión de tiempo no hay evolución mensual. Es obligatoria en prácticamente toda estrella.' },
+  { id: 'dim_reserva', label: 'dim_reserva', correct: false, why: 'La reserva ES el hecho. Una dimensión 1:1 con la tabla de hechos no aporta nada: si necesitas el número de reserva, va como dimensión degenerada dentro del hecho.' },
   { id: 'dim_socio', label: 'dim_socio', correct: true, why: 'Permite cortar por ciudad y segmento de edad, y contar socios distintos.' },
   { id: 'dim_clase', label: 'dim_clase', correct: true, why: 'Trae disciplina, instructor, nivel y cupo. Responde "qué disciplinas llenan sala".' },
+  { id: 'dim_ingreso', label: 'dim_ingreso', correct: false, why: 'El ingreso es una métrica continua. Las métricas van en el hecho, no en dimensiones.' },
   { id: 'dim_sucursal', label: 'dim_sucursal', correct: true, why: 'Compara rendimiento entre sucursales, una de las metas explícitas.' },
   { id: 'dim_plan', label: 'dim_plan', correct: true, why: 'Permite ver si los planes caros se usan más o menos que los baratos.' },
-  { id: 'dim_reserva', label: 'dim_reserva', correct: false, why: 'La reserva ES el hecho. Una dimensión 1:1 con la tabla de hechos no aporta nada: si necesitás el número de reserva, va como dimensión degenerada dentro del hecho.' },
   { id: 'dim_asistio', label: 'dim_asistio', correct: false, why: 'Un flag de dos valores no merece tabla. Sobre-normalizar la estrella es el error opuesto al de no normalizar nada.' },
-  { id: 'dim_ingreso', label: 'dim_ingreso', correct: false, why: 'El ingreso es una métrica continua. Las métricas van en el hecho, no en dimensiones.' },
 ]
+
+/**
+ * Posiciones del diagrama de estrella. El hecho va al centro y las ocho
+ * opciones de dimensión tienen su lugar alrededor: aparecen solo las que el
+ * alumno marca, correctas o no, igual que el lienzo del MER.
+ */
+export const starLayout = {
+  hecho: { x: 530, y: 500 },
+  /* Las cinco dimensiones correctas ocupan los vertices del anillo, de modo que
+     un modelo bien resuelto queda repartido en toda la superficie. Los tres
+     distractores caen en los huecos que sobran. */
+  dimensiones: {
+    dim_socio: { x: 195, y: 170 },
+    dim_clase: { x: 880, y: 170 },
+    dim_tiempo: { x: 150, y: 520 },
+    dim_sucursal: { x: 925, y: 520 },
+    dim_plan: { x: 530, y: 880 },
+    dim_reserva: { x: 195, y: 855 },
+    dim_asistio: { x: 880, y: 855 },
+    dim_ingreso: { x: 530, y: 115 },
+  },
+}
+
+/** Atributos que muestra cada dimensión del diagrama, ya sin el prefijo id_. */
+export const starDimensionColumns = {
+  dim_tiempo: ['fecha', 'anio', 'mes', 'nombre_mes', 'dia_semana'],
+  dim_socio: ['nombre', 'ciudad', 'segmento_edad'],
+  dim_clase: ['disciplina', 'instructor', 'cupo', 'nivel'],
+  dim_sucursal: ['nombre', 'ciudad'],
+  dim_plan: ['nombre', 'precio_mensual'],
+}
 
 export const starSchema = [
   { table: 'hecho_reserva', kind: 'fact', columns: ['id_hecho PK', 'id_tiempo FK', 'id_socio FK', 'id_clase FK', 'id_sucursal FK', 'id_plan FK', 'cantidad_reserva', 'asistio', 'ingreso_prorrateado'] },
@@ -304,7 +342,7 @@ export const kpiChallenges = [
     goal: '¿Los socios realmente usan lo que pagan?',
     formula: 'SUM(asistio) / SUM(cantidad_reserva) × 100',
     prompt: 'Devolvé un único número: el porcentaje de reservas que terminaron en asistencia, redondeado a 2 decimales.',
-    hint: 'Multiplicá por 100.0 (con decimal) antes de dividir, si no SQLite hace división entera. Usá ROUND(..., 2).',
+    hint: 'Multiplica por 100.0 (con decimal) antes de dividir, si no SQLite hace división entera. Usa ROUND(..., 2).',
     starter: 'SELECT ROUND(SUM(...) * 100.0 / SUM(...), 2)\nFROM hecho_reserva;',
     expectedSql: 'SELECT ROUND(SUM(asistio) * 100.0 / SUM(cantidad_reserva), 2) FROM hecho_reserva;',
     orderMatters: false,
@@ -314,8 +352,8 @@ export const kpiChallenges = [
     name: 'Asistencias por disciplina',
     goal: '¿Qué disciplinas llenan sala y cuáles se vacían?',
     formula: 'SUM(asistio) agrupado por disciplina',
-    prompt: 'Mostrá la disciplina y la cantidad de asistencias reales, de mayor a menor.',
-    hint: 'Necesitás JOIN con dim_clase. Agrupá por disciplina y ordená el SUM descendente.',
+    prompt: 'Muestra la disciplina y la cantidad de asistencias reales, de mayor a menor.',
+    hint: 'Necesitas JOIN con dim_clase. Agrupa por disciplina y ordená el SUM descendente.',
     starter: 'SELECT c.disciplina, SUM(h.asistio)\nFROM hecho_reserva h\nJOIN dim_clase c ON ...\nGROUP BY ...\nORDER BY ...;',
     expectedSql: `SELECT c.disciplina, SUM(h.asistio)
       FROM hecho_reserva h
@@ -329,7 +367,7 @@ export const kpiChallenges = [
     name: 'Ingreso por sucursal',
     goal: '¿Cómo se compara el rendimiento entre sucursales?',
     formula: 'SUM(ingreso_prorrateado) agrupado por sucursal',
-    prompt: 'Mostrá el nombre de la sucursal y su ingreso total prorrateado, redondeado a 2 decimales.',
+    prompt: 'Muestra el nombre de la sucursal y su ingreso total prorrateado, redondeado a 2 decimales.',
     hint: 'JOIN con dim_sucursal y GROUP BY por el nombre de la sucursal.',
     starter: 'SELECT s.nombre, ROUND(SUM(h.ingreso_prorrateado), 2)\nFROM hecho_reserva h\nJOIN dim_sucursal s ON ...\nGROUP BY ...;',
     expectedSql: `SELECT s.nombre, ROUND(SUM(h.ingreso_prorrateado), 2)
@@ -343,8 +381,8 @@ export const kpiChallenges = [
     name: 'Evolución mensual de asistencias',
     goal: '¿Cómo evoluciona mes a mes para planificar instructores?',
     formula: 'SUM(asistio) agrupado por mes, en orden cronológico',
-    prompt: 'Mostrá el número de mes, el nombre del mes y las asistencias, ordenado cronológicamente.',
-    hint: 'Ojo: si ordenás por nombre_mes salen alfabéticamente (Agosto antes que Julio). Agrupá y ordená por el número de mes.',
+    prompt: 'Muestra el número de mes, el nombre del mes y las asistencias, ordenado cronológicamente.',
+    hint: 'Ojo: si ordenás por nombre_mes salen alfabéticamente (Agosto antes que Julio). Agrupa y ordená por el número de mes.',
     starter: 'SELECT t.mes, t.nombre_mes, SUM(h.asistio)\nFROM hecho_reserva h\nJOIN dim_tiempo t ON ...\nGROUP BY ...\nORDER BY ...;',
     expectedSql: `SELECT t.mes, t.nombre_mes, SUM(h.asistio)
       FROM hecho_reserva h
