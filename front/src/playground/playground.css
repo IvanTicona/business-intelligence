@@ -1,0 +1,883 @@
+/* ==========================================================================
+   PLAYGROUND
+   Misma distribución que las prácticas 1 a 4: bloque de trabajo a la izquierda
+   y modelo fijo a la derecha, con alto atado al viewport y ancho dinámico.
+   ========================================================================== */
+
+.pg-page {
+  padding: 16px;
+}
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.pg-columna-izq {
+  min-width: 0;
+}
+
+.pg-columna-der {
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+
+.pg-card.ant-card {
+  border-radius: 18px;
+}
+
+/* --- Encabezado y ficha de la base --- */
+
+.pg-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pg-head-titulos {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.pg-title {
+  margin: 0;
+  color: #132B70;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.pg-selector {
+  min-width: 260px;
+}
+
+.pg-ficha {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-left: 4px solid #e8b22b;
+  border-radius: 0 10px 10px 0;
+  background: rgba(232, 178, 43, 0.07);
+}
+
+.pg-ficha-concepto {
+  margin: 0;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.pg-ficha-nota {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pg-ficha-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 10px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.pg-ficha-datos strong {
+  color: #132B70;
+}
+
+.pg-aviso {
+  margin-top: 18px;
+  color: #64748b;
+}
+
+.pg-aviso-error {
+  color: #dc2626;
+}
+
+/* --- Editor --- */
+
+.pg-editor-bloque {
+  margin-top: 20px;
+}
+
+.pg-editor-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pg-editor-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.pg-boton {
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.pg-boton-primario {
+  background: #1677ff;
+  color: #ffffff;
+}
+
+.pg-boton-primario:hover {
+  background: #0958d9;
+}
+
+.pg-boton-fantasma {
+  border-color: rgba(15, 23, 42, 0.16);
+  background: #ffffff;
+  color: #475569;
+}
+
+.pg-boton-fantasma:hover {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+/* --- Resultado --- */
+
+.pg-resultado {
+  margin-top: 18px;
+}
+
+.pg-resultado-vacio {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px dashed rgba(15, 23, 42, 0.16);
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pg-resultado-barra {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.pg-resultado-conteo {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pg-resultado-conteo em {
+  color: #94a3b8;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.pg-error {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 4px solid #dc2626;
+  border-radius: 0 8px 8px 0;
+  background: rgba(220, 38, 38, 0.06);
+  color: #b91c1c;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 13px;
+}
+
+.pg-tabla-scroll {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+}
+
+.pg-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pg-tabla th {
+  position: sticky;
+  top: 0;
+  padding: 9px 12px;
+  background: #132B70;
+  color: #ffffff;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pg-tabla td {
+  padding: 7px 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.pg-tabla tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.pg-celda-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pg-nulo {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* --- Gráficos --- */
+
+.pg-chart {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  padding: 10px 6px 4px;
+  background: #ffffff;
+}
+
+.pg-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pg-chart-guia {
+  stroke: rgba(15, 23, 42, 0.08);
+  stroke-width: 1;
+}
+
+.pg-chart-tick {
+  fill: #94a3b8;
+  font-size: 11px;
+  text-anchor: end;
+}
+
+.pg-chart-etiqueta {
+  fill: #475569;
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.pg-chart-barra {
+  transition: opacity 0.16s ease;
+}
+
+.pg-chart-barra:hover,
+.pg-chart-porcion:hover {
+  opacity: 0.78;
+}
+
+.pg-chart-linea {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pg-chart-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 8px 10px 6px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.pg-chart-leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pg-chart-leyenda i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.pg-chart-vacio {
+  margin: 0;
+  padding: 22px;
+  border: 1px dashed rgba(15, 23, 42, 0.16);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.pg-chart-vacio code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
+}
+
+/* --- Retos --- */
+
+.pg-retos {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.09);
+}
+
+.pg-bloque {
+  margin-top: 16px;
+}
+
+.pg-bloque-nombre {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  color: #132B70;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pg-bloque-nombre em {
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.pg-bloque-lista {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-bloque-lista li {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pg-bloque-lista li.pg-reto-abierto {
+  border-color: #1677ff;
+}
+
+.pg-reto-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pg-reto-cabecera:hover {
+  background: rgba(22, 119, 255, 0.05);
+}
+
+.pg-reto-titulo {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pg-reto-concepto {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(19, 43, 112, 0.07);
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.pg-reto-cuerpo {
+  padding: 4px 14px 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.pg-reto-consigna {
+  margin: 10px 0 0;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pg-reto-pista,
+.pg-reto-trampa {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pg-reto-pista {
+  color: #475569;
+}
+
+.pg-reto-trampa {
+  padding: 8px 12px;
+  border-left: 3px solid #e8b22b;
+  border-radius: 0 6px 6px 0;
+  background: rgba(232, 178, 43, 0.08);
+  color: #78350f;
+}
+
+.pg-reto-pista strong,
+.pg-reto-trampa strong {
+  display: inline-block;
+  margin-right: 6px;
+  color: #132B70;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pg-reto-cuerpo .pg-boton {
+  margin-top: 12px;
+}
+
+/* --- Historial --- */
+
+.pg-historial {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.09);
+}
+
+.pg-historial-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pg-historial ul {
+  display: grid;
+  gap: 4px;
+  max-height: 210px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-historial button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pg-historial button:hover {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+.pg-historial code {
+  flex: 1;
+  overflow: hidden;
+  color: #475569;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-historial em {
+  flex: none;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-style: normal;
+}
+
+.pg-historial-marca {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.pg-historial-marca.ok { background: #22c55e; }
+.pg-historial-marca.mal { background: #ef4444; }
+
+/* --- Panel del modelo --- */
+
+.pg-panel-modelo {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: calc(100vh - 32px);
+  padding: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.pg-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pg-panel-pista {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.pg-panel-lienzo {
+  min-height: 0;
+  border-radius: 12px;
+  /* Mismo fondo punteado que el diagrama de la práctica 2. */
+  background-color: #fbfcfe;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.09) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* El marco posiciona los controles de zoom sobre el lienzo, y recorta lo que
+   se sale de cuadro cuando el alumno se acerca. */
+.pg-diagrama-marco {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.pg-diagrama {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Sin esto, arrastrar para desplazarse selecciona el texto de las tablas y
+     el diagrama queda pintado de azul. */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.pg-diagrama-movible {
+  cursor: grab;
+}
+
+.pg-diagrama-movible:active {
+  cursor: grabbing;
+}
+
+.pg-zoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(3px);
+}
+
+.pg-zoom button {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.pg-zoom button:hover:not(:disabled) {
+  background: rgba(22, 119, 255, 0.1);
+  color: #1677ff;
+}
+
+.pg-zoom button:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.pg-zoom-nivel {
+  min-width: 44px;
+  color: #64748b;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pg-zoom-ajustar {
+  margin-left: 2px;
+  border-left: 1px solid rgba(15, 23, 42, 0.1) !important;
+  border-radius: 0 7px 7px 0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.pg-zoom-pista {
+  position: absolute;
+  left: 10px;
+  bottom: 14px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  pointer-events: none;
+}
+
+/* --- Diagrama --- */
+
+.pg-arista {
+  stroke: rgba(19, 43, 112, 0.28);
+  stroke-width: 1.4;
+}
+
+.pg-arista-activa {
+  stroke: #1677ff;
+  stroke-width: 2.4;
+}
+
+.pg-caja-cuerpo {
+  fill: #ffffff;
+  stroke: rgba(19, 43, 112, 0.22);
+  stroke-width: 1.2;
+}
+
+.pg-caja-cabecera {
+  fill: #dbe6ff;
+}
+
+.pg-caja-hecho .pg-caja-cabecera { fill: #132B70; }
+.pg-caja-hecho .pg-caja-nombre { fill: #ffffff; }
+.pg-caja-hecho .pg-caja-cuerpo { stroke: #132B70; stroke-width: 1.6; }
+
+.pg-caja-tabla .pg-caja-cabecera { fill: #e2e8f0; }
+
+.pg-caja-activa .pg-caja-cuerpo {
+  stroke: #1677ff;
+  stroke-width: 2.2;
+}
+
+.pg-caja-nombre {
+  fill: #132B70;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pg-columna {
+  fill: #475569;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 10.5px;
+}
+
+.pg-columna-pk {
+  fill: #132B70;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.pg-columna-fk { fill: #1677ff; }
+.pg-columna-metrica { fill: #15803d; font-weight: 600; }
+
+/* Campo que la consulta está usando. El color del texto ya distingue PK, FK y
+   métrica, así que el uso se marca con una franja detrás y algo más de peso:
+   se nota sin tapar la información que ya estaba. */
+.pg-columna-uso {
+  fill: rgba(232, 178, 43, 0.3);
+  stroke: rgba(232, 178, 43, 0.65);
+  stroke-width: 1;
+}
+
+.pg-columna-usada {
+  font-weight: 700;
+}
+
+.pg-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pg-leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pg-chip {
+  display: inline-block;
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1px solid rgba(19, 43, 112, 0.22);
+}
+
+.pg-chip-hecho { background: #132B70; border-color: #132B70; }
+.pg-chip-dimension { background: #dbe6ff; }
+.pg-chip-tabla { background: #e2e8f0; }
+.pg-chip-uso { background: rgba(232, 178, 43, 0.3); border-color: rgba(232, 178, 43, 0.75); }
+
+/* --- Panel de esquema --- */
+
+.pg-esquema {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.09);
+  min-height: 0;
+}
+
+.pg-esquema-lista {
+  display: grid;
+  gap: 2px;
+  max-height: 190px;
+  overflow-y: auto;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-esquema-tabla {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pg-esquema-tabla:hover {
+  background: rgba(22, 119, 255, 0.06);
+}
+
+.pg-esquema-activa .pg-esquema-tabla {
+  background: rgba(22, 119, 255, 0.1);
+}
+
+.pg-esquema-tabla code {
+  flex: 1;
+  color: #1f2937;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.pg-esquema-tabla em {
+  color: #94a3b8;
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* Cuántos campos de esa tabla toca la consulta. */
+.pg-esquema-uso {
+  flex: none;
+  min-width: 17px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(232, 178, 43, 0.3);
+  color: #78350f;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pg-esquema-col-activa {
+  border-radius: 4px;
+  background: rgba(232, 178, 43, 0.22);
+}
+
+.pg-panel-uso {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.pg-esquema-columnas {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 6px;
+  padding: 6px 8px 6px 28px;
+  border-left: 2px solid rgba(22, 119, 255, 0.25);
+  list-style: none;
+}
+
+.pg-esquema-columnas li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.pg-esquema-columnas code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: #475569;
+}
+
+.pg-esquema-columnas span {
+  color: #cbd5e1;
+  font-size: 10.5px;
+}
+
+.pg-esquema-columnas em {
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-style: normal;
+}
+
+.pg-col-pk { color: #132B70 !important; font-weight: 700; text-decoration: underline; }
+.pg-col-fk { color: #1677ff !important; }
+.pg-col-metrica { color: #15803d !important; font-weight: 600; }
+.pg-col-marca { color: #15803d !important; }
+
+/* En pantallas angostas el modelo pasa abajo y deja de competir por el ancho. */
+@media (max-width: 1180px) {
+  .pg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pg-columna-der {
+    position: static;
+  }
+
+  .pg-panel-modelo {
+    height: auto;
+  }
+
+  .pg-panel-lienzo {
+    min-height: 420px;
+  }
+}

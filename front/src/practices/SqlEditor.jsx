@@ -50,8 +50,17 @@ export default function SqlEditor({
   disabled,
   rows = 7,
   placeholder = 'Escribe aquí tu consulta SQL...',
+  onSubmit,
 }) {
   const capaRef = useRef(null)
+
+  // Ctrl+Enter ejecuta, que es lo que todo el mundo intenta en un editor SQL.
+  function atajos(event) {
+    if (onSubmit && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault()
+      onSubmit()
+    }
+  }
 
   const piezas = tokenizar(value ?? '')
   const vacio = !value
@@ -80,6 +89,7 @@ export default function SqlEditor({
         value={value}
         onChange={event => onChange(event.target.value)}
         onScroll={sincronizar}
+        onKeyDown={atajos}
       />
     </div>
   )

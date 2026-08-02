@@ -16,6 +16,7 @@ if (!adminToken) {
 }
 const practiceConfigs = {
   'practice-1': {
+    label: 'Práctica 1 · Exploración del dataset',
     csvFilename: 'practica-1-entregas.csv',
     fields: [
       { key: 'rowMeaning', csvHeader: 'row_meaning' },
@@ -26,6 +27,7 @@ const practiceConfigs = {
     ],
   },
   'practice-2': {
+    label: 'Práctica 2 · Del caso al MER',
     csvFilename: 'practica-2-entregas.csv',
     fields: [
       { key: 'classificationScore', csvHeader: 'clasificacion_entidad_atributo' },
@@ -36,6 +38,7 @@ const practiceConfigs = {
     ],
   },
   'practice-3': {
+    label: 'Práctica 3 · Consultas SQL',
     csvFilename: 'practica-3-entregas.csv',
     fields: [
       { key: 'solvedCount', csvHeader: 'retos_resueltos' },
@@ -45,6 +48,7 @@ const practiceConfigs = {
     ],
   },
   'practice-4': {
+    label: 'Práctica 4 · Data mart en estrella',
     csvFilename: 'practica-4-entregas.csv',
     fields: [
       { key: 'grain', csvHeader: 'grain_del_hecho' },
@@ -136,6 +140,85 @@ app.get('/api/admin/submissions.csv', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'No se pudo generar el CSV' })
+  }
+})
+
+/*
+ * Panorama del curso para el docente.
+ *
+ * Contesta las tres preguntas que se hacen antes de una clase: quién entregó,
+ * quién va quedando atrás y qué ejercicio traba a más gente. Todo sale de
+ * practice_submissions: no hay tabla nueva ni login.
+ */
+app.get('/api/admin/panorama', requireAdmin, async (_req, res) => {
+  try {
+    await ensureDatabase()
+
+    const practicas = Object.keys(practiceConfigs)
+
+    const { rows: porPractica } = await pool.query(
+      `SELECT practice_id,
+              COUNT(*)::int AS entregas,
+              COUNT(DISTINCT student_identifier)::int AS estudiantes,
+              MIN(created_at) AS primera,
+              MAX(created_at) AS ultima
+       FROM practice_submissions
+       GROUP BY practice_id`,
+    )
+
+    // Un alumno "se quedó" si entregó alguna práctica pero no las siguientes.
+    const { rows: porEstudiante } = await pool.query(
+      `SELECT student_identifier,
+              ARRAY_AGG(DISTINCT practice_id ORDER BY practice_id) AS practicas,
+              COUNT(DISTINCT practice_id)::int AS completadas,
+              MAX(created_at) AS ultima
+       FROM practice_submissions
+       GROUP BY student_identifier
+       ORDER BY completadas ASC, ultima ASC`,
+    )
+
+    const total = practicas.length
+    const ahora = Date.now()
+
+    const estudiantes = porEstudiante.map(fila => {
+      const faltan = practicas.filter(id => !fila.practicas.includes(id))
+      const diasSinEntregar = Math.floor((ahora - new Date(fila.ultima).getTime()) / 86400000)
+
+      return {
+        studentIdentifier: fila.student_identifier,
+        completadas: fila.completadas,
+        total,
+        faltan,
+        ultimaEntrega: fila.ultima,
+        diasSinEntregar,
+        // El corte de 7 días es el mismo criterio que usa el reporte de upb-sql:
+        // no es que no haya entregado, es que dejó de avanzar.
+        estancado: faltan.length > 0 && diasSinEntregar >= 7,
+      }
+    })
+
+    res.json({
+      practicas: practicas.map(id => {
+        const fila = porPractica.find(p => p.practice_id === id)
+        return {
+          practiceId: id,
+          label: practiceConfigs[id].label ?? id,
+          entregas: fila?.entregas ?? 0,
+          estudiantes: fila?.estudiantes ?? 0,
+          primera: fila?.primera ?? null,
+          ultima: fila?.ultima ?? null,
+        }
+      }),
+      estudiantes,
+      resumen: {
+        estudiantesUnicos: estudiantes.length,
+        completaronTodo: estudiantes.filter(e => e.faltan.length === 0).length,
+        estancados: estudiantes.filter(e => e.estancado).length,
+      },
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'No se pudo generar el panorama del curso' })
   }
 })
 

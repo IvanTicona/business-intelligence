@@ -1704,3 +1704,110 @@ select,
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* --- Panorama del curso (panel docente) --------------------------------- */
+
+.panorama {
+  display: grid;
+  gap: 22px;
+  margin-bottom: 28px;
+  padding: 22px 24px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.panorama-cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.panorama-cifras article {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-left: 4px solid #1677ff;
+  border-radius: 0 10px 10px 0;
+  background: rgba(22, 119, 255, 0.05);
+}
+
+.panorama-cifras article.panorama-alerta {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.panorama-cifras strong {
+  color: #132B70;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.panorama-cifras span {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.panorama-practicas {
+  display: grid;
+  gap: 8px;
+}
+
+.panorama-practica {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.panorama-practica-nombre {
+  color: #1f2937;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.panorama-barra {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.panorama-barra div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1677ff, #22c55e);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.panorama-practica-dato {
+  color: #64748b;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.panorama-estancados table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.panorama-estancados th {
+  padding: 8px 12px;
+  border-bottom: 2px solid rgba(15, 23, 42, 0.1);
+  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.panorama-estancados td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  color: #1f2937;
+}

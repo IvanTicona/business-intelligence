@@ -1,11 +1,15 @@
 import { Button, Card, Input, Layout, Menu, Tag, Typography } from 'antd'
 import { motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import PracticeIcon from './practices/PracticeIcon.jsx'
 import PracticeTwo from './practices/PracticeTwo.jsx'
 import PracticeThree from './practices/PracticeThree.jsx'
 import PracticeFour from './practices/PracticeFour.jsx'
 import { apiUrl } from './lib/api.js'
+
+// El laboratorio arrastra su CSS y sus bases: que no pese en la carga inicial
+// de quien solo viene a ver los capítulos.
+const PlaygroundPage = lazy(() => import('./playground/PlaygroundPage.jsx'))
 
 const { Content, Sider } = Layout
 const { Title, Paragraph } = Typography
@@ -74,6 +78,11 @@ const practiceItems = [
   { key: 'practice-2', label: 'Práctica 2' },
   { key: 'practice-3', label: 'Práctica 3' },
   { key: 'practice-4', label: 'Práctica 4' },
+]
+
+// El playground es libre: no se entrega ni se corrige, se explora.
+const labItems = [
+  { key: 'playground', label: 'Laboratorio SQL' },
 ]
 
 const practiceStatusStorageKey = 'bi-course-practice-status'
@@ -780,6 +789,12 @@ const menuGroups = [
     type: 'group',
     children: practiceItems,
   },
+  {
+    key: 'lab',
+    label: 'Laboratorio',
+    type: 'group',
+    children: labItems,
+  },
 ]
 
 // Cada práctica es un playground independiente. Agregar una nueva es sumar
@@ -799,7 +814,7 @@ export default function App() {
   const isAdminRoute = window.location.pathname.startsWith('/docente/entregas')
 
   const selectedItem = useMemo(() => {
-    return [...aboutItems, ...theoryItems, ...practiceItems].find(item => item.key === selectedKey)
+    return [...aboutItems, ...theoryItems, ...practiceItems, ...labItems].find(item => item.key === selectedKey)
   }, [selectedKey])
 
   const menuItems = useMemo(() => buildMenuItems(practiceStatus), [practiceStatus])
@@ -909,6 +924,10 @@ export default function App() {
             onNext={goNextSlide}
             onPrev={goPrevSlide}
           />
+        ) : selectedKey === 'playground' ? (
+          <Suspense fallback={<div className="lab-cargando">Cargando el laboratorio…</div>}>
+            <PlaygroundPage />
+          </Suspense>
         ) : PracticePlaygrounds[selectedKey] ? (
           (() => {
             const Playground = PracticePlaygrounds[selectedKey]
@@ -990,6 +1009,7 @@ function BlockedContent({ title }) {
 function menuIconFor(key) {
   if (key.startsWith('chapter')) return 'book'
   if (key.startsWith('practice')) return 'practice'
+  if (key === 'playground') return 'lab'
   return 'person'
 }
 
@@ -998,6 +1018,7 @@ function CourseMenuIcon({ name }) {
     book: <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21V5.5Zm0 0V21M8 7h8M8 11h8" />,
     practice: <path d="M8 3h8l3 3v15H5V3h3Zm8 0v4h4M8 12h8M8 16h6" />,
     person: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />,
+    lab: <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7 15h10" />,
   }
 
   return (
@@ -1236,10 +1257,86 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
   )
 }
 
+/**
+ * Panorama del curso: lo que el docente necesita ver ANTES de entrar a clase.
+ * Cuánto entregó cada práctica, y sobre todo quién dejó de avanzar, que es lo
+ * que la lista plana de entregas no muestra.
+ */
+function PanoramaCurso({ panorama }) {
+  const { practicas, estudiantes, resumen } = panorama
+  const estancados = estudiantes.filter(e => e.estancado)
+
+  return (
+    <section className="panorama">
+      <div className="panorama-cifras">
+        <article>
+          <strong>{resumen.estudiantesUnicos}</strong>
+          <span>estudiantes con al menos una entrega</span>
+        </article>
+        <article>
+          <strong>{resumen.completaronTodo}</strong>
+          <span>completaron las {practicas.length} prácticas</span>
+        </article>
+        <article className={resumen.estancados > 0 ? 'panorama-alerta' : ''}>
+          <strong>{resumen.estancados}</strong>
+          <span>sin avanzar hace 7 días o más</span>
+        </article>
+      </div>
+
+      <div className="panorama-practicas">
+        {practicas.map(practica => (
+          <div className="panorama-practica" key={practica.practiceId}>
+            <span className="panorama-practica-nombre">{practica.label}</span>
+            <div className="panorama-barra">
+              <div
+                style={{
+                  width: resumen.estudiantesUnicos
+                    ? `${Math.round((practica.estudiantes / resumen.estudiantesUnicos) * 100)}%`
+                    : '0%',
+                }}
+              />
+            </div>
+            <span className="panorama-practica-dato">
+              {practica.estudiantes} de {resumen.estudiantesUnicos}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {estancados.length > 0 && (
+        <div className="panorama-estancados">
+          <span className="practice-panel-label">Quiénes se quedaron</span>
+          <table>
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Avance</th>
+                <th>Le falta</th>
+                <th>Última entrega</th>
+              </tr>
+            </thead>
+            <tbody>
+              {estancados.map(alumno => (
+                <tr key={alumno.studentIdentifier}>
+                  <td>{alumno.studentIdentifier}</td>
+                  <td>{alumno.completadas} / {alumno.total}</td>
+                  <td>{alumno.faltan.map(id => id.replace('practice-', 'P')).join(', ')}</td>
+                  <td>hace {alumno.diasSinEntregar} día(s)</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function AdminSubmissionsPanel() {
   const [token, setToken] = useState('')
   const [selectedPracticeId, setSelectedPracticeId] = useState('practice-1')
   const [submissions, setSubmissions] = useState([])
+  const [panorama, setPanorama] = useState(null)
   const [status, setStatus] = useState({ type: 'idle', message: '' })
   const selectedPractice = adminPracticeConfigs[selectedPracticeId]
 
@@ -1258,8 +1355,23 @@ function AdminSubmissionsPanel() {
       const data = await response.json()
       setSubmissions(data.submissions ?? [])
       setStatus({ type: 'success', message: '' })
+
+      // El panorama viaja aparte porque no depende de la práctica elegida.
+      cargarPanorama()
     } catch {
       setStatus({ type: 'error', message: 'No se pudieron cargar las entregas.' })
+    }
+  }
+
+  async function cargarPanorama() {
+    try {
+      const response = await fetch(apiUrl('/api/admin/panorama'), {
+        headers: token ? { 'x-admin-token': token } : {},
+      })
+      if (!response.ok) throw new Error('No autorizado')
+      setPanorama(await response.json())
+    } catch {
+      setPanorama(null)
     }
   }
 
@@ -1328,6 +1440,8 @@ function AdminSubmissionsPanel() {
       </section>
 
       {status.message && <p className="admin-status-error">{status.message}</p>}
+
+      {panorama && <PanoramaCurso panorama={panorama} />}
 
       <section className="admin-submissions-list">
         {submissions.map(submission => (
