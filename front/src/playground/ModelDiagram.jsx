@@ -66,15 +66,35 @@ export default function ModelDiagram({
     return salida
   }, [cajas, relacionesActivas])
 
+  /*
+   * Encuadre del dibujo.
+   *
+   * Se ajusta al contenido, pero con un mínimo: sin él, una base de una sola
+   * tabla llenaba el lienzo entero y el nombre salía del tamaño de un titular.
+   * Con el mínimo, un modelo chico se ve chico, que es lo correcto.
+   */
   const marco = useMemo(() => {
     if (cajas.size === 0) return { x: 0, y: 0, ancho: 100, alto: 100 }
+
     const lista = [...cajas.values()]
     const margen = 40
     const x = Math.min(...lista.map(c => c.izq)) - margen
     const y = Math.min(...lista.map(c => c.arriba)) - margen
     const ancho = Math.max(...lista.map(c => c.der)) + margen - x
     const alto = Math.max(...lista.map(c => c.abajo)) + margen - y
-    return { x, y, ancho, alto }
+
+    const MINIMO_ANCHO = 780
+    const MINIMO_ALTO = 560
+    const anchoFinal = Math.max(ancho, MINIMO_ANCHO)
+    const altoFinal = Math.max(alto, MINIMO_ALTO)
+
+    // Al agrandar el marco, el contenido se mantiene centrado.
+    return {
+      x: x - (anchoFinal - ancho) / 2,
+      y: y - (altoFinal - alto) / 2,
+      ancho: anchoFinal,
+      alto: altoFinal,
+    }
   }, [cajas])
 
   // --- Zoom y desplazamiento ---------------------------------------------

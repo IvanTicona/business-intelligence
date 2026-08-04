@@ -11,6 +11,7 @@ import { apiUrl } from './lib/api.js'
 // de quien solo viene a ver los capítulos.
 const PlaygroundPage = lazy(() => import('./playground/PlaygroundPage.jsx'))
 const TallerOltpPage = lazy(() => import('./taller/TallerOltpPage.jsx'))
+const ConsolaLibrePage = lazy(() => import('./consola/ConsolaLibrePage.jsx'))
 
 const { Content, Sider } = Layout
 const { Title, Paragraph } = Typography
@@ -81,11 +82,13 @@ const practiceItems = [
   { key: 'practice-4', label: 'Práctica 4' },
 ]
 
-// Dos etapas, en orden: primero se construye una base transaccional a mano, y
-// recién después se consulta el modelo dimensional ya armado.
+// Tres etapas, en orden: primero se construye una base transaccional siguiendo
+// una consigna, después se consultan modelos dimensionales ya armados, y al
+// final una base vacía sin consigna ninguna.
 const labItems = [
   { key: 'taller-oltp', label: 'Taller OLTP' },
   { key: 'playground', label: 'Laboratorio OLAP' },
+  { key: 'consola-libre', label: 'Playground' },
 ]
 
 const practiceStatusStorageKey = 'bi-course-practice-status'
@@ -935,6 +938,10 @@ export default function App() {
           <Suspense fallback={<div className="lab-cargando">Cargando el laboratorio…</div>}>
             <PlaygroundPage />
           </Suspense>
+        ) : selectedKey === 'consola-libre' ? (
+          <Suspense fallback={<div className="lab-cargando">Cargando el playground…</div>}>
+            <ConsolaLibrePage />
+          </Suspense>
         ) : PracticePlaygrounds[selectedKey] ? (
           (() => {
             const Playground = PracticePlaygrounds[selectedKey]
@@ -1016,7 +1023,7 @@ function BlockedContent({ title }) {
 function menuIconFor(key) {
   if (key.startsWith('chapter')) return 'book'
   if (key.startsWith('practice')) return 'practice'
-  if (key === 'playground' || key === 'taller-oltp') return 'lab'
+  if (key === 'playground' || key === 'taller-oltp' || key === 'consola-libre') return 'lab'
   return 'person'
 }
 

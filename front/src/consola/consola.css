@@ -1,0 +1,24 @@
+/* ==========================================================================
+   PLAYGROUND LIBRE
+   Reutiliza la distribución del laboratorio y las piezas del taller; acá solo
+   va lo propio de esta página.
+   ========================================================================== */
+
+.libre-page {
+  padding: 16px;
+}
+
+.libre-motor {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(19, 43, 112, 0.07);
+  color: #132B70;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Sin especificación al pie, el diagrama y el esquema se reparten el alto. */
+.libre-page .pg-panel-modelo {
+  grid-template-rows: auto minmax(0, 1.8fr) auto minmax(0, 1fr);
+}
