@@ -342,9 +342,9 @@ export const kpiChallenges = [
     goal: '¿Los socios realmente usan lo que pagan?',
     formula: 'SUM(asistio) / SUM(cantidad_reserva) × 100',
     prompt: 'Devolvé un único número: el porcentaje de reservas que terminaron en asistencia, redondeado a 2 decimales.',
-    hint: 'Multiplica por 100.0 (con decimal) antes de dividir, si no SQLite hace división entera. Usa ROUND(..., 2).',
-    starter: 'SELECT ROUND(SUM(...) * 100.0 / SUM(...), 2)\nFROM hecho_reserva;',
-    expectedSql: 'SELECT ROUND(SUM(asistio) * 100.0 / SUM(cantidad_reserva), 2) FROM hecho_reserva;',
+    hint: 'Multiplica por 100.0 (con decimal) antes de dividir, si no Postgres hace división entera entre enteros. Usa ROUND((...)::numeric, 2).',
+    starter: 'SELECT ROUND((SUM(...) * 100.0 / SUM(...))::numeric, 2)\nFROM hecho_reserva;',
+    expectedSql: 'SELECT ROUND((SUM(asistio) * 100.0 / SUM(cantidad_reserva))::numeric, 2) FROM hecho_reserva;',
     orderMatters: false,
   },
   {
@@ -369,8 +369,8 @@ export const kpiChallenges = [
     formula: 'SUM(ingreso_prorrateado) agrupado por sucursal',
     prompt: 'Muestra el nombre de la sucursal y su ingreso total prorrateado, redondeado a 2 decimales.',
     hint: 'JOIN con dim_sucursal y GROUP BY por el nombre de la sucursal.',
-    starter: 'SELECT s.nombre, ROUND(SUM(h.ingreso_prorrateado), 2)\nFROM hecho_reserva h\nJOIN dim_sucursal s ON ...\nGROUP BY ...;',
-    expectedSql: `SELECT s.nombre, ROUND(SUM(h.ingreso_prorrateado), 2)
+    starter: 'SELECT s.nombre, ROUND((SUM(h.ingreso_prorrateado))::numeric, 2)\nFROM hecho_reserva h\nJOIN dim_sucursal s ON ...\nGROUP BY ...;',
+    expectedSql: `SELECT s.nombre, ROUND((SUM(h.ingreso_prorrateado))::numeric, 2)
       FROM hecho_reserva h
       JOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal
       GROUP BY s.nombre;`,

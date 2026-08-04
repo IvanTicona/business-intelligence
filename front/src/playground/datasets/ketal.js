@@ -379,7 +379,7 @@ export const ketal = {
       prompt: "Importe total vendido por macrozona de sucursal y por año. Ordena por macrozona y luego por año.",
       hint: "Necesitas dos JOIN: uno a dim_sucursal y otro a dim_tiempo.",
       starter: "SELECT s.macrozona, t.anio, ...\nFROM hecho_venta h\nJOIN ...;",
-      expectedSql: "SELECT s.macrozona, t.anio, ROUND(SUM(h.importe), 2) AS importe\nFROM hecho_venta h\nJOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY s.macrozona, t.anio ORDER BY s.macrozona, t.anio;",
+      expectedSql: "SELECT s.macrozona, t.anio, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h\nJOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY s.macrozona, t.anio ORDER BY s.macrozona, t.anio;",
       orderMatters: true
     },
     {
@@ -390,7 +390,7 @@ export const ketal = {
       prompt: "Importe total de 2025 solo para la marca PIL, por nombre de producto, de mayor a menor.",
       hint: "El filtro por año vive en dim_tiempo y el de marca en dim_producto. Ninguno está en el hecho.",
       starter: "SELECT p.nombre, ...\nFROM hecho_venta h\nJOIN ...\nWHERE p.marca = 'PIL' AND ...;",
-      expectedSql: "SELECT p.nombre, ROUND(SUM(h.importe), 2) AS importe\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE p.marca = 'PIL' AND t.anio = 2025\nGROUP BY p.nombre ORDER BY importe DESC;",
+      expectedSql: "SELECT p.nombre, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE p.marca = 'PIL' AND t.anio = 2025\nGROUP BY p.nombre ORDER BY importe DESC;",
       orderMatters: true
     },
     {
@@ -412,7 +412,7 @@ export const ketal = {
       prompt: "El importe de 2025 agrupado por trimestre. Dos columnas: trimestre e importe.",
       hint: "dim_tiempo ya trae la columna trimestre calculada: no la deduzcas del mes.",
       starter: "SELECT t.trimestre, ...\nFROM hecho_venta h\nJOIN dim_tiempo t ON ...\nWHERE ...;",
-      expectedSql: "SELECT t.trimestre, ROUND(SUM(h.importe), 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY t.trimestre ORDER BY t.trimestre;",
+      expectedSql: "SELECT t.trimestre, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY t.trimestre ORDER BY t.trimestre;",
       orderMatters: true
     },
     {
@@ -423,7 +423,7 @@ export const ketal = {
       prompt: "Dentro del primer trimestre de 2025, el importe mes a mes. Muestra nombre_mes e importe.",
       hint: "Es la consulta anterior bajando un nivel: agrupa por mes en vez de por trimestre.",
       starter: "SELECT t.nombre_mes, ...\nFROM hecho_venta h\nJOIN ...\nWHERE t.anio = 2025 AND ...;",
-      expectedSql: "SELECT t.nombre_mes, ROUND(SUM(h.importe), 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 AND t.trimestre = 1\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+      expectedSql: "SELECT t.nombre_mes, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 AND t.trimestre = 1\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
       orderMatters: true
     },
     {
@@ -433,8 +433,8 @@ export const ketal = {
       title: "El margen no se promedia",
       prompt: "Margen porcentual de 2025 por categoría: (importe - costo) / importe * 100, redondeado a 2. Ordena de mayor a menor margen.",
       hint: "Suma primero y divide después. Promediar el margen de cada fila da otro número, y está mal.",
-      starter: "SELECT p.categoria,\n  ROUND(... / ... * 100, 2) AS margen_pct\nFROM ...;",
-      expectedSql: "SELECT p.categoria, ROUND((SUM(h.importe) - SUM(h.costo)) / SUM(h.importe) * 100, 2) AS margen_pct\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY p.categoria ORDER BY margen_pct DESC;",
+      starter: "SELECT p.categoria,\n  ROUND((... / ... * 100)::numeric, 2) AS margen_pct\nFROM ...;",
+      expectedSql: "SELECT p.categoria, ROUND(((SUM(h.importe) - SUM(h.costo)) / SUM(h.importe) * 100)::numeric, 2) AS margen_pct\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY p.categoria ORDER BY margen_pct DESC;",
       orderMatters: true,
       trampa: "AVG((importe - costo) / importe) da un numero parecido y equivocado: promedia porcentajes de ventas de distinto tamaño como si pesaran igual."
     },
@@ -445,8 +445,8 @@ export const ketal = {
       title: "Comparar 2025 contra 2024",
       prompt: "Por mes (1 a 12), el importe de 2024 y el de 2025 en columnas separadas: mes, importe_2024, importe_2025.",
       hint: "Un SUM con CASE WHEN por año dentro del mismo GROUP BY: no necesitas dos consultas.",
-      starter: "SELECT t.mes,\n  ROUND(SUM(CASE WHEN ... THEN h.importe ELSE 0 END), 2) AS importe_2024,\n  ...\nFROM ...;",
-      expectedSql: "SELECT t.mes,\n  ROUND(SUM(CASE WHEN t.anio = 2024 THEN h.importe ELSE 0 END), 2) AS importe_2024,\n  ROUND(SUM(CASE WHEN t.anio = 2025 THEN h.importe ELSE 0 END), 2) AS importe_2025\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+      starter: "SELECT t.mes,\n  ROUND((SUM(CASE WHEN ... THEN h.importe ELSE 0 END))::numeric, 2) AS importe_2024,\n  ...\nFROM ...;",
+      expectedSql: "SELECT t.mes,\n  ROUND((SUM(CASE WHEN t.anio = 2024 THEN h.importe ELSE 0 END))::numeric, 2) AS importe_2024,\n  ROUND((SUM(CASE WHEN t.anio = 2025 THEN h.importe ELSE 0 END))::numeric, 2) AS importe_2025\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
       orderMatters: true
     },
     {
@@ -456,8 +456,8 @@ export const ketal = {
       title: "Acumulado del año",
       prompt: "Importe mensual de 2025 y su acumulado corrido: mes, importe, acumulado.",
       hint: "SUM(...) OVER (ORDER BY mes) acumula. Calcula el total mensual en una subconsulta primero.",
-      starter: "SELECT mes, importe,\n  ROUND(SUM(importe) OVER (ORDER BY ...), 2) AS acumulado\nFROM ( ... );",
-      expectedSql: "SELECT mes, importe, ROUND(SUM(importe) OVER (ORDER BY mes), 2) AS acumulado\nFROM (\n  SELECT t.mes AS mes, ROUND(SUM(h.importe), 2) AS importe\n  FROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY t.mes\n) ORDER BY mes;",
+      starter: "SELECT mes, importe,\n  ROUND((SUM(importe) OVER (ORDER BY ...))::numeric, 2) AS acumulado\nFROM ( ... );",
+      expectedSql: "SELECT mes, importe, ROUND((SUM(importe) OVER (ORDER BY mes))::numeric, 2) AS acumulado\nFROM (\n  SELECT t.mes AS mes, ROUND((SUM(h.importe))::numeric, 2) AS importe\n  FROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY t.mes\n) ORDER BY mes;",
       orderMatters: true
     },
     {
@@ -467,8 +467,8 @@ export const ketal = {
       title: "Cuánto pesa cada sucursal",
       prompt: "Para 2025: nombre de sucursal, su importe y qué porcentaje representa del total, redondeado a 2. De mayor a menor.",
       hint: "SUM(...) OVER () sin ORDER BY da el total general contra el que dividir.",
-      starter: "SELECT nombre, importe,\n  ROUND(importe * 100.0 / SUM(importe) OVER (), 2) AS participacion\nFROM ( ... );",
-      expectedSql: "SELECT nombre, importe, ROUND(importe * 100.0 / SUM(importe) OVER (), 2) AS participacion\nFROM (\n  SELECT s.nombre AS nombre, ROUND(SUM(h.importe), 2) AS importe\n  FROM hecho_venta h\n  JOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\n  JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY s.nombre\n) ORDER BY importe DESC;",
+      starter: "SELECT nombre, importe,\n  ROUND((importe * 100.0 / SUM(importe) OVER ())::numeric, 2) AS participacion\nFROM ( ... );",
+      expectedSql: "SELECT nombre, importe, ROUND((importe * 100.0 / SUM(importe) OVER ())::numeric, 2) AS participacion\nFROM (\n  SELECT s.nombre AS nombre, ROUND((SUM(h.importe))::numeric, 2) AS importe\n  FROM hecho_venta h\n  JOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\n  JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY s.nombre\n) ORDER BY importe DESC;",
       orderMatters: true
     },
     {
@@ -491,7 +491,7 @@ export const ketal = {
       prompt: "Responde con el modelo OLTP (venta, detalle_venta, producto, categoria): importe por categoría en 2025. El importe en el OLTP hay que calcularlo: cantidad * precio_unitario - descuento.",
       hint: "Son tres JOIN y un cálculo. En la estrella la misma pregunta fue un JOIN y un SUM: esa diferencia es el punto del ejercicio.",
       starter: "SELECT c.nombre, ...\nFROM detalle_venta d\nJOIN venta v ON ...\nJOIN producto p ON ...\nJOIN categoria c ON ...;",
-      expectedSql: "SELECT c.nombre AS categoria, ROUND(SUM(d.cantidad * d.precio_unitario - d.descuento), 2) AS importe\nFROM detalle_venta d\nJOIN venta v ON d.id_venta = v.id_venta\nJOIN producto p ON d.id_producto = p.id_producto\nJOIN categoria c ON p.id_categoria = c.id_categoria\nWHERE v.fecha >= '2025-01-01' AND v.fecha <= '2025-12-31'\nGROUP BY c.nombre ORDER BY importe DESC;",
+      expectedSql: "SELECT c.nombre AS categoria, ROUND((SUM(d.cantidad * d.precio_unitario - d.descuento))::numeric, 2) AS importe\nFROM detalle_venta d\nJOIN venta v ON d.id_venta = v.id_venta\nJOIN producto p ON d.id_producto = p.id_producto\nJOIN categoria c ON p.id_categoria = c.id_categoria\nWHERE v.fecha >= '2025-01-01' AND v.fecha <= '2025-12-31'\nGROUP BY c.nombre ORDER BY importe DESC;",
       orderMatters: true
     }
   ]
@@ -544,7 +544,7 @@ CREATE TABLE promocion (
 
 CREATE TABLE venta (
   id_venta INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   id_sucursal INTEGER NOT NULL REFERENCES sucursal(id_sucursal),
   id_cliente INTEGER NOT NULL REFERENCES cliente(id_cliente)
 );
@@ -732,7 +732,7 @@ INSERT INTO promocion (id_promocion, nombre, mecanica, porcentaje) VALUES
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -742,28 +742,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2024-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-12-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2024-01-01', DATE '2025-12-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_producto (
   id_producto INTEGER PRIMARY KEY,

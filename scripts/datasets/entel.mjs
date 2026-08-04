@@ -267,7 +267,7 @@ const retos = [
     prompt: 'Datos consumidos (GB) por plan, usando la tabla de grain fino. Columnas: plan, datos_gb redondeado a 2. De mayor a menor.',
     hint: 'hecho_consumo_dia tiene una fila por SIM y día: hay que sumar muchas.',
     starter: 'SELECT pl.nombre AS plan, ...\nFROM hecho_consumo_dia c\nJOIN dim_plan pl ON ...;',
-    expectedSql: `SELECT pl.nombre AS plan, ROUND(SUM(c.datos_gb), 2) AS datos_gb
+    expectedSql: `SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb
 FROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan
 GROUP BY pl.nombre ORDER BY datos_gb DESC;`,
     orderMatters: true,
@@ -278,7 +278,7 @@ GROUP BY pl.nombre ORDER BY datos_gb DESC;`,
     prompt: 'El mismo consumo por plan, pero leyendo agregado_consumo_mes. Columnas: plan, datos_gb redondeado a 2. De mayor a menor. Compara el resultado con el reto anterior.',
     hint: 'El agregado ya trae los GB sumados: solo hay que agrupar por plan.',
     starter: 'SELECT pl.nombre AS plan, ...\nFROM agregado_consumo_mes a\nJOIN dim_plan pl ON ...;',
-    expectedSql: `SELECT pl.nombre AS plan, ROUND(SUM(a.datos_gb), 2) AS datos_gb
+    expectedSql: `SELECT pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb
 FROM agregado_consumo_mes a JOIN dim_plan pl ON a.id_plan = pl.id_plan
 GROUP BY pl.nombre ORDER BY datos_gb DESC;`,
     orderMatters: true,
@@ -290,7 +290,7 @@ GROUP BY pl.nombre ORDER BY datos_gb DESC;`,
     prompt: 'Consumo de datos por día de la semana. Columnas: dia_semana, datos_gb redondeado a 2. De mayor a menor.',
     hint: 'El agregado está resumido por MES: perdió el día. Esta pregunta solo la puede responder el grain fino.',
     starter: 'SELECT t.dia_semana, ...\nFROM hecho_consumo_dia c\nJOIN dim_tiempo t ON ...;',
-    expectedSql: `SELECT t.dia_semana, ROUND(SUM(c.datos_gb), 2) AS datos_gb
+    expectedSql: `SELECT t.dia_semana, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb
 FROM hecho_consumo_dia c JOIN dim_tiempo t ON c.id_tiempo = t.id_tiempo
 GROUP BY t.dia_semana ORDER BY datos_gb DESC;`,
     orderMatters: true,
@@ -312,7 +312,7 @@ GROUP BY t.dia_semana ORDER BY datos_gb DESC;`,
     prompt: 'Consumo de datos por región de la macroregión Occidente. Columnas: region, datos_gb redondeado a 2. De mayor a menor.',
     hint: 'La macroregión es un atributo de dim_region.',
     starter: "SELECT rg.nombre AS region, ...\nFROM hecho_consumo_dia c\nJOIN dim_region rg ON ...\nWHERE rg.macroregion = ...;",
-    expectedSql: `SELECT rg.nombre AS region, ROUND(SUM(c.datos_gb), 2) AS datos_gb
+    expectedSql: `SELECT rg.nombre AS region, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb
 FROM hecho_consumo_dia c JOIN dim_region rg ON c.id_region = rg.id_region
 WHERE rg.macroregion = 'Occidente'
 GROUP BY rg.nombre ORDER BY datos_gb DESC;`,
@@ -348,8 +348,8 @@ GROUP BY rg.nombre ORDER BY lineas DESC, rg.nombre;`,
     title: 'Consumo promedio por línea',
     prompt: 'GB promedio por línea en cada plan: total de GB dividido por líneas distintas, redondeado a 2. Columnas: plan, gb_por_linea. De mayor a menor.',
     hint: 'Divide dos agregados, no promedies el consumo diario.',
-    starter: 'SELECT pl.nombre AS plan,\n  ROUND(SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea), 2) AS gb_por_linea\nFROM ...;',
-    expectedSql: `SELECT pl.nombre AS plan, ROUND(SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea), 2) AS gb_por_linea
+    starter: 'SELECT pl.nombre AS plan,\n  ROUND((SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea))::numeric, 2) AS gb_por_linea\nFROM ...;',
+    expectedSql: `SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea))::numeric, 2) AS gb_por_linea
 FROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan
 GROUP BY pl.nombre ORDER BY gb_por_linea DESC;`,
     orderMatters: true,
@@ -359,8 +359,8 @@ GROUP BY pl.nombre ORDER BY gb_por_linea DESC;`,
     title: 'Los tres meses',
     prompt: 'Consumo de datos por mes desde el agregado. Columnas: mes, datos_gb redondeado a 2. En orden de mes.',
     hint: 'El agregado ya tiene la columna mes: no necesita dim_tiempo.',
-    starter: 'SELECT mes, ROUND(SUM(datos_gb), 2) AS datos_gb\nFROM agregado_consumo_mes\nGROUP BY ...;',
-    expectedSql: `SELECT mes, ROUND(SUM(datos_gb), 2) AS datos_gb
+    starter: 'SELECT mes, ROUND((SUM(datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes\nGROUP BY ...;',
+    expectedSql: `SELECT mes, ROUND((SUM(datos_gb))::numeric, 2) AS datos_gb
 FROM agregado_consumo_mes GROUP BY mes ORDER BY mes;`,
     orderMatters: true,
   },
@@ -369,9 +369,9 @@ FROM agregado_consumo_mes GROUP BY mes ORDER BY mes;`,
     title: 'Qué región pesa más',
     prompt: 'Por región: GB y su porcentaje del total nacional, redondeado a 2. Columnas: region, datos_gb, participacion. De mayor a menor.',
     hint: 'SUM(...) OVER () da el total nacional.',
-    starter: 'SELECT region, datos_gb,\n  ROUND(datos_gb * 100.0 / SUM(datos_gb) OVER (), 2) AS participacion\nFROM ( ... );',
-    expectedSql: `SELECT region, datos_gb, ROUND(datos_gb * 100.0 / SUM(datos_gb) OVER (), 2) AS participacion FROM (
-  SELECT rg.nombre AS region, ROUND(SUM(a.datos_gb), 2) AS datos_gb
+    starter: 'SELECT region, datos_gb,\n  ROUND((datos_gb * 100.0 / SUM(datos_gb) OVER ())::numeric, 2) AS participacion\nFROM ( ... );',
+    expectedSql: `SELECT region, datos_gb, ROUND((datos_gb * 100.0 / SUM(datos_gb) OVER ())::numeric, 2) AS participacion FROM (
+  SELECT rg.nombre AS region, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb
   FROM agregado_consumo_mes a JOIN dim_region rg ON a.id_region = rg.id_region
   GROUP BY rg.nombre
 ) ORDER BY datos_gb DESC;`,
@@ -384,7 +384,7 @@ FROM agregado_consumo_mes GROUP BY mes ORDER BY mes;`,
     hint: 'ROW_NUMBER() OVER (PARTITION BY region ORDER BY datos_gb DESC) y quedarse con el puesto 1.',
     starter: 'SELECT region, plan, datos_gb FROM (\n  SELECT ..., ROW_NUMBER() OVER (PARTITION BY ...) AS puesto\n  FROM ...\n) WHERE puesto = 1;',
     expectedSql: `SELECT region, plan, datos_gb FROM (
-  SELECT rg.nombre AS region, pl.nombre AS plan, ROUND(SUM(a.datos_gb), 2) AS datos_gb,
+  SELECT rg.nombre AS region, pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb,
     ROW_NUMBER() OVER (PARTITION BY rg.nombre ORDER BY SUM(a.datos_gb) DESC, pl.nombre) AS puesto
   FROM agregado_consumo_mes a
   JOIN dim_region rg ON a.id_region = rg.id_region
@@ -398,11 +398,11 @@ FROM agregado_consumo_mes GROUP BY mes ORDER BY mes;`,
     title: 'Comprobar que el agregado no miente',
     prompt: 'Compara el total de GB de las dos tablas en una sola fila: columnas detalle, agregado y diferencia, todas redondeadas a 2.',
     hint: 'Dos subconsultas escalares y una resta. Si la diferencia no da cero, el proceso que llena el agregado está roto.',
-    starter: 'SELECT\n  ROUND((SELECT SUM(datos_gb) FROM ...), 2) AS detalle,\n  ...;',
+    starter: 'SELECT\n  ROUND(((SELECT SUM(datos_gb) FROM ...))::numeric, 2) AS detalle,\n  ...;',
     expectedSql: `SELECT
-  ROUND((SELECT SUM(datos_gb) FROM hecho_consumo_dia), 2) AS detalle,
-  ROUND((SELECT SUM(datos_gb) FROM agregado_consumo_mes), 2) AS agregado,
-  ROUND((SELECT SUM(datos_gb) FROM hecho_consumo_dia) - (SELECT SUM(datos_gb) FROM agregado_consumo_mes), 2) AS diferencia;`,
+  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia))::numeric, 2) AS detalle,
+  ROUND(((SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS agregado,
+  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia) - (SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS diferencia;`,
     orderMatters: false,
   },
 ]

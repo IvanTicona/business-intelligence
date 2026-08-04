@@ -288,8 +288,8 @@ export const teleferico = {
       title: "Duración: el promedio sí, la suma no",
       prompt: "Duración promedio de viaje por línea, redondeada a 1 decimal. Muestra color y promedio, del viaje más largo al más corto.",
       hint: "Sumar duraciones de viajes distintos no significa nada. La duración es una métrica NO aditiva: se promedia.",
-      starter: "SELECT l.color, ROUND(AVG(...), 1) AS minutos\nFROM hecho_viaje h\nJOIN dim_linea l ON ...;",
-      expectedSql: "SELECT l.color, ROUND(AVG(h.duracion_min), 1) AS minutos\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY minutos DESC;",
+      starter: "SELECT l.color, ROUND((AVG(...))::numeric, 1) AS minutos\nFROM hecho_viaje h\nJOIN dim_linea l ON ...;",
+      expectedSql: "SELECT l.color, ROUND((AVG(h.duracion_min))::numeric, 1) AS minutos\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY minutos DESC;",
       orderMatters: true,
       trampa: "SUM(duracion_min) da un numero enorme y sin sentido: la suma de duraciones de viajes distintos no es ninguna magnitud real."
     },
@@ -300,8 +300,8 @@ export const teleferico = {
       title: "Un flag que sí se suma",
       prompt: "Porcentaje de viajes que fueron transbordo, por línea. Muestra color y el porcentaje redondeado a 2. De mayor a menor.",
       hint: "es_transbordo vale 0 o 1: SUM cuenta los transbordos y COUNT(*) el total. Ese es el patrón de un flag aditivo.",
-      starter: "SELECT l.color, ROUND(SUM(...) * 100.0 / COUNT(*), 2) AS pct\nFROM ...;",
-      expectedSql: "SELECT l.color, ROUND(SUM(h.es_transbordo) * 100.0 / COUNT(*), 2) AS pct_transbordo\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY pct_transbordo DESC;",
+      starter: "SELECT l.color, ROUND((SUM(...) * 100.0 / COUNT(*))::numeric, 2) AS pct\nFROM ...;",
+      expectedSql: "SELECT l.color, ROUND((SUM(h.es_transbordo) * 100.0 / COUNT(*))::numeric, 2) AS pct_transbordo\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY pct_transbordo DESC;",
       orderMatters: true
     },
     {
@@ -312,7 +312,7 @@ export const teleferico = {
       prompt: "Viajes y recaudación por mes. Muestra nombre_mes, viajes y recaudacion (SUM de tarifa_pagada redondeado a 2), en orden de mes.",
       hint: "Agrupa por mes y nombre_mes juntos, y ordena por el número de mes para que no salga alfabético.",
       starter: "SELECT t.nombre_mes, COUNT(*) AS viajes, ...\nFROM ...\nGROUP BY t.mes, t.nombre_mes\nORDER BY ...;",
-      expectedSql: "SELECT t.nombre_mes, COUNT(*) AS viajes, ROUND(SUM(h.tarifa_pagada), 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+      expectedSql: "SELECT t.nombre_mes, COUNT(*) AS viajes, ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
       orderMatters: true
     },
     {
@@ -333,8 +333,8 @@ export const teleferico = {
       title: "Suavizar la serie",
       prompt: "Viajes por mes junto a la media móvil de 3 meses, redondeada a 1. Columnas: mes, viajes, media_movil.",
       hint: "ROWS BETWEEN 2 PRECEDING AND CURRENT ROW define la ventana de tres meses.",
-      starter: "SELECT mes, viajes,\n  ROUND(AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN ... ), 1) AS media_movil\nFROM ( ... );",
-      expectedSql: "SELECT mes, viajes, ROUND(AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS media_movil\nFROM (\n  SELECT t.mes AS mes, COUNT(*) AS viajes\n  FROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
+      starter: "SELECT mes, viajes,\n  ROUND((AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN ... ))::numeric, 1) AS media_movil\nFROM ( ... );",
+      expectedSql: "SELECT mes, viajes, ROUND((AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW))::numeric, 1) AS media_movil\nFROM (\n  SELECT t.mes AS mes, COUNT(*) AS viajes\n  FROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
       orderMatters: true
     },
     {
@@ -344,8 +344,8 @@ export const teleferico = {
       title: "La trampa de la tarifa cero",
       prompt: "Tarifa promedio efectivamente pagada por tipo de pasajero, contando también los viajes gratuitos. Muestra tipo y el promedio redondeado a 2, de mayor a menor.",
       hint: "Los transbordos pagan 0, y las personas con discapacidad también. Un cero es un dato, no un faltante: entra en el promedio.",
-      starter: "SELECT p.tipo, ROUND(AVG(...), 2) AS tarifa_promedio\nFROM hecho_viaje h\nJOIN dim_pasajero p ON ...;",
-      expectedSql: "SELECT p.tipo, ROUND(AVG(h.tarifa_pagada), 2) AS tarifa_promedio\nFROM hecho_viaje h JOIN dim_pasajero p ON h.id_tipo_pasajero = p.id_tipo_pasajero\nGROUP BY p.tipo ORDER BY tarifa_promedio DESC;",
+      starter: "SELECT p.tipo, ROUND((AVG(...))::numeric, 2) AS tarifa_promedio\nFROM hecho_viaje h\nJOIN dim_pasajero p ON ...;",
+      expectedSql: "SELECT p.tipo, ROUND((AVG(h.tarifa_pagada))::numeric, 2) AS tarifa_promedio\nFROM hecho_viaje h JOIN dim_pasajero p ON h.id_tipo_pasajero = p.id_tipo_pasajero\nGROUP BY p.tipo ORDER BY tarifa_promedio DESC;",
       orderMatters: true,
       trampa: "Filtrar WHERE tarifa_pagada > 0 sube el promedio y responde otra pregunta: cuanto pagan los que pagan, no cuanto se recauda por viaje."
     },
@@ -357,7 +357,7 @@ export const teleferico = {
       prompt: "Por línea: total de viajes, viajes pagos (tarifa mayor a 0) y recaudación. Columnas: color, viajes, viajes_pagos, recaudacion. Ordena por recaudación de mayor a menor.",
       hint: "Los tres números salen de la misma pasada con SUM(CASE WHEN ...). No hace falta consultar tres veces.",
       starter: "SELECT l.color, COUNT(*) AS viajes,\n  SUM(CASE WHEN ... THEN 1 ELSE 0 END) AS viajes_pagos,\n  ...\nFROM ...;",
-      expectedSql: "SELECT l.color, COUNT(*) AS viajes,\n  SUM(CASE WHEN h.tarifa_pagada > 0 THEN 1 ELSE 0 END) AS viajes_pagos,\n  ROUND(SUM(h.tarifa_pagada), 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY recaudacion DESC;",
+      expectedSql: "SELECT l.color, COUNT(*) AS viajes,\n  SUM(CASE WHEN h.tarifa_pagada > 0 THEN 1 ELSE 0 END) AS viajes_pagos,\n  ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY recaudacion DESC;",
       orderMatters: true
     }
   ]
@@ -371,7 +371,7 @@ teleferico.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -381,28 +381,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-12-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-12-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_franja (
   id_franja INTEGER PRIMARY KEY,

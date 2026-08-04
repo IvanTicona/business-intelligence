@@ -97,13 +97,14 @@ function resumir(sentencia) {
 }
 
 /**
- * @param {object} SQL   módulo de sql.js ya inicializado
+ * @param {object} db      base de PGlite, ya creada y vacía
  * @param {string} script
- * @returns {{db, registro: Array, resultado: object|null, error: object|null}}
- *          `db` queda abierta: la usa el diagrama para leer el esquema.
+ * @returns {Promise<{registro: Array, resultado: object|null, error: object|null}>}
+ *          La base queda poblada: de ahí lee el diagrama.
  */
-export function ejecutarScript(SQL, script) {
-  const db = new SQL.Database()
+export async function ejecutarScript(db, script) {
+  await db.reiniciar()
+
   const sentencias = partirSentencias(script)
   const registro = []
   let resultado = null
@@ -114,13 +115,12 @@ export function ejecutarScript(SQL, script) {
     const tipo = tipoDe(sentencia)
 
     try {
-      const salida = db.exec(sentencia)
-      const filasDevueltas = salida.length ? salida[salida.length - 1].values.length : 0
+      const salida = await db.query(sentencia, [], { rowMode: 'array' })
+      const devuelveFilas = salida.fields?.length > 0
 
-      // El último SELECT con resultados es lo que se muestra en la tabla.
-      if (salida.length) {
-        const ultimo = salida[salida.length - 1]
-        resultado = { columns: ultimo.columns, rows: ultimo.values }
+      // El último SELECT con columnas es lo que se muestra en la tabla.
+      if (devuelveFilas) {
+        resultado = { columns: salida.fields.map(f => f.name), rows: salida.rows }
       }
 
       registro.push({
@@ -128,11 +128,10 @@ export function ejecutarScript(SQL, script) {
         tipo,
         resumen: resumir(sentencia),
         ok: true,
-        // getRowsModified cuenta INSERT, UPDATE y DELETE; los SELECT devuelven filas.
-        detalle: salida.length
-          ? `${filasDevueltas} fila(s)`
-          : db.getRowsModified() > 0
-            ? `${db.getRowsModified()} fila(s) afectada(s)`
+        detalle: devuelveFilas
+          ? `${salida.rows.length} fila(s)`
+          : salida.affectedRows > 0
+            ? `${salida.affectedRows} fila(s) afectada(s)`
             : 'ok',
       })
     } catch (err) {
@@ -140,14 +139,28 @@ export function ejecutarScript(SQL, script) {
         numero: i + 1,
         tipo,
         resumen: resumir(sentencia),
-        mensaje: err.message,
+        mensaje: mensajeDeError(err),
       }
-      registro.push({ numero: i + 1, tipo, resumen: resumir(sentencia), ok: false, detalle: err.message })
+      registro.push({ numero: i + 1, tipo, resumen: resumir(sentencia), ok: false, detalle: mensajeDeError(err) })
       // Se corta acá: seguir después de un CREATE TABLE fallido solo genera
       // errores en cascada que esconden el problema real.
       break
     }
   }
 
-  return { db, registro, resultado, error }
+  return { registro, resultado, error }
+}
+
+/**
+ * Postgres da bastante más que el mensaje: posición del carácter, pista y
+ * detalle. Se aprovechan, porque para el alumno la diferencia entre "syntax
+ * error" y "syntax error en la posición 42, quizás quisiste..." es enorme.
+ */
+function mensajeDeError(err) {
+  const partes = [err.message.split('\n')[0]]
+  if (err.position) partes.push(`(posición ${err.position})`)
+  if (err.hint) partes.push(`— ${err.hint}`)
+  else if (err.detail) partes.push(`— ${err.detail}`)
+
+  return partes.join(' ')
 }

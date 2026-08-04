@@ -28,7 +28,7 @@ export const comillas = texto => String(texto).replace(/'/g, "''")
 
 /** Arma un INSERT multi-fila legible, cortando en bloques para no hacer una línea infinita. */
 export function insert(tabla, columnas, filas, porBloque = 1) {
-  // Un NaN se escribiría sin comillas y SQLite lo leería como nombre de
+  // Un NaN se escribiría sin comillas y Postgres lo leería como nombre de
   // columna, fallando con un "no such column: NaN" que no dice nada. Mejor
   // reventar acá, señalando la fila y la columna exactas.
   filas.forEach((fila, i) => {
@@ -54,14 +54,17 @@ export function insert(tabla, columnas, filas, porBloque = 1) {
 }
 
 /**
- * Dimensión tiempo por CTE recursivo en vez de 731 INSERT a mano.
- * SQLite lo soporta y el archivo baja de ~45 KB a diez líneas.
+ * Dimensión tiempo generada con `generate_series` en vez de 731 INSERT a mano:
+ * el archivo baja de ~45 KB a quince líneas.
+ *
+ * generate_series es de Postgres y vale la pena que el alumno la vea: produce
+ * una serie de fechas sin tabla auxiliar ni recursión.
  */
 export function dimTiempo(desde, hasta) {
   return `
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -71,28 +74,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('${desde}')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '${hasta}'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;`.trim()
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '${desde}', DATE '${hasta}', INTERVAL '1 day') AS d;`.trim()
 }
 
 /** id_tiempo es AAAAMMDD, así el hecho referencia la fecha sin buscar la PK. */

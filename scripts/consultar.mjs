@@ -3,7 +3,7 @@
  * retos sin adivinar:
  *   node scripts/consultar.mjs ketal "SELECT ..."
  */
-import initSqlJs from 'sql.js'
+import { PGlite } from '@electric-sql/pglite'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, join } from 'path'
 
@@ -17,19 +17,27 @@ if (!ds) {
   process.exit(1)
 }
 
-const SQL = await initSqlJs({ locateFile: () => join(RAIZ, 'node_modules/sql.js/dist/sql-wasm.wasm') })
-const db = new SQL.Database()
-db.run(ds.seedSql)
+const db = new PGlite()
+await db.exec(ds.seedSql)
 
 const sql = consulta.join(' ')
-const res = db.exec(sql)
-if (!res.length) {
-  console.log('(sin resultados)')
-} else {
-  const { columns, values } = res[res.length - 1]
-  console.log(columns.join(' | '))
-  console.log('-'.repeat(columns.join(' | ').length))
-  for (const fila of values.slice(0, 40)) console.log(fila.join(' | '))
-  if (values.length > 40) console.log(`... ${values.length - 40} fila(s) más`)
+
+try {
+  const res = await db.query(sql, [], { rowMode: 'array' })
+
+  if (!res.fields?.length) {
+    console.log(`(sin resultados · ${res.affectedRows ?? 0} fila(s) afectada(s))`)
+  } else {
+    const columnas = res.fields.map(f => f.name)
+    console.log(columnas.join(' | '))
+    console.log('-'.repeat(columnas.join(' | ').length))
+    for (const fila of res.rows.slice(0, 40)) console.log(fila.join(' | '))
+    if (res.rows.length > 40) console.log(`... ${res.rows.length - 40} fila(s) más`)
+  }
+} catch (error) {
+  console.error('✗', error.message.split('\n')[0])
+  if (error.position) console.error('   posición', error.position)
+  if (error.hint) console.error('   pista:', error.hint)
 }
-db.close()
+
+await db.close()

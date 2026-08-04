@@ -236,7 +236,7 @@ const retos = [
     prompt: 'Cantidad de pedidos y subtotal por categoría de comercio. Columnas: categoria, pedidos, subtotal. De mayor a menor subtotal.',
     hint: 'La categoría está en dim_comercio.',
     starter: 'SELECT c.categoria, COUNT(*) AS pedidos, ...\nFROM hecho_pedido p\nJOIN dim_comercio c ON ...;',
-    expectedSql: `SELECT c.categoria, COUNT(*) AS pedidos, ROUND(SUM(p.subtotal), 2) AS subtotal
+    expectedSql: `SELECT c.categoria, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal
 FROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio
 GROUP BY c.categoria ORDER BY subtotal DESC;`,
     orderMatters: true,
@@ -246,8 +246,8 @@ GROUP BY c.categoria ORDER BY subtotal DESC;`,
     title: 'Envíos por zona',
     prompt: 'Cantidad de envíos y minutos promedio de entrega por zona, redondeado a 1. Columnas: zona, envios, minutos. Del más lento al más rápido.',
     hint: 'dim_zona la comparten los dos hechos: acá se usa desde hecho_envio.',
-    starter: 'SELECT z.nombre, COUNT(*) AS envios, ROUND(AVG(e.minutos_entrega), 1) AS minutos\nFROM hecho_envio e\nJOIN dim_zona z ON ...;',
-    expectedSql: `SELECT z.nombre AS zona, COUNT(*) AS envios, ROUND(AVG(e.minutos_entrega), 1) AS minutos
+    starter: 'SELECT z.nombre, COUNT(*) AS envios, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos\nFROM hecho_envio e\nJOIN dim_zona z ON ...;',
+    expectedSql: `SELECT z.nombre AS zona, COUNT(*) AS envios, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos
 FROM hecho_envio e JOIN dim_zona z ON e.id_zona = z.id_zona
 GROUP BY z.nombre ORDER BY minutos DESC;`,
     orderMatters: true,
@@ -287,8 +287,8 @@ ORDER BY z.nombre;`,
     title: 'Tasa de concreción por zona',
     prompt: 'Por zona: pedidos, envíos y el porcentaje de pedidos que terminaron en envío, redondeado a 2. Columnas: zona, pedidos, envios, tasa. De mayor a menor tasa.',
     hint: 'Es el reto anterior, dividiendo una columna por la otra. Cuida la división entera: multiplica por 100.0.',
-    starter: 'SELECT zona, pedidos, envios,\n  ROUND(envios * 100.0 / pedidos, 2) AS tasa\nFROM ( ... );',
-    expectedSql: `SELECT zona, pedidos, envios, ROUND(envios * 100.0 / pedidos, 2) AS tasa FROM (
+    starter: 'SELECT zona, pedidos, envios,\n  ROUND((envios * 100.0 / pedidos)::numeric, 2) AS tasa\nFROM ( ... );',
+    expectedSql: `SELECT zona, pedidos, envios, ROUND((envios * 100.0 / pedidos)::numeric, 2) AS tasa FROM (
   SELECT z.nombre AS zona,
     COALESCE(ped.pedidos, 0) AS pedidos,
     COALESCE(env.envios, 0) AS envios
@@ -307,8 +307,8 @@ ORDER BY z.nombre;`,
     hint: 'Las dos métricas viven en hechos distintos. Resume cada una por macrozona y después únelas.',
     starter: 'SELECT z.macrozona, ...\nFROM dim_zona z\nLEFT JOIN ( ... ) ON ...\nGROUP BY z.macrozona;',
     expectedSql: `SELECT z.macrozona,
-  ROUND(SUM(COALESCE(ped.subtotal, 0)), 2) AS subtotal,
-  ROUND(SUM(COALESCE(env.costo, 0)), 2) AS costo_envio
+  ROUND((SUM(COALESCE(ped.subtotal, 0)))::numeric, 2) AS subtotal,
+  ROUND((SUM(COALESCE(env.costo, 0)))::numeric, 2) AS costo_envio
 FROM dim_zona z
 LEFT JOIN (
   SELECT id_zona_entrega AS id_zona, SUM(subtotal) AS subtotal
@@ -325,8 +325,8 @@ GROUP BY z.macrozona ORDER BY z.macrozona;`,
     title: 'Minutos: promedio, nunca suma',
     prompt: 'Minutos promedio de entrega por tipo de vehículo, redondeado a 1. Columnas: vehiculo, minutos, envios. Del más lento al más rápido.',
     hint: 'Sumar los minutos de entregas distintas no es ninguna magnitud real.',
-    starter: 'SELECT rp.vehiculo, ROUND(AVG(e.minutos_entrega), 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;',
-    expectedSql: `SELECT rp.vehiculo, ROUND(AVG(e.minutos_entrega), 1) AS minutos, COUNT(*) AS envios
+    starter: 'SELECT rp.vehiculo, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;',
+    expectedSql: `SELECT rp.vehiculo, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos, COUNT(*) AS envios
 FROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor
 GROUP BY rp.vehiculo ORDER BY minutos DESC;`,
     orderMatters: true,
@@ -348,7 +348,7 @@ GROUP BY t.dia_semana ORDER BY pedidos DESC;`,
     prompt: 'Pedidos y subtotal por mes. Columnas: mes, pedidos, subtotal. En orden de mes.',
     hint: 'Agrupa por t.mes y ordena por el mismo campo.',
     starter: 'SELECT t.mes, COUNT(*) AS pedidos, ...\nFROM hecho_pedido p\nJOIN dim_tiempo t ON ...;',
-    expectedSql: `SELECT t.mes, COUNT(*) AS pedidos, ROUND(SUM(p.subtotal), 2) AS subtotal
+    expectedSql: `SELECT t.mes, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal
 FROM hecho_pedido p JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
 GROUP BY t.mes ORDER BY t.mes;`,
     orderMatters: true,
@@ -360,7 +360,7 @@ GROUP BY t.mes ORDER BY t.mes;`,
     hint: 'RANK() OVER (ORDER BY ... DESC) numera; después se recorta con LIMIT.',
     starter: 'SELECT RANK() OVER (ORDER BY ... DESC) AS puesto, nombre, subtotal\nFROM ( ... )\nLIMIT 5;',
     expectedSql: `SELECT RANK() OVER (ORDER BY subtotal DESC) AS puesto, nombre, subtotal FROM (
-  SELECT c.nombre AS nombre, ROUND(SUM(p.subtotal), 2) AS subtotal
+  SELECT c.nombre AS nombre, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal
   FROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio
   GROUP BY c.nombre
 ) ORDER BY subtotal DESC LIMIT 5;`,
@@ -371,8 +371,8 @@ GROUP BY t.mes ORDER BY t.mes;`,
     title: 'La trampa del abanico',
     prompt: 'Subtotal por zona contando SOLO los pedidos entregados, sin pasar por hecho_envio. Columnas: zona, subtotal. De mayor a menor.',
     hint: 'El subtotal está en hecho_pedido: no hace falta tocar hecho_envio para nada.',
-    starter: "SELECT z.nombre AS zona, ROUND(SUM(p.subtotal), 2) AS subtotal\nFROM hecho_pedido p\nJOIN dim_zona z ON ...\nWHERE p.estado = 'Entregado'\n...;",
-    expectedSql: `SELECT z.nombre AS zona, ROUND(SUM(p.subtotal), 2) AS subtotal
+    starter: "SELECT z.nombre AS zona, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p\nJOIN dim_zona z ON ...\nWHERE p.estado = 'Entregado'\n...;",
+    expectedSql: `SELECT z.nombre AS zona, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal
 FROM hecho_pedido p JOIN dim_zona z ON p.id_zona_entrega = z.id_zona
 WHERE p.estado = 'Entregado'
 GROUP BY z.nombre ORDER BY subtotal DESC;`,
@@ -384,8 +384,8 @@ GROUP BY z.nombre ORDER BY subtotal DESC;`,
     title: 'Qué hecho responde qué',
     prompt: 'Por repartidor: envíos hechos, kilómetros recorridos y propina total. Columnas: alias, envios, km, propina. Los 8 primeros por kilómetros.',
     hint: 'Esta pregunta es solo de hecho_envio: los pedidos no saben quién repartió.',
-    starter: 'SELECT rp.alias, COUNT(*) AS envios, ROUND(SUM(e.distancia_km), 2) AS km, ...\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;',
-    expectedSql: `SELECT rp.alias, COUNT(*) AS envios, ROUND(SUM(e.distancia_km), 2) AS km, ROUND(SUM(e.propina), 2) AS propina
+    starter: 'SELECT rp.alias, COUNT(*) AS envios, ROUND((SUM(e.distancia_km))::numeric, 2) AS km, ...\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;',
+    expectedSql: `SELECT rp.alias, COUNT(*) AS envios, ROUND((SUM(e.distancia_km))::numeric, 2) AS km, ROUND((SUM(e.propina))::numeric, 2) AS propina
 FROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor
 GROUP BY rp.alias ORDER BY km DESC, rp.alias LIMIT 8;`,
     orderMatters: true,

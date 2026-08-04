@@ -1,9 +1,9 @@
-import { Card, Segmented, Tag, Typography } from 'antd'
+import { Card, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SqlEditor from '../practices/SqlEditor.jsx'
 import ModelDiagram from '../playground/ModelDiagram.jsx'
-import ResultChart, { sePuedeGraficar } from '../playground/ResultChart.jsx'
-import { cargarMotor } from '../lib/sqlEngine.js'
+import { RegistroSentencias, ResultadoConsola } from '../consola/piezas.jsx'
+import { crearBaseVacia } from '../lib/sqlEngine.js'
 import { caso } from './caso-sagarnaga.js'
 import { ejecutarScript } from './ejecutarScript.js'
 import { leerEsquema } from './esquemaVivo.js'
@@ -36,7 +36,7 @@ function leerLogrados() {
  * acaba de crear, así que cada CREATE TABLE aparece dibujado al instante.
  */
 export default function TallerOltpPage() {
-  const [motor, setMotor] = useState(null)
+  const [base, setBase] = useState(null)
   const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) ?? caso.scriptInicial)
   const [ejecucion, setEjecucion] = useState(null)
   const [vista, setVista] = useState('tabla')
@@ -54,10 +54,12 @@ export default function TallerOltpPage() {
    */
   const [logrados, setLogrados] = useState(leerLogrados)
 
-  const dbRef = useRef(null)
-
+  // La base se crea UNA vez y se reutiliza: cada ejecución vacía su esquema en
+  // lugar de levantar otra instancia, que cuesta más de un segundo.
   useEffect(() => {
-    cargarMotor().then(setMotor)
+    let viva = true
+    crearBaseVacia().then(db => { if (viva) setBase(db) })
+    return () => { viva = false }
   }, [])
 
   // El script del alumno es su trabajo: no se pierde al recargar.
@@ -65,14 +67,10 @@ export default function TallerOltpPage() {
     window.localStorage.setItem(CLAVE_GUARDADO, script)
   }, [script])
 
-  const correr = useCallback(() => {
-    if (!motor) return
+  const correr = useCallback(async () => {
+    if (!base) return
 
-    // La base anterior se cierra: cada ejecución arranca de cero.
-    dbRef.current?.close()
-
-    const salida = ejecutarScript(motor, script)
-    dbRef.current = salida.db
+    const salida = await ejecutarScript(base, script)
 
     const resultado = salida.resultado
       ? {
@@ -87,32 +85,39 @@ export default function TallerOltpPage() {
       registro: salida.registro,
       error: salida.error,
       resultado,
-      tablas: leerEsquema(salida.db),
+      tablas: await leerEsquema(base),
       sello: Date.now(),
     })
-  }, [motor, script])
+  }, [base, script])
 
-  // Primera corrida apenas el motor está listo, para que el diagrama no
+  // Primera corrida apenas la base está lista, para que el diagrama no
   // arranque vacío si el alumno ya tenía trabajo guardado.
   useEffect(() => {
-    if (motor && !ejecucion) correr()
-  }, [motor, ejecucion, correr])
+    if (base && !ejecucion) correr()
+  }, [base, ejecucion, correr])
 
   const tablas = ejecucion?.tablas ?? []
 
-  const estadoDePasos = useMemo(() => {
-    if (!ejecucion) return new Map()
+  // La verificación consulta la base, así que es asíncrona: se guarda en estado
+  // en vez de calcularse en el render.
+  const [estadoDePasos, setEstadoDePasos] = useState(new Map())
 
-    return new Map(
-      caso.pasos.map(paso => [
+  useEffect(() => {
+    if (!ejecucion || !base) return
+    let viva = true
+
+    Promise.all(
+      caso.pasos.map(async paso => [
         paso.id,
-        verificarPaso(
+        await verificarPaso(
           { ...paso, resultadoDelAlumno: ejecucion.resultado },
-          { db: dbRef.current, tablas, modelo: caso.modelo },
+          { db: base, tablas, modelo: caso.modelo },
         ),
       ]),
-    )
-  }, [ejecucion, tablas])
+    ).then(pares => { if (viva) setEstadoDePasos(new Map(pares)) })
+
+    return () => { viva = false }
+  }, [ejecucion, base, tablas])
 
   // Lo que se acaba de resolver se suma a lo ya logrado.
   useEffect(() => {
@@ -157,9 +162,9 @@ export default function TallerOltpPage() {
               <p className="pg-ficha-nota">{caso.nota}</p>
             </div>
 
-            {!motor && <Paragraph className="pg-aviso">Iniciando el motor SQL…</Paragraph>}
+            {!base && <Paragraph className="pg-aviso">Iniciando PostgreSQL…</Paragraph>}
 
-            {motor && (
+            {base && (
               <>
                 <div className="pg-editor-bloque">
                   <div className="pg-editor-barra">
@@ -191,19 +196,21 @@ export default function TallerOltpPage() {
                 </div>
 
                 {ejecucion && (
-                  <Registro
-                    ejecucion={ejecucion}
+                  <RegistroSentencias
+                    registro={ejecucion.registro}
+                    error={ejecucion.error}
                     abierto={mostrarRegistro}
                     onAlternar={() => setMostrarRegistro(v => !v)}
                   />
                 )}
 
-                <Resultado
+                <ResultadoConsola
                   resultado={ejecucion?.resultado}
                   vista={vista}
                   setVista={setVista}
                   tipoGrafico={tipoGrafico}
                   setTipoGrafico={setTipoGrafico}
+                  maxFilas={MAX_FILAS}
                 />
 
                 <Pasos
@@ -248,105 +255,6 @@ export default function TallerOltpPage() {
           </div>
         </aside>
       </section>
-    </div>
-  )
-}
-
-/** Qué pasó con cada sentencia. Se abre solo cuando algo falló. */
-function Registro({ ejecucion, abierto, onAlternar }) {
-  const { registro, error } = ejecucion
-
-  return (
-    <div className="taller-registro">
-      {error ? (
-        <div className="taller-error">
-          <strong>La sentencia {error.numero} falló</strong>
-          <code>{error.resumen}</code>
-          <span>{error.mensaje}</span>
-        </div>
-      ) : (
-        <button type="button" className="taller-registro-ok" onClick={onAlternar}>
-          {registro.length} sentencia(s) ejecutadas sin errores
-          <em>{abierto ? 'ocultar detalle' : 'ver detalle'}</em>
-        </button>
-      )}
-
-      {(abierto || error) && (
-        <ol className="taller-registro-lista">
-          {registro.map(linea => (
-            <li key={linea.numero} className={linea.ok ? '' : 'taller-linea-mal'}>
-              <span className="taller-linea-tipo">{linea.tipo}</span>
-              <code>{linea.resumen}</code>
-              <em>{linea.detalle}</em>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
-  )
-}
-
-function Resultado({ resultado, vista, setVista, tipoGrafico, setTipoGrafico }) {
-  if (!resultado) {
-    return <p className="pg-resultado-vacio">Cuando tu script termine en una consulta, el resultado aparece acá.</p>
-  }
-
-  const graficable = sePuedeGraficar(resultado)
-
-  return (
-    <div className="pg-resultado">
-      <div className="pg-resultado-barra">
-        <span className="pg-resultado-conteo">
-          {resultado.totalFilas} fila(s)
-          {resultado.recortado && <em> · se muestran las primeras {MAX_FILAS}</em>}
-        </span>
-
-        <Segmented
-          size="small"
-          value={vista}
-          onChange={setVista}
-          options={[
-            { label: 'Tabla', value: 'tabla' },
-            { label: 'Gráfico', value: 'grafico', disabled: !graficable },
-          ]}
-        />
-
-        {vista === 'grafico' && (
-          <Segmented
-            size="small"
-            value={tipoGrafico}
-            onChange={setTipoGrafico}
-            options={[
-              { label: 'Barras', value: 'barras' },
-              { label: 'Líneas', value: 'lineas' },
-              { label: 'Torta', value: 'torta' },
-            ]}
-          />
-        )}
-      </div>
-
-      {vista === 'tabla' ? (
-        <div className="pg-tabla-scroll">
-          <table className="pg-tabla">
-            <thead>
-              <tr>{resultado.columns.map(col => <th key={col}>{col}</th>)}</tr>
-            </thead>
-            <tbody>
-              {resultado.rows.map((fila, i) => (
-                <tr key={i}>
-                  {fila.map((celda, j) => (
-                    <td key={j} className={typeof celda === 'number' ? 'pg-celda-num' : ''}>
-                      {celda === null ? <span className="pg-nulo">NULL</span> : String(celda)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <ResultChart resultado={resultado} tipo={tipoGrafico} />
-      )}
     </div>
   )
 }

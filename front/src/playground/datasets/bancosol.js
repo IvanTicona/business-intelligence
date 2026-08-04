@@ -250,7 +250,7 @@ export const bancosol = {
       prompt: "Monto total desembolsado por producto en el año. Muestra nombre del producto y monto, de mayor a menor.",
       hint: "El monto del desembolso es aditivo puro: se suma sin cuidados.",
       starter: "SELECT p.nombre, ...\nFROM hecho_desembolso d\nJOIN dim_producto p ON ...;",
-      expectedSql: "SELECT p.nombre, ROUND(SUM(d.monto), 2) AS monto\nFROM hecho_desembolso d JOIN dim_producto p ON d.id_producto = p.id_producto\nGROUP BY p.nombre ORDER BY monto DESC;",
+      expectedSql: "SELECT p.nombre, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d JOIN dim_producto p ON d.id_producto = p.id_producto\nGROUP BY p.nombre ORDER BY monto DESC;",
       orderMatters: true
     },
     {
@@ -271,8 +271,8 @@ export const bancosol = {
       title: "Lo que sí se suma",
       prompt: "Monto desembolsado por mes. Columnas: mes, monto. En orden de mes.",
       hint: "Sumar desembolsos de meses distintos SÍ tiene sentido: es el total colocado en el período.",
-      starter: "SELECT t.mes, ROUND(SUM(d.monto), 2) AS monto\nFROM hecho_desembolso d\nJOIN dim_tiempo t ON ...;",
-      expectedSql: "SELECT t.mes, ROUND(SUM(d.monto), 2) AS monto\nFROM hecho_desembolso d JOIN dim_tiempo t ON d.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+      starter: "SELECT t.mes, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d\nJOIN dim_tiempo t ON ...;",
+      expectedSql: "SELECT t.mes, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d JOIN dim_tiempo t ON d.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
       orderMatters: true
     },
     {
@@ -282,8 +282,8 @@ export const bancosol = {
       title: "El saldo sí se suma entre clientes",
       prompt: "Saldo de cartera del cierre de diciembre (mes 12), sumado por agencia. Columnas: nombre de agencia y saldo, de mayor a menor.",
       hint: "Dentro de UN mes el saldo se suma sin problema: son clientes distintos en el mismo instante.",
-      starter: "SELECT a.nombre, ROUND(SUM(s.saldo_cartera), 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN ...\nWHERE t.mes = 12\n...;",
-      expectedSql: "SELECT a.nombre, ROUND(SUM(s.saldo_cartera), 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN dim_agencia a ON s.id_agencia = a.id_agencia\nJOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = 12\nGROUP BY a.nombre ORDER BY saldo DESC;",
+      starter: "SELECT a.nombre, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN ...\nWHERE t.mes = 12\n...;",
+      expectedSql: "SELECT a.nombre, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN dim_agencia a ON s.id_agencia = a.id_agencia\nJOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = 12\nGROUP BY a.nombre ORDER BY saldo DESC;",
       orderMatters: true
     },
     {
@@ -293,8 +293,8 @@ export const bancosol = {
       title: "El saldo NO se suma entre meses",
       prompt: "Saldo de cartera al cierre de CADA mes. Columnas: mes, saldo. En orden de mes. Fíjate que cada fila es una foto, no un acumulado.",
       hint: "Agrupa por mes y suma dentro de cada mes. Lo que NO hay que hacer es sumar los doce meses entre sí.",
-      starter: "SELECT t.mes, ROUND(SUM(s.saldo_cartera), 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN dim_tiempo t ON ...\nGROUP BY ...;",
-      expectedSql: "SELECT t.mes, ROUND(SUM(s.saldo_cartera), 2) AS saldo\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+      starter: "SELECT t.mes, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN dim_tiempo t ON ...\nGROUP BY ...;",
+      expectedSql: "SELECT t.mes, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
       orderMatters: true,
       trampa: "SUM(saldo_cartera) SIN agrupar por mes suma las doce fotos y da una cifra gigante que no existe en ningun balance. Ese es el error clasico con metricas semi-aditivas."
     },
@@ -305,8 +305,8 @@ export const bancosol = {
       title: "La cartera del año es la del último mes",
       prompt: "La cartera total del banco al cierre del año, en una sola fila con una sola columna llamada cartera_final.",
       hint: "Para una métrica semi-aditiva, el total del año NO es la suma de los meses: es el valor del último mes.",
-      starter: "SELECT ROUND(SUM(s.saldo_cartera), 2) AS cartera_final\nFROM hecho_saldo_mes s\nJOIN dim_tiempo t ON ...\nWHERE t.mes = ( ... );",
-      expectedSql: "SELECT ROUND(SUM(s.saldo_cartera), 2) AS cartera_final\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = (SELECT MAX(t2.mes) FROM hecho_saldo_mes s2 JOIN dim_tiempo t2 ON s2.id_tiempo = t2.id_tiempo);",
+      starter: "SELECT ROUND((SUM(s.saldo_cartera))::numeric, 2) AS cartera_final\nFROM hecho_saldo_mes s\nJOIN dim_tiempo t ON ...\nWHERE t.mes = ( ... );",
+      expectedSql: "SELECT ROUND((SUM(s.saldo_cartera))::numeric, 2) AS cartera_final\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = (SELECT MAX(t2.mes) FROM hecho_saldo_mes s2 JOIN dim_tiempo t2 ON s2.id_tiempo = t2.id_tiempo);",
       orderMatters: false
     },
     {
@@ -316,8 +316,8 @@ export const bancosol = {
       title: "Saldo promedio del año",
       prompt: "Saldo promedio mensual de la cartera del banco, en una fila con una columna llamada saldo_promedio, redondeado a 2.",
       hint: "Primero el saldo de cada mes, después el promedio de esos doce números. Es la otra forma válida de resumir un semi-aditivo.",
-      starter: "SELECT ROUND(AVG(saldo), 2) AS saldo_promedio\nFROM (\n  SELECT t.mes, SUM(...) AS saldo\n  FROM ... GROUP BY t.mes\n);",
-      expectedSql: "SELECT ROUND(AVG(saldo), 2) AS saldo_promedio FROM (\n  SELECT t.mes AS mes, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n);",
+      starter: "SELECT ROUND((AVG(saldo))::numeric, 2) AS saldo_promedio\nFROM (\n  SELECT t.mes, SUM(...) AS saldo\n  FROM ... GROUP BY t.mes\n);",
+      expectedSql: "SELECT ROUND((AVG(saldo))::numeric, 2) AS saldo_promedio FROM (\n  SELECT t.mes AS mes, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n);",
       orderMatters: false
     },
     {
@@ -328,7 +328,7 @@ export const bancosol = {
       prompt: "Cantidad y monto de desembolsos de \"Microcredito individual\", por rubro del cliente. Columnas: rubro, operaciones, monto. De mayor a menor monto.",
       hint: "El nombre del producto está en dim_producto y el rubro en dim_cliente: dos JOIN desde el hecho.",
       starter: "SELECT c.rubro, COUNT(*) AS operaciones, ...\nFROM hecho_desembolso d\nJOIN ...\nWHERE p.nombre = 'Microcredito individual'\n...;",
-      expectedSql: "SELECT c.rubro, COUNT(*) AS operaciones, ROUND(SUM(d.monto), 2) AS monto\nFROM hecho_desembolso d\nJOIN dim_cliente c ON d.id_cliente = c.id_cliente\nJOIN dim_producto p ON d.id_producto = p.id_producto\nWHERE p.nombre = 'Microcredito individual'\nGROUP BY c.rubro ORDER BY monto DESC;",
+      expectedSql: "SELECT c.rubro, COUNT(*) AS operaciones, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d\nJOIN dim_cliente c ON d.id_cliente = c.id_cliente\nJOIN dim_producto p ON d.id_producto = p.id_producto\nWHERE p.nombre = 'Microcredito individual'\nGROUP BY c.rubro ORDER BY monto DESC;",
       orderMatters: true
     },
     {
@@ -339,7 +339,7 @@ export const bancosol = {
       prompt: "Saldo de cartera por mes junto al saldo del mes anterior. Columnas: mes, saldo, saldo_anterior. El primer mes lleva NULL.",
       hint: "LAG(saldo) OVER (ORDER BY mes) trae el valor de la fila anterior.",
       starter: "SELECT mes, saldo, LAG(saldo) OVER (ORDER BY ...) AS saldo_anterior\nFROM ( ... );",
-      expectedSql: "SELECT mes, saldo, LAG(saldo) OVER (ORDER BY mes) AS saldo_anterior FROM (\n  SELECT t.mes AS mes, ROUND(SUM(s.saldo_cartera), 2) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
+      expectedSql: "SELECT mes, saldo, LAG(saldo) OVER (ORDER BY mes) AS saldo_anterior FROM (\n  SELECT t.mes AS mes, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
       orderMatters: true
     },
     {
@@ -349,8 +349,8 @@ export const bancosol = {
       title: "Peso de cada agencia en la cartera",
       prompt: "Al cierre de diciembre: nombre de agencia, saldo y qué porcentaje del total representa, redondeado a 2. De mayor a menor.",
       hint: "SUM(...) OVER () da el total contra el que dividir, sin repetir la consulta.",
-      starter: "SELECT nombre, saldo,\n  ROUND(saldo * 100.0 / SUM(saldo) OVER (), 2) AS participacion\nFROM ( ... );",
-      expectedSql: "SELECT nombre, saldo, ROUND(saldo * 100.0 / SUM(saldo) OVER (), 2) AS participacion FROM (\n  SELECT a.nombre AS nombre, ROUND(SUM(s.saldo_cartera), 2) AS saldo\n  FROM hecho_saldo_mes s\n  JOIN dim_agencia a ON s.id_agencia = a.id_agencia\n  JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY a.nombre\n) ORDER BY saldo DESC;",
+      starter: "SELECT nombre, saldo,\n  ROUND((saldo * 100.0 / SUM(saldo) OVER ())::numeric, 2) AS participacion\nFROM ( ... );",
+      expectedSql: "SELECT nombre, saldo, ROUND((saldo * 100.0 / SUM(saldo) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT a.nombre AS nombre, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\n  FROM hecho_saldo_mes s\n  JOIN dim_agencia a ON s.id_agencia = a.id_agencia\n  JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY a.nombre\n) ORDER BY saldo DESC;",
       orderMatters: true
     },
     {
@@ -361,7 +361,7 @@ export const bancosol = {
       prompt: "Por agencia: monto desembolsado en todo el año y saldo de cartera al cierre de diciembre. Columnas: agencia, desembolsado, cartera. Ordena por agencia.",
       hint: "Los dos hechos tienen grain distinto: NO se pueden unir con un JOIN directo. Resume cada uno por separado y recién después únelos por agencia.",
       starter: "SELECT a.nombre AS agencia, ...\nFROM dim_agencia a\nLEFT JOIN ( ... ) col ON ...\nLEFT JOIN ( ... ) car ON ...;",
-      expectedSql: "SELECT a.nombre AS agencia,\n  ROUND(COALESCE(col.monto, 0), 2) AS desembolsado,\n  ROUND(COALESCE(car.saldo, 0), 2) AS cartera\nFROM dim_agencia a\nLEFT JOIN (\n  SELECT id_agencia, SUM(monto) AS monto FROM hecho_desembolso GROUP BY id_agencia\n) col ON col.id_agencia = a.id_agencia\nLEFT JOIN (\n  SELECT s.id_agencia AS id_agencia, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY s.id_agencia\n) car ON car.id_agencia = a.id_agencia\nORDER BY a.nombre;",
+      expectedSql: "SELECT a.nombre AS agencia,\n  ROUND((COALESCE(col.monto, 0))::numeric, 2) AS desembolsado,\n  ROUND((COALESCE(car.saldo, 0))::numeric, 2) AS cartera\nFROM dim_agencia a\nLEFT JOIN (\n  SELECT id_agencia, SUM(monto) AS monto FROM hecho_desembolso GROUP BY id_agencia\n) col ON col.id_agencia = a.id_agencia\nLEFT JOIN (\n  SELECT s.id_agencia AS id_agencia, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY s.id_agencia\n) car ON car.id_agencia = a.id_agencia\nORDER BY a.nombre;",
       orderMatters: true,
       trampa: "Unir los dos hechos con un JOIN directo multiplica las filas: cada desembolso se cruza con cada foto mensual del cliente. Es el \"fan trap\" y el total se infla varias veces."
     },
@@ -372,8 +372,8 @@ export const bancosol = {
       title: "La mora se mide contra su propio mes",
       prompt: "Índice de mora por mes: saldo_mora sobre saldo_cartera por cien, redondeado a 2. Columnas: mes, indice_mora. En orden de mes.",
       hint: "Suma numerador y denominador DENTRO de cada mes y recién ahí divide.",
-      starter: "SELECT t.mes,\n  ROUND(SUM(s.saldo_mora) * 100.0 / SUM(s.saldo_cartera), 2) AS indice_mora\nFROM ...;",
-      expectedSql: "SELECT t.mes, ROUND(SUM(s.saldo_mora) * 100.0 / SUM(s.saldo_cartera), 2) AS indice_mora\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+      starter: "SELECT t.mes,\n  ROUND((SUM(s.saldo_mora) * 100.0 / SUM(s.saldo_cartera))::numeric, 2) AS indice_mora\nFROM ...;",
+      expectedSql: "SELECT t.mes, ROUND((SUM(s.saldo_mora) * 100.0 / SUM(s.saldo_cartera))::numeric, 2) AS indice_mora\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
       orderMatters: true,
       trampa: "AVG(saldo_mora / saldo_cartera) promedia el ratio de cada cliente y le da el mismo peso a uno con Bs 500 que a uno con Bs 400.000. El indice real pondera por saldo."
     }
@@ -393,7 +393,7 @@ bancosol.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -403,28 +403,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-12-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-12-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_agencia (
   id_agencia INTEGER PRIMARY KEY,

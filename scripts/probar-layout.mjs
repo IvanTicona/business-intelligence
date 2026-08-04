@@ -7,7 +7,7 @@
  * Una línea escondida detrás de una caja intermedia parece conectarse con ella.
  * En material didáctico eso no es un detalle estético: es un dato falso.
  */
-import initSqlJs from 'sql.js'
+import { PGlite } from '@electric-sql/pglite'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, join } from 'path'
 
@@ -17,8 +17,6 @@ const { CAJA_ANCHO, CAJA_CABECERA, CAJA_FILA } = await import(pathToFileURL(join
 const { puntosDeRuta } = await import(pathToFileURL(join(RAIZ, 'front/src/playground/rutaAristas.js')))
 const { caso } = await import(pathToFileURL(join(RAIZ, 'front/src/taller/caso-sagarnaga.js')))
 const { catalogo, cargarDataset } = await import(pathToFileURL(join(RAIZ, 'front/src/playground/datasets/index.js')))
-
-const SQL = await initSqlJs({ locateFile: () => join(RAIZ, 'node_modules/sql.js/dist/sql-wasm.wasm') })
 
 /** DDL de referencia: lo que el caso le pide construir al alumno. */
 const ddl = caso.modelo
@@ -35,9 +33,9 @@ const ddl = caso.modelo
   })
   .join('\n\n')
 
-const db = new SQL.Database()
-db.run(ddl)
-const tablas = leerEsquema(db)
+const db = new PGlite()
+await db.exec(ddl)
+const tablas = await leerEsquema(db)
 
 console.log('=== Disposición ===')
 for (const t of tablas) {
@@ -96,7 +94,7 @@ const rodeos = []
 
 console.log('\n=== Taller ===')
 revisar(tablas, 'sagarnaga', problemas, rodeos)
-db.close()
+await db.close()
 
 console.log('\n=== Las ocho bases del laboratorio ===')
 for (const ficha of catalogo) {

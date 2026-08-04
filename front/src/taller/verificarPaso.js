@@ -7,7 +7,7 @@ import { contarFilas, verificarEsquema } from './esquemaVivo.js'
  * Devuelve siempre `{ ok, problemas[] }`. Los problemas están escritos para el
  * alumno: "a reserva le falta la columna estado", no un stack trace.
  */
-export function verificarPaso(paso, { db, tablas, modelo }) {
+export async function verificarPaso(paso, { db, tablas, modelo }) {
   if (!db) return { ok: false, problemas: ['Ejecuta el script para empezar.'] }
 
   const { verificar } = paso
@@ -23,7 +23,7 @@ export function verificarPaso(paso, { db, tablas, modelo }) {
   if (verificar.tipo === 'filas') {
     const problemas = []
     for (const [tabla, minimo] of Object.entries(verificar.minimos)) {
-      const reales = contarFilas(db, tabla)
+      const reales = await contarFilas(db, tabla)
       if (reales < minimo) {
         problemas.push(`${tabla} tiene ${reales} fila(s) y necesita ${minimo}.`)
       }
@@ -44,7 +44,7 @@ export function verificarPaso(paso, { db, tablas, modelo }) {
  * Ambas se corren sobre la misma base, así que si el alumno cargó los datos
  * pedidos, la comparación es sobre las mismas filas.
  */
-function verificarConsulta(db, paso) {
+async function verificarConsulta(db, paso) {
   const { resultadoDelAlumno } = paso
   if (!resultadoDelAlumno || !resultadoDelAlumno.columns?.length) {
     return { ok: false, problemas: ['Tu script todavía no termina en una consulta que devuelva filas.'] }
@@ -52,9 +52,8 @@ function verificarConsulta(db, paso) {
 
   let esperado
   try {
-    const salida = db.exec(paso.verificar.sql)
-    if (!salida.length) return { ok: false, problemas: ['No se pudo calcular la respuesta esperada.'] }
-    esperado = { columns: salida[0].columns, rows: salida[0].values }
+    const salida = await db.query(paso.verificar.sql, [], { rowMode: 'array' })
+    esperado = { columns: salida.fields.map(f => f.name), rows: salida.rows }
   } catch (error) {
     return { ok: false, problemas: [`No se pudo calcular la respuesta esperada: ${error.message}`] }
   }
@@ -73,10 +72,18 @@ function verificarConsulta(db, paso) {
     }
   }
 
+  // Postgres devuelve los NUMERIC como cadena para no perder precisión, así que
+  // lo que parece texto puede ser un número: se intenta convertir antes.
   const normalizar = grid =>
     grid.map(fila =>
       fila
-        .map(v => (v === null ? '∅' : typeof v === 'number' ? Number(v.toFixed(2)) : String(v).trim()))
+        .map(v => {
+          if (v === null || v === undefined) return '∅'
+          if (typeof v === 'number') return Number(v.toFixed(2))
+          if (v instanceof Date) return v.toISOString().slice(0, 10)
+          const t = String(v).trim()
+          return t !== '' && !Number.isNaN(Number(t)) ? Number(Number(t).toFixed(2)) : t
+        })
         .join('|'),
     )
 

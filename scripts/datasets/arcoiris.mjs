@@ -241,7 +241,7 @@ const retos = [
     prompt: 'Cantidad de atenciones e importe facturado por especialidad. Columnas: nombre, atenciones, importe. De mayor a menor importe.',
     hint: 'Cada fila del hecho es una atención: COUNT(*) las cuenta.',
     starter: 'SELECT e.nombre, COUNT(*) AS atenciones, ...\nFROM hecho_atencion a\nJOIN dim_especialidad e ON ...;',
-    expectedSql: `SELECT e.nombre, COUNT(*) AS atenciones, ROUND(SUM(a.importe), 2) AS importe
+    expectedSql: `SELECT e.nombre, COUNT(*) AS atenciones, ROUND((SUM(a.importe))::numeric, 2) AS importe
 FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad
 GROUP BY e.nombre ORDER BY importe DESC;`,
     orderMatters: true,
@@ -299,8 +299,8 @@ GROUP BY actual.zona ORDER BY atenciones DESC, actual.zona;`,
     title: 'Solo los internados',
     prompt: 'Para las atenciones con internación: especialidad, cantidad y promedio de días de estancia redondeado a 1. De mayor a menor promedio.',
     hint: 'es_internacion es un flag 0/1 en el hecho.',
-    starter: 'SELECT e.nombre, COUNT(*) AS casos, ROUND(AVG(a.dias_estancia), 1) AS estancia\nFROM hecho_atencion a\nJOIN ...\nWHERE ...;',
-    expectedSql: `SELECT e.nombre, COUNT(*) AS casos, ROUND(AVG(a.dias_estancia), 1) AS estancia
+    starter: 'SELECT e.nombre, COUNT(*) AS casos, ROUND((AVG(a.dias_estancia))::numeric, 1) AS estancia\nFROM hecho_atencion a\nJOIN ...\nWHERE ...;',
+    expectedSql: `SELECT e.nombre, COUNT(*) AS casos, ROUND((AVG(a.dias_estancia))::numeric, 1) AS estancia
 FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad
 WHERE a.es_internacion = 1
 GROUP BY e.nombre ORDER BY estancia DESC;`,
@@ -311,8 +311,8 @@ GROUP BY e.nombre ORDER BY estancia DESC;`,
     title: 'Facturación por tipo de seguro',
     prompt: 'Importe facturado por el seguro que tenía el paciente al momento de la atención. Columnas: seguro, importe. De mayor a menor.',
     hint: 'Otra vez la foto histórica: unir por id_version.',
-    starter: 'SELECT p.seguro, ROUND(SUM(a.importe), 2) AS importe\nFROM hecho_atencion a\nJOIN dim_paciente p ON ...;',
-    expectedSql: `SELECT p.seguro, ROUND(SUM(a.importe), 2) AS importe
+    starter: 'SELECT p.seguro, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a\nJOIN dim_paciente p ON ...;',
+    expectedSql: `SELECT p.seguro, ROUND((SUM(a.importe))::numeric, 2) AS importe
 FROM hecho_atencion a JOIN dim_paciente p ON a.id_version_paciente = p.id_version
 GROUP BY p.seguro ORDER BY importe DESC;`,
     orderMatters: true,
@@ -323,7 +323,7 @@ GROUP BY p.seguro ORDER BY importe DESC;`,
     prompt: 'Importe por área del hospital. Columnas: area, importe. De mayor a menor.',
     hint: 'El área es un nivel más alto que la especialidad dentro de la misma dimensión: es una jerarquía.',
     starter: 'SELECT e.area, ...\nFROM hecho_atencion a\nJOIN dim_especialidad e ON ...;',
-    expectedSql: `SELECT e.area, ROUND(SUM(a.importe), 2) AS importe
+    expectedSql: `SELECT e.area, ROUND((SUM(a.importe))::numeric, 2) AS importe
 FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad
 GROUP BY e.area ORDER BY importe DESC;`,
     orderMatters: true,
@@ -359,11 +359,11 @@ GROUP BY tipo_dia ORDER BY atenciones DESC;`,
     title: 'Peso de cada especialidad en su área',
     prompt: 'Por especialidad: área, nombre, importe y qué porcentaje representa dentro de SU área, redondeado a 2. Ordena por área y por importe descendente.',
     hint: 'PARTITION BY area hace que el total del OVER se calcule por área y no sobre todo el hospital.',
-    starter: 'SELECT area, nombre, importe,\n  ROUND(importe * 100.0 / SUM(importe) OVER (PARTITION BY ...), 2) AS pct_area\nFROM ( ... );',
+    starter: 'SELECT area, nombre, importe,\n  ROUND((importe * 100.0 / SUM(importe) OVER (PARTITION BY ...))::numeric, 2) AS pct_area\nFROM ( ... );',
     expectedSql: `SELECT area, nombre, importe,
-  ROUND(importe * 100.0 / SUM(importe) OVER (PARTITION BY area), 2) AS pct_area
+  ROUND((importe * 100.0 / SUM(importe) OVER (PARTITION BY area))::numeric, 2) AS pct_area
 FROM (
-  SELECT e.area AS area, e.nombre AS nombre, ROUND(SUM(a.importe), 2) AS importe
+  SELECT e.area AS area, e.nombre AS nombre, ROUND((SUM(a.importe))::numeric, 2) AS importe
   FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad
   GROUP BY e.area, e.nombre
 ) ORDER BY area, importe DESC;`,

@@ -220,7 +220,7 @@ export const arcoiris = {
       prompt: "Cantidad de atenciones e importe facturado por especialidad. Columnas: nombre, atenciones, importe. De mayor a menor importe.",
       hint: "Cada fila del hecho es una atención: COUNT(*) las cuenta.",
       starter: "SELECT e.nombre, COUNT(*) AS atenciones, ...\nFROM hecho_atencion a\nJOIN dim_especialidad e ON ...;",
-      expectedSql: "SELECT e.nombre, COUNT(*) AS atenciones, ROUND(SUM(a.importe), 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.nombre ORDER BY importe DESC;",
+      expectedSql: "SELECT e.nombre, COUNT(*) AS atenciones, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.nombre ORDER BY importe DESC;",
       orderMatters: true
     },
     {
@@ -276,8 +276,8 @@ export const arcoiris = {
       title: "Solo los internados",
       prompt: "Para las atenciones con internación: especialidad, cantidad y promedio de días de estancia redondeado a 1. De mayor a menor promedio.",
       hint: "es_internacion es un flag 0/1 en el hecho.",
-      starter: "SELECT e.nombre, COUNT(*) AS casos, ROUND(AVG(a.dias_estancia), 1) AS estancia\nFROM hecho_atencion a\nJOIN ...\nWHERE ...;",
-      expectedSql: "SELECT e.nombre, COUNT(*) AS casos, ROUND(AVG(a.dias_estancia), 1) AS estancia\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nWHERE a.es_internacion = 1\nGROUP BY e.nombre ORDER BY estancia DESC;",
+      starter: "SELECT e.nombre, COUNT(*) AS casos, ROUND((AVG(a.dias_estancia))::numeric, 1) AS estancia\nFROM hecho_atencion a\nJOIN ...\nWHERE ...;",
+      expectedSql: "SELECT e.nombre, COUNT(*) AS casos, ROUND((AVG(a.dias_estancia))::numeric, 1) AS estancia\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nWHERE a.es_internacion = 1\nGROUP BY e.nombre ORDER BY estancia DESC;",
       orderMatters: true
     },
     {
@@ -287,8 +287,8 @@ export const arcoiris = {
       title: "Facturación por tipo de seguro",
       prompt: "Importe facturado por el seguro que tenía el paciente al momento de la atención. Columnas: seguro, importe. De mayor a menor.",
       hint: "Otra vez la foto histórica: unir por id_version.",
-      starter: "SELECT p.seguro, ROUND(SUM(a.importe), 2) AS importe\nFROM hecho_atencion a\nJOIN dim_paciente p ON ...;",
-      expectedSql: "SELECT p.seguro, ROUND(SUM(a.importe), 2) AS importe\nFROM hecho_atencion a JOIN dim_paciente p ON a.id_version_paciente = p.id_version\nGROUP BY p.seguro ORDER BY importe DESC;",
+      starter: "SELECT p.seguro, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a\nJOIN dim_paciente p ON ...;",
+      expectedSql: "SELECT p.seguro, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_paciente p ON a.id_version_paciente = p.id_version\nGROUP BY p.seguro ORDER BY importe DESC;",
       orderMatters: true
     },
     {
@@ -299,7 +299,7 @@ export const arcoiris = {
       prompt: "Importe por área del hospital. Columnas: area, importe. De mayor a menor.",
       hint: "El área es un nivel más alto que la especialidad dentro de la misma dimensión: es una jerarquía.",
       starter: "SELECT e.area, ...\nFROM hecho_atencion a\nJOIN dim_especialidad e ON ...;",
-      expectedSql: "SELECT e.area, ROUND(SUM(a.importe), 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.area ORDER BY importe DESC;",
+      expectedSql: "SELECT e.area, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.area ORDER BY importe DESC;",
       orderMatters: true
     },
     {
@@ -331,8 +331,8 @@ export const arcoiris = {
       title: "Peso de cada especialidad en su área",
       prompt: "Por especialidad: área, nombre, importe y qué porcentaje representa dentro de SU área, redondeado a 2. Ordena por área y por importe descendente.",
       hint: "PARTITION BY area hace que el total del OVER se calcule por área y no sobre todo el hospital.",
-      starter: "SELECT area, nombre, importe,\n  ROUND(importe * 100.0 / SUM(importe) OVER (PARTITION BY ...), 2) AS pct_area\nFROM ( ... );",
-      expectedSql: "SELECT area, nombre, importe,\n  ROUND(importe * 100.0 / SUM(importe) OVER (PARTITION BY area), 2) AS pct_area\nFROM (\n  SELECT e.area AS area, e.nombre AS nombre, ROUND(SUM(a.importe), 2) AS importe\n  FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\n  GROUP BY e.area, e.nombre\n) ORDER BY area, importe DESC;",
+      starter: "SELECT area, nombre, importe,\n  ROUND((importe * 100.0 / SUM(importe) OVER (PARTITION BY ...))::numeric, 2) AS pct_area\nFROM ( ... );",
+      expectedSql: "SELECT area, nombre, importe,\n  ROUND((importe * 100.0 / SUM(importe) OVER (PARTITION BY area))::numeric, 2) AS pct_area\nFROM (\n  SELECT e.area AS area, e.nombre AS nombre, ROUND((SUM(a.importe))::numeric, 2) AS importe\n  FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\n  GROUP BY e.area, e.nombre\n) ORDER BY area, importe DESC;",
       orderMatters: true
     },
     {
@@ -362,7 +362,7 @@ arcoiris.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -372,28 +372,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-12-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-12-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_especialidad (
   id_especialidad INTEGER PRIMARY KEY,

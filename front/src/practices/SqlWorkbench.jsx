@@ -5,7 +5,7 @@ import SqlEditor from './SqlEditor.jsx'
 import { compareResults, runQuery } from '../lib/sqlEngine.js'
 
 /**
- * Editor + ejecución real contra SQLite en el navegador.
+ * Editor + ejecución real contra PostgreSQL en el navegador.
  * Si `expectedSql` viene definido, además compara el resultado del alumno
  * contra el de la consulta de referencia, ejecutando ambas sobre la misma base.
  */
@@ -23,7 +23,7 @@ export default function SqlWorkbench({
   const [error, setError] = useState('')
   const [verdict, setVerdict] = useState(null)
 
-  function execute() {
+  async function execute() {
     setError('')
     setVerdict(null)
 
@@ -35,10 +35,10 @@ export default function SqlWorkbench({
 
     let actual
     try {
-      actual = runQuery(db, value)
+      actual = await runQuery(db, value)
     } catch (sqlError) {
       setResult(null)
-      setError(traducirError(sqlError.message))
+      setError(traducirError(sqlError))
       return
     }
 
@@ -46,7 +46,7 @@ export default function SqlWorkbench({
 
     if (!expectedSql) return
 
-    const expected = runQuery(db, expectedSql)
+    const expected = await runQuery(db, expectedSql)
     const comparison = compareResults(actual, expected, orderMatters)
     setVerdict(comparison)
     if (comparison.ok) onSolved?.()
@@ -124,23 +124,41 @@ export function SchemaExplorer({ tables, title = 'Esquema disponible' }) {
   )
 }
 
-// SQLite responde en inglés y con jerga; traducimos los errores más frecuentes
+// Postgres responde en inglés y con jerga; traducimos los errores más frecuentes
 // para que el alumno sepa qué corregir en vez de googlear el mensaje.
-function traducirError(message) {
-  if (/no such column/i.test(message)) {
-    return `${message}. Esa columna no existe. Revisa el nombre en el esquema de la derecha, o el alias de la tabla.`
-  }
-  if (/no such table/i.test(message)) {
-    return `${message}. Esa tabla no existe. Fíjate en el esquema los nombres exactos.`
-  }
-  if (/syntax error/i.test(message)) {
-    return `${message}. Error de sintaxis: Suele ser una coma de más, un paréntesis sin cerrar o una palabra clave mal escrita.`
-  }
-  if (/ambiguous column name/i.test(message)) {
-    return `${message}. La columna existe en más de una tabla del JOIN. Prefíjala con el alias, por ejemplo e.id_sector.`
-  }
-  if (/misuse of aggregate/i.test(message)) {
-    return `${message}. No puedes usar una función de agregación ahí. Para filtrar por un agregado se usa HAVING, no WHERE.`
-  }
-  return message
+/**
+ * Traduce el error de Postgres a algo accionable.
+ *
+ * Postgres trae más que el mensaje: código, posición del carácter y a veces una
+ * pista propia. Se aprovechan todos: la diferencia entre "syntax error" y
+ * "syntax error en la posición 42" es enorme para quien está aprendiendo.
+ *
+ * Los códigos son estables (los define el estándar), así que se usan en lugar
+ * de reconocer el texto del mensaje, que cambia entre versiones.
+ */
+function traducirError(error) {
+  const mensaje = (typeof error === 'string' ? error : error?.message ?? '').split('\n')[0]
+  const codigo = typeof error === 'object' ? error?.code : undefined
+  const posicion = typeof error === 'object' && error?.position ? ` (posición ${error.position})` : ''
+
+  const ayuda = {
+    // undefined_column
+    '42703': 'Esa columna no existe. Revisa el nombre en el esquema de la derecha, o el alias de la tabla.',
+    // undefined_table
+    '42P01': 'Esa tabla no existe. Fíjate en el esquema los nombres exactos.',
+    // syntax_error
+    '42601': 'Error de sintaxis: suele ser una coma de más, un paréntesis sin cerrar o una palabra clave mal escrita.',
+    // ambiguous_column
+    '42702': 'La columna existe en más de una tabla del JOIN. Prefíjala con el alias, por ejemplo e.id_sector.',
+    // grouping_error
+    '42803': 'Toda columna que no esté dentro de una función de agregación tiene que aparecer en el GROUP BY.',
+    // undefined_function
+    '42883': 'Esa función no existe con esos tipos. Si es ROUND con dos argumentos, el primero debe ser numeric: prueba con ::numeric.',
+    // datatype_mismatch
+    '42804': 'Los tipos no coinciden. Postgres no convierte solo entre texto y número: castea con :: si hace falta.',
+    // division_by_zero
+    '22012': 'División por cero. Protege el denominador con NULLIF(divisor, 0).',
+  }[codigo]
+
+  return ayuda ? `${mensaje}${posicion}. ${ayuda}` : `${mensaje}${posicion}`
 }

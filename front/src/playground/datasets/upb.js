@@ -241,8 +241,8 @@ export const upb = {
       title: "El paralelo no tiene tabla",
       prompt: "Inscripciones y nota promedio por paralelo, redondeada a 1. Columnas: paralelo, inscripciones, nota. Ordena por paralelo.",
       hint: "El paralelo está en el hecho: no hay ninguna dimensión que unir. Eso es una dimensión degenerada.",
-      starter: "SELECT paralelo, COUNT(*) AS inscripciones, ROUND(AVG(nota_final), 1) AS nota\nFROM hecho_inscripcion\nGROUP BY ...;",
-      expectedSql: "SELECT paralelo, COUNT(*) AS inscripciones, ROUND(AVG(nota_final), 1) AS nota\nFROM hecho_inscripcion GROUP BY paralelo ORDER BY paralelo;",
+      starter: "SELECT paralelo, COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion\nGROUP BY ...;",
+      expectedSql: "SELECT paralelo, COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion GROUP BY paralelo ORDER BY paralelo;",
       orderMatters: true
     },
     {
@@ -263,8 +263,8 @@ export const upb = {
       title: "Tasa de aprobación por materia",
       prompt: "Porcentaje de aprobación por materia, redondeado a 2. Columnas: materia, inscripciones, tasa. De menor a mayor tasa (las más difíciles primero).",
       hint: "aprobado es 0 o 1: SUM cuenta los aprobados y COUNT(*) el total.",
-      starter: "SELECT m.nombre AS materia, COUNT(*) AS inscripciones,\n  ROUND(SUM(i.aprobado) * 100.0 / COUNT(*), 2) AS tasa\nFROM ...;",
-      expectedSql: "SELECT m.nombre AS materia, COUNT(*) AS inscripciones,\n  ROUND(SUM(i.aprobado) * 100.0 / COUNT(*), 2) AS tasa\nFROM hecho_inscripcion i JOIN dim_materia m ON i.id_materia = m.id_materia\nGROUP BY m.nombre ORDER BY tasa ASC, m.nombre;",
+      starter: "SELECT m.nombre AS materia, COUNT(*) AS inscripciones,\n  ROUND((SUM(i.aprobado) * 100.0 / COUNT(*))::numeric, 2) AS tasa\nFROM ...;",
+      expectedSql: "SELECT m.nombre AS materia, COUNT(*) AS inscripciones,\n  ROUND((SUM(i.aprobado) * 100.0 / COUNT(*))::numeric, 2) AS tasa\nFROM hecho_inscripcion i JOIN dim_materia m ON i.id_materia = m.id_materia\nGROUP BY m.nombre ORDER BY tasa ASC, m.nombre;",
       orderMatters: true
     },
     {
@@ -286,7 +286,7 @@ export const upb = {
       prompt: "Inscripciones y nota promedio por facultad, redondeada a 1. Columnas: facultad, inscripciones, nota. De mayor a menor cantidad.",
       hint: "La facultad es el nivel superior de la jerarquía dentro de dim_carrera.",
       starter: "SELECT ca.facultad, COUNT(*) AS inscripciones, ...\nFROM hecho_inscripcion i\nJOIN ...;",
-      expectedSql: "SELECT ca.facultad, COUNT(*) AS inscripciones, ROUND(AVG(i.nota_final), 1) AS nota\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.facultad ORDER BY inscripciones DESC;",
+      expectedSql: "SELECT ca.facultad, COUNT(*) AS inscripciones, ROUND((AVG(i.nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.facultad ORDER BY inscripciones DESC;",
       orderMatters: true
     },
     {
@@ -319,7 +319,7 @@ export const upb = {
       prompt: "Para cada facultad, la materia con menor tasa de aprobación. Columnas: facultad, materia, tasa. Ordena por facultad.",
       hint: "Calcula la tasa por materia y facultad, y usa ROW_NUMBER() con PARTITION BY facultad ordenando ascendente.",
       starter: "SELECT facultad, materia, tasa FROM (\n  SELECT ..., ROW_NUMBER() OVER (PARTITION BY ... ORDER BY ... ASC) AS puesto\n  FROM ...\n) WHERE puesto = 1;",
-      expectedSql: "SELECT facultad, materia, tasa FROM (\n  SELECT ca.facultad AS facultad, m.nombre AS materia,\n    ROUND(SUM(i.aprobado) * 100.0 / COUNT(*), 2) AS tasa,\n    ROW_NUMBER() OVER (PARTITION BY ca.facultad ORDER BY SUM(i.aprobado) * 1.0 / COUNT(*) ASC, m.nombre) AS puesto\n  FROM hecho_inscripcion i\n  JOIN dim_materia m ON i.id_materia = m.id_materia\n  JOIN dim_carrera ca ON m.id_carrera = ca.id_carrera\n  GROUP BY ca.facultad, m.nombre\n) WHERE puesto = 1 ORDER BY facultad;",
+      expectedSql: "SELECT facultad, materia, tasa FROM (\n  SELECT ca.facultad AS facultad, m.nombre AS materia,\n    ROUND((SUM(i.aprobado) * 100.0 / COUNT(*))::numeric, 2) AS tasa,\n    ROW_NUMBER() OVER (PARTITION BY ca.facultad ORDER BY SUM(i.aprobado) * 1.0 / COUNT(*) ASC, m.nombre) AS puesto\n  FROM hecho_inscripcion i\n  JOIN dim_materia m ON i.id_materia = m.id_materia\n  JOIN dim_carrera ca ON m.id_carrera = ca.id_carrera\n  GROUP BY ca.facultad, m.nombre\n) WHERE puesto = 1 ORDER BY facultad;",
       orderMatters: true
     },
     {
@@ -329,8 +329,8 @@ export const upb = {
       title: "Los diez mejores promedios",
       prompt: "Los 10 estudiantes con mejor nota promedio, con su carrera. Columnas: nombre, carrera, promedio redondeado a 1, materias.",
       hint: "Agrupa por estudiante, y ordena por el promedio. Muestra también cuántas materias cursó.",
-      starter: "SELECT e.nombre, ca.nombre AS carrera, ROUND(AVG(i.nota_final), 1) AS promedio, COUNT(*) AS materias\nFROM ...\nLIMIT 10;",
-      expectedSql: "SELECT e.nombre, ca.nombre AS carrera, ROUND(AVG(i.nota_final), 1) AS promedio, COUNT(*) AS materias\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY e.nombre, ca.nombre ORDER BY promedio DESC, e.nombre LIMIT 10;",
+      starter: "SELECT e.nombre, ca.nombre AS carrera, ROUND((AVG(i.nota_final))::numeric, 1) AS promedio, COUNT(*) AS materias\nFROM ...\nLIMIT 10;",
+      expectedSql: "SELECT e.nombre, ca.nombre AS carrera, ROUND((AVG(i.nota_final))::numeric, 1) AS promedio, COUNT(*) AS materias\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY e.nombre, ca.nombre ORDER BY promedio DESC, e.nombre LIMIT 10;",
       orderMatters: true
     },
     {
@@ -352,8 +352,8 @@ export const upb = {
       title: "Asistencia y nota",
       prompt: "Nota promedio agrupada por tramo de asistencia: \"Menos de 70\", \"70 a 85\" y \"Mas de 85\". Columnas: tramo, inscripciones, nota. Ordena por tramo.",
       hint: "CASE WHEN arma los tramos; se agrupa por la misma expresión.",
-      starter: "SELECT CASE WHEN asistencia_pct < 70 THEN 'Menos de 70'\n            WHEN asistencia_pct <= 85 THEN '70 a 85'\n            ELSE 'Mas de 85' END AS tramo,\n  COUNT(*) AS inscripciones, ROUND(AVG(nota_final), 1) AS nota\nFROM hecho_inscripcion\nGROUP BY ...;",
-      expectedSql: "SELECT CASE WHEN asistencia_pct < 70 THEN 'Menos de 70'\n            WHEN asistencia_pct <= 85 THEN '70 a 85'\n            ELSE 'Mas de 85' END AS tramo,\n  COUNT(*) AS inscripciones, ROUND(AVG(nota_final), 1) AS nota\nFROM hecho_inscripcion GROUP BY tramo ORDER BY tramo;",
+      starter: "SELECT CASE WHEN asistencia_pct < 70 THEN 'Menos de 70'\n            WHEN asistencia_pct <= 85 THEN '70 a 85'\n            ELSE 'Mas de 85' END AS tramo,\n  COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion\nGROUP BY ...;",
+      expectedSql: "SELECT CASE WHEN asistencia_pct < 70 THEN 'Menos de 70'\n            WHEN asistencia_pct <= 85 THEN '70 a 85'\n            ELSE 'Mas de 85' END AS tramo,\n  COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion GROUP BY tramo ORDER BY tramo;",
       orderMatters: true,
       trampa: "Si los tres tramos dan notas parecidas, la conclusion NO es que asistir no sirva: en estos datos la nota se generó aparte de la asistencia. Un cruce sin relación causal es la trampa mas facil de vender en un tablero."
     }

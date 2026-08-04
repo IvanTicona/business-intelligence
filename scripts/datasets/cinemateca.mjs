@@ -331,8 +331,8 @@ GROUP BY s.nombre, f.horario ORDER BY s.nombre, f.horario;`,
     title: 'Recaudación sin columna de importe',
     prompt: 'Recaudación total por tipo de público. Columnas: tipo, asistentes, recaudacion redondeada a 2. De mayor a menor recaudación.',
     hint: 'El hecho no guarda el precio: está en dim_publico. Se multiplica el conteo por el precio de la dimensión.',
-    starter: 'SELECT pu.tipo, COUNT(*) AS asistentes, ROUND(COUNT(*) * pu.precio, 2) AS recaudacion\nFROM hecho_asistencia a\nJOIN dim_publico pu ON ...;',
-    expectedSql: `SELECT pu.tipo, COUNT(*) AS asistentes, ROUND(COUNT(*) * pu.precio, 2) AS recaudacion
+    starter: 'SELECT pu.tipo, COUNT(*) AS asistentes, ROUND((COUNT(*) * pu.precio)::numeric, 2) AS recaudacion\nFROM hecho_asistencia a\nJOIN dim_publico pu ON ...;',
+    expectedSql: `SELECT pu.tipo, COUNT(*) AS asistentes, ROUND((COUNT(*) * pu.precio)::numeric, 2) AS recaudacion
 FROM hecho_asistencia a JOIN dim_publico pu ON a.id_publico = pu.id_publico
 GROUP BY pu.tipo, pu.precio ORDER BY recaudacion DESC;`,
     orderMatters: true,
@@ -342,8 +342,8 @@ GROUP BY pu.tipo, pu.precio ORDER BY recaudacion DESC;`,
     title: 'Qué tan llenas están las salas',
     prompt: 'Ocupación promedio por sala: asistentes de cada función sobre la capacidad de la sala, por cien, promediado y redondeado a 2. Columnas: sala, capacidad, ocupacion_pct. De mayor a menor.',
     hint: 'Primero los asistentes por función, y después el promedio de la ocupación de esas funciones.',
-    starter: 'SELECT sala, capacidad, ROUND(AVG(pct), 2) AS ocupacion_pct\nFROM (\n  SELECT ..., COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM ... GROUP BY a.id_funcion, ...\n) GROUP BY sala, capacidad;',
-    expectedSql: `SELECT sala, capacidad, ROUND(AVG(pct), 2) AS ocupacion_pct FROM (
+    starter: 'SELECT sala, capacidad, ROUND((AVG(pct))::numeric, 2) AS ocupacion_pct\nFROM (\n  SELECT ..., COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM ... GROUP BY a.id_funcion, ...\n) GROUP BY sala, capacidad;',
+    expectedSql: `SELECT sala, capacidad, ROUND((AVG(pct))::numeric, 2) AS ocupacion_pct FROM (
   SELECT s.nombre AS sala, s.capacidad AS capacidad, COUNT(*) * 100.0 / s.capacidad AS pct
   FROM hecho_asistencia a JOIN dim_sala s ON a.id_sala = s.id_sala
   GROUP BY a.id_funcion, s.nombre, s.capacidad
@@ -377,8 +377,8 @@ GROUP BY t.dia_semana ORDER BY asistentes DESC;`,
     title: 'Peso de cada ciclo',
     prompt: 'Por ciclo: asistentes y su porcentaje del total, redondeado a 2. Columnas: ciclo, asistentes, participacion. De mayor a menor.',
     hint: 'SUM(...) OVER () sobre el conteo ya agregado.',
-    starter: 'SELECT ciclo, asistentes,\n  ROUND(asistentes * 100.0 / SUM(asistentes) OVER (), 2) AS participacion\nFROM ( ... );',
-    expectedSql: `SELECT ciclo, asistentes, ROUND(asistentes * 100.0 / SUM(asistentes) OVER (), 2) AS participacion FROM (
+    starter: 'SELECT ciclo, asistentes,\n  ROUND((asistentes * 100.0 / SUM(asistentes) OVER ())::numeric, 2) AS participacion\nFROM ( ... );',
+    expectedSql: `SELECT ciclo, asistentes, ROUND((asistentes * 100.0 / SUM(asistentes) OVER ())::numeric, 2) AS participacion FROM (
   SELECT c.nombre AS ciclo, COUNT(*) AS asistentes
   FROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo
   GROUP BY c.nombre
@@ -390,9 +390,9 @@ GROUP BY t.dia_semana ORDER BY asistentes DESC;`,
     title: 'Promedio de público por función',
     prompt: 'Por ciclo: funciones, asistentes y promedio de asistentes por función redondeado a 1. Columnas: ciclo, funciones, asistentes, promedio. De mayor a menor promedio.',
     hint: 'Las funciones y las asistencias tienen grain distinto. Cuenta las funciones con DISTINCT dentro de la misma consulta.',
-    starter: 'SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND(COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion), 1) AS promedio\nFROM ...;',
+    starter: 'SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND((COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion))::numeric, 1) AS promedio\nFROM ...;',
     expectedSql: `SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,
-  ROUND(COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion), 1) AS promedio
+  ROUND((COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion))::numeric, 1) AS promedio
 FROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo
 GROUP BY c.nombre ORDER BY promedio DESC;`,
     orderMatters: true,

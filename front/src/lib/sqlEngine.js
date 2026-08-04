@@ -1,35 +1,57 @@
-import initSqlJs from 'sql.js'
-import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
+/**
+ * MOTOR SQL DEL CURSO · PostgreSQL
+ *
+ * Las consolas corren PGlite: PostgreSQL compilado a WebAssembly. Igual que
+ * antes no hay servidor —la base vive en la pestaña del alumno— pero el
+ * dialecto ahora es el mismo que se dicta en clase.
+ *
+ * PGlite es asíncrono, a diferencia de sql.js, así que todo lo que toca la base
+ * devuelve promesas. La forma del resultado se mantiene en `{ columns, rows }`
+ * con las filas como arreglos, que es lo que ya consume toda la aplicación.
+ */
 
-let enginePromise = null
-
-// sql.js carga el .wasm por separado; Vite lo emite como asset y nos da la URL final.
-function loadEngine() {
-  if (!enginePromise) {
-    enginePromise = initSqlJs({ locateFile: () => wasmUrl })
-  }
-
-  return enginePromise
-}
+let motorPrometido = null
 
 /**
- * Devuelve el motor sql.js ya inicializado.
+ * Carga PGlite una sola vez.
  *
- * El taller OLTP necesita crear bases vacías por su cuenta (el alumno escribe
- * el DDL), así que no le sirve `createDatabase`, que espera un seed.
+ * Va con `import()` dinámico a propósito: el motor pesa ~3,6 MB comprimido y no
+ * tiene por qué descargarlo quien solo viene a ver los capítulos. Baja recién
+ * cuando se abre una consola.
  */
 export function cargarMotor() {
-  return loadEngine()
+  if (!motorPrometido) {
+    motorPrometido = import('@electric-sql/pglite').then(m => m.PGlite)
+  }
+
+  return motorPrometido
 }
 
 /**
- * Crea una base SQLite en memoria y la puebla con el DDL + INSERTs del seed.
- * Cada práctica trae su propio seed, así los alumnos consultan datos reales.
+ * Base vacía, lista para que el alumno escriba su propio DDL.
+ *
+ * `reiniciar()` vacía el esquema en vez de crear otra base: levantar una
+ * instancia nueva cuesta más de un segundo, y el taller reinicia en cada
+ * ejecución.
+ */
+export async function crearBaseVacia() {
+  const PGlite = await cargarMotor()
+  const db = new PGlite()
+
+  db.reiniciar = async () => {
+    await db.exec('DROP SCHEMA public CASCADE; CREATE SCHEMA public;')
+  }
+
+  return db
+}
+
+/**
+ * Crea una base y la puebla con el DDL + INSERTs del seed.
+ * Cada práctica y cada base del laboratorio traen el suyo.
  */
 export async function createDatabase(seedSql) {
-  const SQL = await loadEngine()
-  const db = new SQL.Database()
-  db.run(seedSql)
+  const db = await crearBaseVacia()
+  await db.exec(seedSql)
 
   return db
 }
@@ -37,13 +59,24 @@ export async function createDatabase(seedSql) {
 /**
  * Ejecuta la consulta del alumno. Devuelve siempre la misma forma
  * ({ columns, rows }) para que la UI no tenga que ramificar.
+ *
+ * Un script con varias sentencias devuelve el resultado de la última que haya
+ * traído filas, que es lo que el alumno espera ver.
  */
-export function runQuery(db, sql) {
-  const results = db.exec(sql)
-  if (results.length === 0) return { columns: [], rows: [] }
+export async function runQuery(db, sql) {
+  const salidas = await db.exec(sql, { rowMode: 'array' })
+  if (!salidas.length) return { columns: [], rows: [] }
 
-  const last = results[results.length - 1]
-  return { columns: last.columns, rows: last.values }
+  for (let i = salidas.length - 1; i >= 0; i--) {
+    if (salidas[i].fields?.length) {
+      return {
+        columns: salidas[i].fields.map(f => f.name),
+        rows: salidas[i].rows,
+      }
+    }
+  }
+
+  return { columns: [], rows: [] }
 }
 
 /**
@@ -60,7 +93,7 @@ export function compareResults(actual, expected, orderMatters = false) {
     return { ok: false, reason: `Esperaba ${expected.columns.length} columna(s) y obtuve ${actual.columns.length}.` }
   }
 
-  const normalize = grid => grid.map(row => row.map(normalizeCell).join(''))
+  const normalize = grid => grid.map(row => row.map(normalizeCell).join('␟'))
   const actualRows = normalize(actual.rows)
   const expectedRows = normalize(expected.rows)
 
@@ -82,10 +115,22 @@ export function compareResults(actual, expected, orderMatters = false) {
   return { ok: true, reason: '' }
 }
 
-// Los números salen de SQLite con precisión flotante: redondeamos para que
-// 1533.3333333 y 1533.33 no se consideren respuestas distintas.
+/**
+ * Normaliza una celda para comparar.
+ *
+ * Postgres devuelve los NUMERIC como cadena para no perder precisión, así que
+ * lo que parece texto puede ser un número: se intenta convertir antes de
+ * comparar, o "1533.33" y 1533.33 se considerarían distintos.
+ */
 function normalizeCell(value) {
   if (value === null || value === undefined) return '∅'
   if (typeof value === 'number') return Number(value.toFixed(2)).toString()
-  return String(value).trim()
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+
+  const texto = String(value).trim()
+  if (texto !== '' && !Number.isNaN(Number(texto))) {
+    return Number(Number(texto).toFixed(2)).toString()
+  }
+
+  return texto
 }

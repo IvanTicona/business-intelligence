@@ -309,8 +309,8 @@ GROUP BY t.dia_semana ORDER BY viajes DESC;`,
     title: 'Duración: el promedio sí, la suma no',
     prompt: 'Duración promedio de viaje por línea, redondeada a 1 decimal. Muestra color y promedio, del viaje más largo al más corto.',
     hint: 'Sumar duraciones de viajes distintos no significa nada. La duración es una métrica NO aditiva: se promedia.',
-    starter: 'SELECT l.color, ROUND(AVG(...), 1) AS minutos\nFROM hecho_viaje h\nJOIN dim_linea l ON ...;',
-    expectedSql: `SELECT l.color, ROUND(AVG(h.duracion_min), 1) AS minutos
+    starter: 'SELECT l.color, ROUND((AVG(...))::numeric, 1) AS minutos\nFROM hecho_viaje h\nJOIN dim_linea l ON ...;',
+    expectedSql: `SELECT l.color, ROUND((AVG(h.duracion_min))::numeric, 1) AS minutos
 FROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea
 GROUP BY l.color ORDER BY minutos DESC;`,
     orderMatters: true,
@@ -321,8 +321,8 @@ GROUP BY l.color ORDER BY minutos DESC;`,
     title: 'Un flag que sí se suma',
     prompt: 'Porcentaje de viajes que fueron transbordo, por línea. Muestra color y el porcentaje redondeado a 2. De mayor a menor.',
     hint: 'es_transbordo vale 0 o 1: SUM cuenta los transbordos y COUNT(*) el total. Ese es el patrón de un flag aditivo.',
-    starter: 'SELECT l.color, ROUND(SUM(...) * 100.0 / COUNT(*), 2) AS pct\nFROM ...;',
-    expectedSql: `SELECT l.color, ROUND(SUM(h.es_transbordo) * 100.0 / COUNT(*), 2) AS pct_transbordo
+    starter: 'SELECT l.color, ROUND((SUM(...) * 100.0 / COUNT(*))::numeric, 2) AS pct\nFROM ...;',
+    expectedSql: `SELECT l.color, ROUND((SUM(h.es_transbordo) * 100.0 / COUNT(*))::numeric, 2) AS pct_transbordo
 FROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea
 GROUP BY l.color ORDER BY pct_transbordo DESC;`,
     orderMatters: true,
@@ -333,7 +333,7 @@ GROUP BY l.color ORDER BY pct_transbordo DESC;`,
     prompt: 'Viajes y recaudación por mes. Muestra nombre_mes, viajes y recaudacion (SUM de tarifa_pagada redondeado a 2), en orden de mes.',
     hint: 'Agrupa por mes y nombre_mes juntos, y ordena por el número de mes para que no salga alfabético.',
     starter: 'SELECT t.nombre_mes, COUNT(*) AS viajes, ...\nFROM ...\nGROUP BY t.mes, t.nombre_mes\nORDER BY ...;',
-    expectedSql: `SELECT t.nombre_mes, COUNT(*) AS viajes, ROUND(SUM(h.tarifa_pagada), 2) AS recaudacion
+    expectedSql: `SELECT t.nombre_mes, COUNT(*) AS viajes, ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion
 FROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo
 GROUP BY t.mes, t.nombre_mes ORDER BY t.mes;`,
     orderMatters: true,
@@ -359,8 +359,8 @@ GROUP BY t.mes, t.nombre_mes ORDER BY t.mes;`,
     title: 'Suavizar la serie',
     prompt: 'Viajes por mes junto a la media móvil de 3 meses, redondeada a 1. Columnas: mes, viajes, media_movil.',
     hint: 'ROWS BETWEEN 2 PRECEDING AND CURRENT ROW define la ventana de tres meses.',
-    starter: 'SELECT mes, viajes,\n  ROUND(AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN ... ), 1) AS media_movil\nFROM ( ... );',
-    expectedSql: `SELECT mes, viajes, ROUND(AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 1) AS media_movil
+    starter: 'SELECT mes, viajes,\n  ROUND((AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN ... ))::numeric, 1) AS media_movil\nFROM ( ... );',
+    expectedSql: `SELECT mes, viajes, ROUND((AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW))::numeric, 1) AS media_movil
 FROM (
   SELECT t.mes AS mes, COUNT(*) AS viajes
   FROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo
@@ -373,8 +373,8 @@ FROM (
     title: 'La trampa de la tarifa cero',
     prompt: 'Tarifa promedio efectivamente pagada por tipo de pasajero, contando también los viajes gratuitos. Muestra tipo y el promedio redondeado a 2, de mayor a menor.',
     hint: 'Los transbordos pagan 0, y las personas con discapacidad también. Un cero es un dato, no un faltante: entra en el promedio.',
-    starter: 'SELECT p.tipo, ROUND(AVG(...), 2) AS tarifa_promedio\nFROM hecho_viaje h\nJOIN dim_pasajero p ON ...;',
-    expectedSql: `SELECT p.tipo, ROUND(AVG(h.tarifa_pagada), 2) AS tarifa_promedio
+    starter: 'SELECT p.tipo, ROUND((AVG(...))::numeric, 2) AS tarifa_promedio\nFROM hecho_viaje h\nJOIN dim_pasajero p ON ...;',
+    expectedSql: `SELECT p.tipo, ROUND((AVG(h.tarifa_pagada))::numeric, 2) AS tarifa_promedio
 FROM hecho_viaje h JOIN dim_pasajero p ON h.id_tipo_pasajero = p.id_tipo_pasajero
 GROUP BY p.tipo ORDER BY tarifa_promedio DESC;`,
     orderMatters: true,
@@ -388,7 +388,7 @@ GROUP BY p.tipo ORDER BY tarifa_promedio DESC;`,
     starter: 'SELECT l.color, COUNT(*) AS viajes,\n  SUM(CASE WHEN ... THEN 1 ELSE 0 END) AS viajes_pagos,\n  ...\nFROM ...;',
     expectedSql: `SELECT l.color, COUNT(*) AS viajes,
   SUM(CASE WHEN h.tarifa_pagada > 0 THEN 1 ELSE 0 END) AS viajes_pagos,
-  ROUND(SUM(h.tarifa_pagada), 2) AS recaudacion
+  ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion
 FROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea
 GROUP BY l.color ORDER BY recaudacion DESC;`,
     orderMatters: true,

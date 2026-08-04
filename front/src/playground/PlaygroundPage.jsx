@@ -65,13 +65,13 @@ export default function PlaygroundPage() {
     return () => { cancelado = true }
   }, [baseId])
 
-  const ejecutar = useCallback(() => {
+  const ejecutar = useCallback(async () => {
     if (!db) return
     const sql = consulta.trim()
     if (!sql) return
 
     try {
-      const salida = runQuery(db, sql)
+      const salida = await runQuery(db, sql)
       const recortado = salida.rows.length > MAX_FILAS
       setResultado({
         ...salida,

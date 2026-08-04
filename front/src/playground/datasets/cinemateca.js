@@ -314,8 +314,8 @@ export const cinemateca = {
       title: "Recaudación sin columna de importe",
       prompt: "Recaudación total por tipo de público. Columnas: tipo, asistentes, recaudacion redondeada a 2. De mayor a menor recaudación.",
       hint: "El hecho no guarda el precio: está en dim_publico. Se multiplica el conteo por el precio de la dimensión.",
-      starter: "SELECT pu.tipo, COUNT(*) AS asistentes, ROUND(COUNT(*) * pu.precio, 2) AS recaudacion\nFROM hecho_asistencia a\nJOIN dim_publico pu ON ...;",
-      expectedSql: "SELECT pu.tipo, COUNT(*) AS asistentes, ROUND(COUNT(*) * pu.precio, 2) AS recaudacion\nFROM hecho_asistencia a JOIN dim_publico pu ON a.id_publico = pu.id_publico\nGROUP BY pu.tipo, pu.precio ORDER BY recaudacion DESC;",
+      starter: "SELECT pu.tipo, COUNT(*) AS asistentes, ROUND((COUNT(*) * pu.precio)::numeric, 2) AS recaudacion\nFROM hecho_asistencia a\nJOIN dim_publico pu ON ...;",
+      expectedSql: "SELECT pu.tipo, COUNT(*) AS asistentes, ROUND((COUNT(*) * pu.precio)::numeric, 2) AS recaudacion\nFROM hecho_asistencia a JOIN dim_publico pu ON a.id_publico = pu.id_publico\nGROUP BY pu.tipo, pu.precio ORDER BY recaudacion DESC;",
       orderMatters: true
     },
     {
@@ -325,8 +325,8 @@ export const cinemateca = {
       title: "Qué tan llenas están las salas",
       prompt: "Ocupación promedio por sala: asistentes de cada función sobre la capacidad de la sala, por cien, promediado y redondeado a 2. Columnas: sala, capacidad, ocupacion_pct. De mayor a menor.",
       hint: "Primero los asistentes por función, y después el promedio de la ocupación de esas funciones.",
-      starter: "SELECT sala, capacidad, ROUND(AVG(pct), 2) AS ocupacion_pct\nFROM (\n  SELECT ..., COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM ... GROUP BY a.id_funcion, ...\n) GROUP BY sala, capacidad;",
-      expectedSql: "SELECT sala, capacidad, ROUND(AVG(pct), 2) AS ocupacion_pct FROM (\n  SELECT s.nombre AS sala, s.capacidad AS capacidad, COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM hecho_asistencia a JOIN dim_sala s ON a.id_sala = s.id_sala\n  GROUP BY a.id_funcion, s.nombre, s.capacidad\n) GROUP BY sala, capacidad ORDER BY ocupacion_pct DESC;",
+      starter: "SELECT sala, capacidad, ROUND((AVG(pct))::numeric, 2) AS ocupacion_pct\nFROM (\n  SELECT ..., COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM ... GROUP BY a.id_funcion, ...\n) GROUP BY sala, capacidad;",
+      expectedSql: "SELECT sala, capacidad, ROUND((AVG(pct))::numeric, 2) AS ocupacion_pct FROM (\n  SELECT s.nombre AS sala, s.capacidad AS capacidad, COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM hecho_asistencia a JOIN dim_sala s ON a.id_sala = s.id_sala\n  GROUP BY a.id_funcion, s.nombre, s.capacidad\n) GROUP BY sala, capacidad ORDER BY ocupacion_pct DESC;",
       orderMatters: true
     },
     {
@@ -358,8 +358,8 @@ export const cinemateca = {
       title: "Peso de cada ciclo",
       prompt: "Por ciclo: asistentes y su porcentaje del total, redondeado a 2. Columnas: ciclo, asistentes, participacion. De mayor a menor.",
       hint: "SUM(...) OVER () sobre el conteo ya agregado.",
-      starter: "SELECT ciclo, asistentes,\n  ROUND(asistentes * 100.0 / SUM(asistentes) OVER (), 2) AS participacion\nFROM ( ... );",
-      expectedSql: "SELECT ciclo, asistentes, ROUND(asistentes * 100.0 / SUM(asistentes) OVER (), 2) AS participacion FROM (\n  SELECT c.nombre AS ciclo, COUNT(*) AS asistentes\n  FROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\n  GROUP BY c.nombre\n) ORDER BY asistentes DESC;",
+      starter: "SELECT ciclo, asistentes,\n  ROUND((asistentes * 100.0 / SUM(asistentes) OVER ())::numeric, 2) AS participacion\nFROM ( ... );",
+      expectedSql: "SELECT ciclo, asistentes, ROUND((asistentes * 100.0 / SUM(asistentes) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT c.nombre AS ciclo, COUNT(*) AS asistentes\n  FROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\n  GROUP BY c.nombre\n) ORDER BY asistentes DESC;",
       orderMatters: true
     },
     {
@@ -369,8 +369,8 @@ export const cinemateca = {
       title: "Promedio de público por función",
       prompt: "Por ciclo: funciones, asistentes y promedio de asistentes por función redondeado a 1. Columnas: ciclo, funciones, asistentes, promedio. De mayor a menor promedio.",
       hint: "Las funciones y las asistencias tienen grain distinto. Cuenta las funciones con DISTINCT dentro de la misma consulta.",
-      starter: "SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND(COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion), 1) AS promedio\nFROM ...;",
-      expectedSql: "SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND(COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion), 1) AS promedio\nFROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\nGROUP BY c.nombre ORDER BY promedio DESC;",
+      starter: "SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND((COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion))::numeric, 1) AS promedio\nFROM ...;",
+      expectedSql: "SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND((COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion))::numeric, 1) AS promedio\nFROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\nGROUP BY c.nombre ORDER BY promedio DESC;",
       orderMatters: true
     }
   ]
@@ -393,7 +393,7 @@ cinemateca.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -403,28 +403,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-03-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-03-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_sala (
   id_sala INTEGER PRIMARY KEY,

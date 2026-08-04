@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@vitejs/plugin-react": "^6.0.1",
     "antd": "^6.4.3",
     "framer-motion": "^12.40.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "sql.js": "^1.14.1",
     "vite": "^8.0.12"
   }
 }

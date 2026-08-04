@@ -241,7 +241,7 @@ export const yaigo = {
       prompt: "Cantidad de pedidos y subtotal por categoría de comercio. Columnas: categoria, pedidos, subtotal. De mayor a menor subtotal.",
       hint: "La categoría está en dim_comercio.",
       starter: "SELECT c.categoria, COUNT(*) AS pedidos, ...\nFROM hecho_pedido p\nJOIN dim_comercio c ON ...;",
-      expectedSql: "SELECT c.categoria, COUNT(*) AS pedidos, ROUND(SUM(p.subtotal), 2) AS subtotal\nFROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\nGROUP BY c.categoria ORDER BY subtotal DESC;",
+      expectedSql: "SELECT c.categoria, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\nGROUP BY c.categoria ORDER BY subtotal DESC;",
       orderMatters: true
     },
     {
@@ -251,8 +251,8 @@ export const yaigo = {
       title: "Envíos por zona",
       prompt: "Cantidad de envíos y minutos promedio de entrega por zona, redondeado a 1. Columnas: zona, envios, minutos. Del más lento al más rápido.",
       hint: "dim_zona la comparten los dos hechos: acá se usa desde hecho_envio.",
-      starter: "SELECT z.nombre, COUNT(*) AS envios, ROUND(AVG(e.minutos_entrega), 1) AS minutos\nFROM hecho_envio e\nJOIN dim_zona z ON ...;",
-      expectedSql: "SELECT z.nombre AS zona, COUNT(*) AS envios, ROUND(AVG(e.minutos_entrega), 1) AS minutos\nFROM hecho_envio e JOIN dim_zona z ON e.id_zona = z.id_zona\nGROUP BY z.nombre ORDER BY minutos DESC;",
+      starter: "SELECT z.nombre, COUNT(*) AS envios, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos\nFROM hecho_envio e\nJOIN dim_zona z ON ...;",
+      expectedSql: "SELECT z.nombre AS zona, COUNT(*) AS envios, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos\nFROM hecho_envio e JOIN dim_zona z ON e.id_zona = z.id_zona\nGROUP BY z.nombre ORDER BY minutos DESC;",
       orderMatters: true
     },
     {
@@ -285,8 +285,8 @@ export const yaigo = {
       title: "Tasa de concreción por zona",
       prompt: "Por zona: pedidos, envíos y el porcentaje de pedidos que terminaron en envío, redondeado a 2. Columnas: zona, pedidos, envios, tasa. De mayor a menor tasa.",
       hint: "Es el reto anterior, dividiendo una columna por la otra. Cuida la división entera: multiplica por 100.0.",
-      starter: "SELECT zona, pedidos, envios,\n  ROUND(envios * 100.0 / pedidos, 2) AS tasa\nFROM ( ... );",
-      expectedSql: "SELECT zona, pedidos, envios, ROUND(envios * 100.0 / pedidos, 2) AS tasa FROM (\n  SELECT z.nombre AS zona,\n    COALESCE(ped.pedidos, 0) AS pedidos,\n    COALESCE(env.envios, 0) AS envios\n  FROM dim_zona z\n  LEFT JOIN (SELECT id_zona_entrega AS id_zona, COUNT(*) AS pedidos FROM hecho_pedido GROUP BY id_zona_entrega) ped\n    ON ped.id_zona = z.id_zona\n  LEFT JOIN (SELECT id_zona, COUNT(*) AS envios FROM hecho_envio GROUP BY id_zona) env\n    ON env.id_zona = z.id_zona\n) ORDER BY tasa DESC, zona;",
+      starter: "SELECT zona, pedidos, envios,\n  ROUND((envios * 100.0 / pedidos)::numeric, 2) AS tasa\nFROM ( ... );",
+      expectedSql: "SELECT zona, pedidos, envios, ROUND((envios * 100.0 / pedidos)::numeric, 2) AS tasa FROM (\n  SELECT z.nombre AS zona,\n    COALESCE(ped.pedidos, 0) AS pedidos,\n    COALESCE(env.envios, 0) AS envios\n  FROM dim_zona z\n  LEFT JOIN (SELECT id_zona_entrega AS id_zona, COUNT(*) AS pedidos FROM hecho_pedido GROUP BY id_zona_entrega) ped\n    ON ped.id_zona = z.id_zona\n  LEFT JOIN (SELECT id_zona, COUNT(*) AS envios FROM hecho_envio GROUP BY id_zona) env\n    ON env.id_zona = z.id_zona\n) ORDER BY tasa DESC, zona;",
       orderMatters: true
     },
     {
@@ -297,7 +297,7 @@ export const yaigo = {
       prompt: "Por macrozona: subtotal de los pedidos entregados y costo de envío total. Columnas: macrozona, subtotal, costo_envio. Ordena por macrozona.",
       hint: "Las dos métricas viven en hechos distintos. Resume cada una por macrozona y después únelas.",
       starter: "SELECT z.macrozona, ...\nFROM dim_zona z\nLEFT JOIN ( ... ) ON ...\nGROUP BY z.macrozona;",
-      expectedSql: "SELECT z.macrozona,\n  ROUND(SUM(COALESCE(ped.subtotal, 0)), 2) AS subtotal,\n  ROUND(SUM(COALESCE(env.costo, 0)), 2) AS costo_envio\nFROM dim_zona z\nLEFT JOIN (\n  SELECT id_zona_entrega AS id_zona, SUM(subtotal) AS subtotal\n  FROM hecho_pedido WHERE estado = 'Entregado' GROUP BY id_zona_entrega\n) ped ON ped.id_zona = z.id_zona\nLEFT JOIN (\n  SELECT id_zona, SUM(costo_envio) AS costo FROM hecho_envio GROUP BY id_zona\n) env ON env.id_zona = z.id_zona\nGROUP BY z.macrozona ORDER BY z.macrozona;",
+      expectedSql: "SELECT z.macrozona,\n  ROUND((SUM(COALESCE(ped.subtotal, 0)))::numeric, 2) AS subtotal,\n  ROUND((SUM(COALESCE(env.costo, 0)))::numeric, 2) AS costo_envio\nFROM dim_zona z\nLEFT JOIN (\n  SELECT id_zona_entrega AS id_zona, SUM(subtotal) AS subtotal\n  FROM hecho_pedido WHERE estado = 'Entregado' GROUP BY id_zona_entrega\n) ped ON ped.id_zona = z.id_zona\nLEFT JOIN (\n  SELECT id_zona, SUM(costo_envio) AS costo FROM hecho_envio GROUP BY id_zona\n) env ON env.id_zona = z.id_zona\nGROUP BY z.macrozona ORDER BY z.macrozona;",
       orderMatters: true
     },
     {
@@ -307,8 +307,8 @@ export const yaigo = {
       title: "Minutos: promedio, nunca suma",
       prompt: "Minutos promedio de entrega por tipo de vehículo, redondeado a 1. Columnas: vehiculo, minutos, envios. Del más lento al más rápido.",
       hint: "Sumar los minutos de entregas distintas no es ninguna magnitud real.",
-      starter: "SELECT rp.vehiculo, ROUND(AVG(e.minutos_entrega), 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;",
-      expectedSql: "SELECT rp.vehiculo, ROUND(AVG(e.minutos_entrega), 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.vehiculo ORDER BY minutos DESC;",
+      starter: "SELECT rp.vehiculo, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;",
+      expectedSql: "SELECT rp.vehiculo, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.vehiculo ORDER BY minutos DESC;",
       orderMatters: true
     },
     {
@@ -330,7 +330,7 @@ export const yaigo = {
       prompt: "Pedidos y subtotal por mes. Columnas: mes, pedidos, subtotal. En orden de mes.",
       hint: "Agrupa por t.mes y ordena por el mismo campo.",
       starter: "SELECT t.mes, COUNT(*) AS pedidos, ...\nFROM hecho_pedido p\nJOIN dim_tiempo t ON ...;",
-      expectedSql: "SELECT t.mes, COUNT(*) AS pedidos, ROUND(SUM(p.subtotal), 2) AS subtotal\nFROM hecho_pedido p JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+      expectedSql: "SELECT t.mes, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
       orderMatters: true
     },
     {
@@ -341,7 +341,7 @@ export const yaigo = {
       prompt: "Los 5 comercios con más subtotal facturado, con su puesto. Columnas: puesto, nombre, subtotal.",
       hint: "RANK() OVER (ORDER BY ... DESC) numera; después se recorta con LIMIT.",
       starter: "SELECT RANK() OVER (ORDER BY ... DESC) AS puesto, nombre, subtotal\nFROM ( ... )\nLIMIT 5;",
-      expectedSql: "SELECT RANK() OVER (ORDER BY subtotal DESC) AS puesto, nombre, subtotal FROM (\n  SELECT c.nombre AS nombre, ROUND(SUM(p.subtotal), 2) AS subtotal\n  FROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\n  GROUP BY c.nombre\n) ORDER BY subtotal DESC LIMIT 5;",
+      expectedSql: "SELECT RANK() OVER (ORDER BY subtotal DESC) AS puesto, nombre, subtotal FROM (\n  SELECT c.nombre AS nombre, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\n  FROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\n  GROUP BY c.nombre\n) ORDER BY subtotal DESC LIMIT 5;",
       orderMatters: true
     },
     {
@@ -351,8 +351,8 @@ export const yaigo = {
       title: "La trampa del abanico",
       prompt: "Subtotal por zona contando SOLO los pedidos entregados, sin pasar por hecho_envio. Columnas: zona, subtotal. De mayor a menor.",
       hint: "El subtotal está en hecho_pedido: no hace falta tocar hecho_envio para nada.",
-      starter: "SELECT z.nombre AS zona, ROUND(SUM(p.subtotal), 2) AS subtotal\nFROM hecho_pedido p\nJOIN dim_zona z ON ...\nWHERE p.estado = 'Entregado'\n...;",
-      expectedSql: "SELECT z.nombre AS zona, ROUND(SUM(p.subtotal), 2) AS subtotal\nFROM hecho_pedido p JOIN dim_zona z ON p.id_zona_entrega = z.id_zona\nWHERE p.estado = 'Entregado'\nGROUP BY z.nombre ORDER BY subtotal DESC;",
+      starter: "SELECT z.nombre AS zona, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p\nJOIN dim_zona z ON ...\nWHERE p.estado = 'Entregado'\n...;",
+      expectedSql: "SELECT z.nombre AS zona, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_zona z ON p.id_zona_entrega = z.id_zona\nWHERE p.estado = 'Entregado'\nGROUP BY z.nombre ORDER BY subtotal DESC;",
       orderMatters: true,
       trampa: "Si sumas subtotal despues de unir con hecho_envio, cada pedido con mas de un envio contaria su subtotal varias veces. La regla: nunca sumes una metrica despues de un JOIN que multiplica filas."
     },
@@ -363,8 +363,8 @@ export const yaigo = {
       title: "Qué hecho responde qué",
       prompt: "Por repartidor: envíos hechos, kilómetros recorridos y propina total. Columnas: alias, envios, km, propina. Los 8 primeros por kilómetros.",
       hint: "Esta pregunta es solo de hecho_envio: los pedidos no saben quién repartió.",
-      starter: "SELECT rp.alias, COUNT(*) AS envios, ROUND(SUM(e.distancia_km), 2) AS km, ...\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;",
-      expectedSql: "SELECT rp.alias, COUNT(*) AS envios, ROUND(SUM(e.distancia_km), 2) AS km, ROUND(SUM(e.propina), 2) AS propina\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.alias ORDER BY km DESC, rp.alias LIMIT 8;",
+      starter: "SELECT rp.alias, COUNT(*) AS envios, ROUND((SUM(e.distancia_km))::numeric, 2) AS km, ...\nFROM hecho_envio e\nJOIN dim_repartidor rp ON ...;",
+      expectedSql: "SELECT rp.alias, COUNT(*) AS envios, ROUND((SUM(e.distancia_km))::numeric, 2) AS km, ROUND((SUM(e.propina))::numeric, 2) AS propina\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.alias ORDER BY km DESC, rp.alias LIMIT 8;",
       orderMatters: true
     }
   ]
@@ -385,7 +385,7 @@ yaigo.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -395,28 +395,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-12-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-12-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_zona (
   id_zona INTEGER PRIMARY KEY,

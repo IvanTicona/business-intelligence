@@ -292,7 +292,7 @@ export const entel = {
       prompt: "Datos consumidos (GB) por plan, usando la tabla de grain fino. Columnas: plan, datos_gb redondeado a 2. De mayor a menor.",
       hint: "hecho_consumo_dia tiene una fila por SIM y día: hay que sumar muchas.",
       starter: "SELECT pl.nombre AS plan, ...\nFROM hecho_consumo_dia c\nJOIN dim_plan pl ON ...;",
-      expectedSql: "SELECT pl.nombre AS plan, ROUND(SUM(c.datos_gb), 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
+      expectedSql: "SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
       orderMatters: true
     },
     {
@@ -303,7 +303,7 @@ export const entel = {
       prompt: "El mismo consumo por plan, pero leyendo agregado_consumo_mes. Columnas: plan, datos_gb redondeado a 2. De mayor a menor. Compara el resultado con el reto anterior.",
       hint: "El agregado ya trae los GB sumados: solo hay que agrupar por plan.",
       starter: "SELECT pl.nombre AS plan, ...\nFROM agregado_consumo_mes a\nJOIN dim_plan pl ON ...;",
-      expectedSql: "SELECT pl.nombre AS plan, ROUND(SUM(a.datos_gb), 2) AS datos_gb\nFROM agregado_consumo_mes a JOIN dim_plan pl ON a.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
+      expectedSql: "SELECT pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes a JOIN dim_plan pl ON a.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
       orderMatters: true,
       trampa: "Los dos retos dan el MISMO numero. Esa es la idea de una tabla agregada: no cambia la respuesta, cambia cuanto hay que leer para obtenerla."
     },
@@ -315,7 +315,7 @@ export const entel = {
       prompt: "Consumo de datos por día de la semana. Columnas: dia_semana, datos_gb redondeado a 2. De mayor a menor.",
       hint: "El agregado está resumido por MES: perdió el día. Esta pregunta solo la puede responder el grain fino.",
       starter: "SELECT t.dia_semana, ...\nFROM hecho_consumo_dia c\nJOIN dim_tiempo t ON ...;",
-      expectedSql: "SELECT t.dia_semana, ROUND(SUM(c.datos_gb), 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_tiempo t ON c.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY datos_gb DESC;",
+      expectedSql: "SELECT t.dia_semana, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_tiempo t ON c.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY datos_gb DESC;",
       orderMatters: true
     },
     {
@@ -337,7 +337,7 @@ export const entel = {
       prompt: "Consumo de datos por región de la macroregión Occidente. Columnas: region, datos_gb redondeado a 2. De mayor a menor.",
       hint: "La macroregión es un atributo de dim_region.",
       starter: "SELECT rg.nombre AS region, ...\nFROM hecho_consumo_dia c\nJOIN dim_region rg ON ...\nWHERE rg.macroregion = ...;",
-      expectedSql: "SELECT rg.nombre AS region, ROUND(SUM(c.datos_gb), 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_region rg ON c.id_region = rg.id_region\nWHERE rg.macroregion = 'Occidente'\nGROUP BY rg.nombre ORDER BY datos_gb DESC;",
+      expectedSql: "SELECT rg.nombre AS region, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_region rg ON c.id_region = rg.id_region\nWHERE rg.macroregion = 'Occidente'\nGROUP BY rg.nombre ORDER BY datos_gb DESC;",
       orderMatters: true
     },
     {
@@ -370,8 +370,8 @@ export const entel = {
       title: "Consumo promedio por línea",
       prompt: "GB promedio por línea en cada plan: total de GB dividido por líneas distintas, redondeado a 2. Columnas: plan, gb_por_linea. De mayor a menor.",
       hint: "Divide dos agregados, no promedies el consumo diario.",
-      starter: "SELECT pl.nombre AS plan,\n  ROUND(SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea), 2) AS gb_por_linea\nFROM ...;",
-      expectedSql: "SELECT pl.nombre AS plan, ROUND(SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea), 2) AS gb_por_linea\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY gb_por_linea DESC;",
+      starter: "SELECT pl.nombre AS plan,\n  ROUND((SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea))::numeric, 2) AS gb_por_linea\nFROM ...;",
+      expectedSql: "SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea))::numeric, 2) AS gb_por_linea\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY gb_por_linea DESC;",
       orderMatters: true
     },
     {
@@ -381,8 +381,8 @@ export const entel = {
       title: "Los tres meses",
       prompt: "Consumo de datos por mes desde el agregado. Columnas: mes, datos_gb redondeado a 2. En orden de mes.",
       hint: "El agregado ya tiene la columna mes: no necesita dim_tiempo.",
-      starter: "SELECT mes, ROUND(SUM(datos_gb), 2) AS datos_gb\nFROM agregado_consumo_mes\nGROUP BY ...;",
-      expectedSql: "SELECT mes, ROUND(SUM(datos_gb), 2) AS datos_gb\nFROM agregado_consumo_mes GROUP BY mes ORDER BY mes;",
+      starter: "SELECT mes, ROUND((SUM(datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes\nGROUP BY ...;",
+      expectedSql: "SELECT mes, ROUND((SUM(datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes GROUP BY mes ORDER BY mes;",
       orderMatters: true
     },
     {
@@ -392,8 +392,8 @@ export const entel = {
       title: "Qué región pesa más",
       prompt: "Por región: GB y su porcentaje del total nacional, redondeado a 2. Columnas: region, datos_gb, participacion. De mayor a menor.",
       hint: "SUM(...) OVER () da el total nacional.",
-      starter: "SELECT region, datos_gb,\n  ROUND(datos_gb * 100.0 / SUM(datos_gb) OVER (), 2) AS participacion\nFROM ( ... );",
-      expectedSql: "SELECT region, datos_gb, ROUND(datos_gb * 100.0 / SUM(datos_gb) OVER (), 2) AS participacion FROM (\n  SELECT rg.nombre AS region, ROUND(SUM(a.datos_gb), 2) AS datos_gb\n  FROM agregado_consumo_mes a JOIN dim_region rg ON a.id_region = rg.id_region\n  GROUP BY rg.nombre\n) ORDER BY datos_gb DESC;",
+      starter: "SELECT region, datos_gb,\n  ROUND((datos_gb * 100.0 / SUM(datos_gb) OVER ())::numeric, 2) AS participacion\nFROM ( ... );",
+      expectedSql: "SELECT region, datos_gb, ROUND((datos_gb * 100.0 / SUM(datos_gb) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT rg.nombre AS region, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb\n  FROM agregado_consumo_mes a JOIN dim_region rg ON a.id_region = rg.id_region\n  GROUP BY rg.nombre\n) ORDER BY datos_gb DESC;",
       orderMatters: true
     },
     {
@@ -404,7 +404,7 @@ export const entel = {
       prompt: "Para cada región, el plan con más GB. Columnas: region, plan, datos_gb. Ordena por región.",
       hint: "ROW_NUMBER() OVER (PARTITION BY region ORDER BY datos_gb DESC) y quedarse con el puesto 1.",
       starter: "SELECT region, plan, datos_gb FROM (\n  SELECT ..., ROW_NUMBER() OVER (PARTITION BY ...) AS puesto\n  FROM ...\n) WHERE puesto = 1;",
-      expectedSql: "SELECT region, plan, datos_gb FROM (\n  SELECT rg.nombre AS region, pl.nombre AS plan, ROUND(SUM(a.datos_gb), 2) AS datos_gb,\n    ROW_NUMBER() OVER (PARTITION BY rg.nombre ORDER BY SUM(a.datos_gb) DESC, pl.nombre) AS puesto\n  FROM agregado_consumo_mes a\n  JOIN dim_region rg ON a.id_region = rg.id_region\n  JOIN dim_plan pl ON a.id_plan = pl.id_plan\n  GROUP BY rg.nombre, pl.nombre\n) WHERE puesto = 1 ORDER BY region;",
+      expectedSql: "SELECT region, plan, datos_gb FROM (\n  SELECT rg.nombre AS region, pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb,\n    ROW_NUMBER() OVER (PARTITION BY rg.nombre ORDER BY SUM(a.datos_gb) DESC, pl.nombre) AS puesto\n  FROM agregado_consumo_mes a\n  JOIN dim_region rg ON a.id_region = rg.id_region\n  JOIN dim_plan pl ON a.id_plan = pl.id_plan\n  GROUP BY rg.nombre, pl.nombre\n) WHERE puesto = 1 ORDER BY region;",
       orderMatters: true
     },
     {
@@ -414,8 +414,8 @@ export const entel = {
       title: "Comprobar que el agregado no miente",
       prompt: "Compara el total de GB de las dos tablas en una sola fila: columnas detalle, agregado y diferencia, todas redondeadas a 2.",
       hint: "Dos subconsultas escalares y una resta. Si la diferencia no da cero, el proceso que llena el agregado está roto.",
-      starter: "SELECT\n  ROUND((SELECT SUM(datos_gb) FROM ...), 2) AS detalle,\n  ...;",
-      expectedSql: "SELECT\n  ROUND((SELECT SUM(datos_gb) FROM hecho_consumo_dia), 2) AS detalle,\n  ROUND((SELECT SUM(datos_gb) FROM agregado_consumo_mes), 2) AS agregado,\n  ROUND((SELECT SUM(datos_gb) FROM hecho_consumo_dia) - (SELECT SUM(datos_gb) FROM agregado_consumo_mes), 2) AS diferencia;",
+      starter: "SELECT\n  ROUND(((SELECT SUM(datos_gb) FROM ...))::numeric, 2) AS detalle,\n  ...;",
+      expectedSql: "SELECT\n  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia))::numeric, 2) AS detalle,\n  ROUND(((SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS agregado,\n  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia) - (SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS diferencia;",
       orderMatters: false
     }
   ]
@@ -436,7 +436,7 @@ entel.seedSql = String.raw`
 
 CREATE TABLE dim_tiempo (
   id_tiempo INTEGER PRIMARY KEY,
-  fecha TEXT NOT NULL,
+  fecha DATE NOT NULL,
   anio INTEGER NOT NULL,
   mes INTEGER NOT NULL,
   nombre_mes TEXT NOT NULL,
@@ -446,28 +446,23 @@ CREATE TABLE dim_tiempo (
 );
 
 INSERT INTO dim_tiempo (id_tiempo, fecha, anio, mes, nombre_mes, trimestre, dia_semana, es_fin_semana)
-WITH RECURSIVE dias(d) AS (
-  SELECT date('2025-01-01')
-  UNION ALL
-  SELECT date(d, '+1 day') FROM dias WHERE d < '2025-03-31'
-)
 SELECT
-  CAST(strftime('%Y%m%d', d) AS INTEGER),
-  d,
-  CAST(strftime('%Y', d) AS INTEGER),
-  CAST(strftime('%m', d) AS INTEGER),
-  CASE CAST(strftime('%m', d) AS INTEGER)
+  CAST(to_char(d, 'YYYYMMDD') AS INTEGER),
+  d::date,
+  EXTRACT(YEAR FROM d)::INTEGER,
+  EXTRACT(MONTH FROM d)::INTEGER,
+  CASE EXTRACT(MONTH FROM d)
     WHEN 1 THEN 'Enero' WHEN 2 THEN 'Febrero' WHEN 3 THEN 'Marzo' WHEN 4 THEN 'Abril'
     WHEN 5 THEN 'Mayo' WHEN 6 THEN 'Junio' WHEN 7 THEN 'Julio' WHEN 8 THEN 'Agosto'
     WHEN 9 THEN 'Septiembre' WHEN 10 THEN 'Octubre' WHEN 11 THEN 'Noviembre' ELSE 'Diciembre'
   END,
-  (CAST(strftime('%m', d) AS INTEGER) + 2) / 3,
-  CASE CAST(strftime('%w', d) AS INTEGER)
+  EXTRACT(QUARTER FROM d)::INTEGER,
+  CASE EXTRACT(DOW FROM d)
     WHEN 0 THEN 'Domingo' WHEN 1 THEN 'Lunes' WHEN 2 THEN 'Martes' WHEN 3 THEN 'Miercoles'
     WHEN 4 THEN 'Jueves' WHEN 5 THEN 'Viernes' ELSE 'Sabado'
   END,
-  CASE WHEN CAST(strftime('%w', d) AS INTEGER) IN (0, 6) THEN 1 ELSE 0 END
-FROM dias;
+  CASE WHEN EXTRACT(DOW FROM d) IN (0, 6) THEN 1 ELSE 0 END
+FROM generate_series(DATE '2025-01-01', DATE '2025-03-31', INTERVAL '1 day') AS d;
 
 CREATE TABLE dim_plan (
   id_plan INTEGER PRIMARY KEY,
