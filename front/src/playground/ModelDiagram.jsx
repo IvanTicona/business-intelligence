@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CAJA_ANCHO, CAJA_CABECERA, CAJA_FILA } from './datasets/contrato.js'
+import { marcasDeCardinalidad, ruta } from './rutaAristas.js'
 
 const ZOOM_MIN = 1
 const ZOOM_MAX = 6
@@ -205,13 +206,24 @@ export default function ModelDiagram({
       onPointerCancel={alSoltar}
     >
       {aristas.map(arista => {
-        const [x1, y1, x2, y2] = recortar(arista.desde, arista.hasta)
+        const lista = [...cajas.values()]
+        const marcas = marcasDeCardinalidad(arista.desde, arista.hasta, lista)
+        const clase = arista.activa ? 'pg-arista-activa' : ''
+
         return (
-          <line
-            key={arista.id}
-            x1={x1} y1={y1} x2={x2} y2={y2}
-            className={`pg-arista ${arista.activa ? 'pg-arista-activa' : ''}`}
-          />
+          <g key={arista.id}>
+            <path d={ruta(arista.desde, arista.hasta, lista)} className={`pg-arista ${clase}`} />
+
+            {/* Pata de gallo del lado que declara la foránea: el "muchos". */}
+            <g transform={`translate(${marcas.muchos.x} ${marcas.muchos.y}) rotate(${marcas.muchos.angulo})`}>
+              <path d="M 11 0 L 0 -4.5 M 11 0 L 0 0 M 11 0 L 0 4.5" className={`pg-marca ${clase}`} />
+            </g>
+
+            {/* Barra del lado de la clave primaria: el "uno". */}
+            <g transform={`translate(${marcas.uno.x} ${marcas.uno.y}) rotate(${marcas.uno.angulo})`}>
+              <path d="M 8 -4.5 L 8 4.5" className={`pg-marca ${clase}`} />
+            </g>
+          </g>
         )
       })}
 
@@ -308,30 +320,4 @@ export default function ModelDiagram({
 /** Cabecera redondeada arriba y recta abajo, para que apoye sobre el cuerpo. */
 function cabecera(x, y, ancho, alto, radio = 8) {
   return `M ${x} ${y + alto} L ${x} ${y + radio} Q ${x} ${y} ${x + radio} ${y} L ${x + ancho - radio} ${y} Q ${x + ancho} ${y} ${x + ancho} ${y + radio} L ${x + ancho} ${y + alto} Z`
-}
-
-/**
- * Recorta el segmento centro-a-centro en el borde de cada caja: si se dibujara
- * completo, la línea entraría por debajo de las tablas y se vería salir de la
- * mitad del texto.
- */
-function recortar(a, b) {
-  const dx = b.x - a.x
-  const dy = b.y - a.y
-  const [ax, ay] = borde(a, dx, dy)
-  const [bx, by] = borde(b, -dx, -dy)
-  return [ax, ay, bx, by]
-}
-
-function borde(caja, dx, dy) {
-  if (dx === 0 && dy === 0) return [caja.x, caja.y]
-
-  const mitadX = CAJA_ANCHO / 2
-  const mitadY = caja.alto / 2
-  // Escala para llegar justo al lado que corresponda según la pendiente.
-  const escalaX = dx === 0 ? Infinity : mitadX / Math.abs(dx)
-  const escalaY = dy === 0 ? Infinity : mitadY / Math.abs(dy)
-  const escala = Math.min(escalaX, escalaY)
-
-  return [caja.x + dx * escala, caja.y + dy * escala]
 }

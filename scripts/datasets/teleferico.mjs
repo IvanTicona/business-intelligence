@@ -226,14 +226,16 @@ const tablas = [
     { nombre: 'cabecera_b', tipo: 'TEXT' },
     { nombre: 'longitud_km', tipo: 'REAL' },
   ] },
-  { nombre: 'dim_estacion', rol: 'dimension', x: 130, y: 620, columnas: [
+  // dim_estacion va DEBAJO de dim_linea a propósito: es la única dimensión que
+  // referencia a otra, y en las esquinas opuestas esa línea cruzaba el hecho.
+  { nombre: 'dim_estacion', rol: 'dimension', x: 820, y: 640, columnas: [
     { nombre: 'id_estacion', tipo: 'INTEGER', pk: true },
     { nombre: 'nombre', tipo: 'TEXT' },
     { nombre: 'id_linea', tipo: 'INTEGER', fk: 'dim_linea' },
     { nombre: 'ciudad', tipo: 'TEXT' },
     { nombre: 'altura_msnm', tipo: 'INTEGER' },
   ] },
-  { nombre: 'dim_pasajero', rol: 'dimension', x: 820, y: 620, columnas: [
+  { nombre: 'dim_pasajero', rol: 'dimension', x: 130, y: 620, columnas: [
     { nombre: 'id_tipo_pasajero', tipo: 'INTEGER', pk: true },
     { nombre: 'tipo', tipo: 'TEXT' },
     { nombre: 'tarifa_base', tipo: 'REAL' },

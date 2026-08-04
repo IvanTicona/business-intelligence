@@ -655,8 +655,12 @@
 /* --- Diagrama --- */
 
 .pg-arista {
+  /* Es un <path> y no un <line>: las relaciones que rodean una tabla se dibujan
+     en codo, y sin fill:none el codo se rellenaría como si fuera un polígono. */
+  fill: none;
   stroke: rgba(19, 43, 112, 0.28);
   stroke-width: 1.4;
+  stroke-linejoin: round;
 }
 
 .pg-arista-activa {
@@ -880,4 +884,18 @@
   .pg-panel-lienzo {
     min-height: 420px;
   }
+}
+
+/* Marcas de cardinalidad: pata de gallo del lado "muchos", barra del "uno".
+   Van más finas que la línea a propósito: informan sin gritar. */
+.pg-marca {
+  fill: none;
+  stroke: rgba(19, 43, 112, 0.45);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.pg-marca.pg-arista-activa {
+  stroke: #1677ff;
+  stroke-width: 1.7;
 }

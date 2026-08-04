@@ -176,8 +176,8 @@ export const teleferico = {
     {
       nombre: "dim_estacion",
       rol: "dimension",
-      x: 130,
-      y: 620,
+      x: 820,
+      y: 640,
       columnas: [
         {
           nombre: "id_estacion",
@@ -206,7 +206,7 @@ export const teleferico = {
     {
       nombre: "dim_pasajero",
       rol: "dimension",
-      x: 820,
+      x: 130,
       y: 620,
       columnas: [
         {

@@ -13,6 +13,16 @@ function loadEngine() {
 }
 
 /**
+ * Devuelve el motor sql.js ya inicializado.
+ *
+ * El taller OLTP necesita crear bases vacías por su cuenta (el alumno escribe
+ * el DDL), así que no le sirve `createDatabase`, que espera un seed.
+ */
+export function cargarMotor() {
+  return loadEngine()
+}
+
+/**
  * Crea una base SQLite en memoria y la puebla con el DDL + INSERTs del seed.
  * Cada práctica trae su propio seed, así los alumnos consultan datos reales.
  */

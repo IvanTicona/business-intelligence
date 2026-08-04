@@ -184,7 +184,7 @@ export default function PlaygroundPage() {
                     value={consulta}
                     onChange={setConsulta}
                     rows={10}
-                    placeholder={`-- Escribe SQL contra ${ficha?.nombre ?? 'la base'} y aprieta Ejecutar.\n-- Ctrl + Enter también corre la consulta.`}
+                    placeholder={`-- Escribe SQL contra ${ficha?.nombre ?? 'la base'} y ejecuta.\n-- Ctrl + Enter también corre la consulta.`}
                     onSubmit={ejecutar}
                   />
                 </div>

@@ -1,0 +1,364 @@
+/* ==========================================================================
+   TALLER OLTP
+   Reutiliza la distribución y los estilos del laboratorio (pg-*); acá van solo
+   las piezas propias: el registro de sentencias, los pasos y la especificación.
+   ========================================================================== */
+
+.taller-page {
+  padding: 16px;
+}
+
+.taller-avance {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(19, 43, 112, 0.07);
+  color: #132B70;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.taller-nota-editor {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* --- Registro de sentencias --- */
+
+.taller-registro {
+  margin-top: 14px;
+}
+
+.taller-registro-ok {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 9px;
+  background: rgba(34, 197, 94, 0.07);
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.taller-registro-ok em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.taller-error {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-left: 4px solid #dc2626;
+  border-radius: 0 9px 9px 0;
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.taller-error strong {
+  color: #b91c1c;
+  font-size: 13.5px;
+}
+
+.taller-error code,
+.taller-registro-lista code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+}
+
+.taller-error code {
+  color: #7f1d1d;
+}
+
+.taller-error span {
+  color: #b91c1c;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.taller-registro-lista {
+  display: grid;
+  gap: 3px;
+  max-height: 190px;
+  overflow-y: auto;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: sentencia;
+}
+
+.taller-registro-lista li {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.taller-registro-lista li:nth-child(even) {
+  background: rgba(15, 23, 42, 0.025);
+}
+
+.taller-linea-mal {
+  background: rgba(220, 38, 38, 0.07) !important;
+}
+
+.taller-linea-tipo {
+  color: #1677ff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.taller-registro-lista code {
+  overflow: hidden;
+  color: #475569;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taller-registro-lista em {
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+/* --- Pasos --- */
+
+.taller-marca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 1.5px solid rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.taller-marca-ok {
+  border-color: #22c55e;
+  background: #22c55e;
+}
+
+.pg-reto-cabecera .taller-marca {
+  margin-right: 10px;
+}
+
+.taller-estado-ok {
+  margin: 12px 0 0;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.taller-problemas {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 10px 14px 10px 30px;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 6px 6px 0;
+  background: rgba(245, 158, 11, 0.08);
+  color: #78350f;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* --- Lienzo vacío y especificación --- */
+
+.taller-lienzo-vacio {
+  display: grid;
+  place-content: center;
+  height: 100%;
+  margin: 0;
+  padding: 30px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.taller-lienzo-vacio code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
+  font-size: 12.5px;
+}
+
+.taller-estado-hecho {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* --- Especificación: una tabla por vez ---------------------------------- */
+
+.taller-spec {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.09);
+}
+
+.taller-spec-barra {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.taller-spec-barra button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+
+.taller-spec-barra button:hover {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
+.taller-spec-titulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.taller-spec-cuenta {
+  color: #94a3b8;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.taller-spec-ficha {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.11);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.taller-spec-hecha {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.taller-spec-ficha header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.taller-spec-ficha header code {
+  color: #132B70;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.taller-spec-para {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.taller-spec-columnas {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taller-spec-columnas li {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.07);
+}
+
+.taller-spec-columnas code {
+  color: #1f2937;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 13.5px;
+}
+
+.taller-spec-columnas span {
+  color: #cbd5e1;
+  font-size: 11.5px;
+}
+
+.taller-spec-marca {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 11.5px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.taller-spec-puntos {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.taller-spec-puntos button {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  border-radius: 999px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.taller-spec-puntos button.hecho {
+  border-color: #22c55e;
+  background: #22c55e;
+}
+
+.taller-spec-puntos button.activo {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.18);
+}
+
+/* El panel del taller reparte su alto entre el diagrama y la especificación,
+   sin crecer: el contenedor mide lo mismo que en el laboratorio. */
+.pg-panel-modelo.taller-panel {
+  grid-template-rows: auto minmax(0, 1.55fr) auto minmax(0, 1fr);
+}
