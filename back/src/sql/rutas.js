@@ -14,11 +14,18 @@ import { nombreSchema, poolDeAlumno, prepararAlumno, vaciarEspacio } from './alu
 import { leerEsquema } from './esquema.js'
 import { solucionDe, verificarReto } from './verificar.js'
 
+/*
+ * El SQL puede venir VACÍO y eso NO es un pedido inválido: es el alumno que
+ * borró el editor y pulsó Ejecutar. Con `min(1)` esto devolvía 400, el cliente
+ * lo trataba como una caída y el taller se quedaba colgado en "Iniciando
+ * PostgreSQL…" para siempre. El ejecutor ya responde "Escribe una consulta.",
+ * que es lo que el alumno necesita leer.
+ */
 const consultaSchema = z.object({
   // El identificador de la base, no el nombre del schema: el cliente pide
   // "ketal" y acá se traduce. Así el front nunca conoce ni nombra un schema.
   base: z.string().trim().min(1).max(40),
-  sql: z.string().min(1).max(20000),
+  sql: z.string().max(20000),
 })
 
 /** De "ketal" a "ds_ketal". Solo pasa lo que existe de verdad. */
@@ -77,7 +84,7 @@ export function rutasSql() {
    * desde la consola del navegador.
    */
   router.post('/verificar', async (req, res) => {
-    const leido = z.object({ reto: z.string().trim().min(1).max(60), sql: z.string().min(1).max(20000) }).safeParse(req.body)
+    const leido = z.object({ reto: z.string().trim().min(1).max(60), sql: z.string().max(20000) }).safeParse(req.body)
     if (!leido.success) return res.status(400).json({ error: 'Pedido inválido' })
 
     try {
@@ -100,7 +107,7 @@ export function rutasSql() {
 
   const espacioSchema = z.object({
     espacio: z.enum(['taller', 'libre']),
-    sql: z.string().min(1).max(50000),
+    sql: z.string().max(50000),
     // El taller vacía en cada corrida —ahí el entregable es el script, y con la
     // base recreada lo escrito ES lo que existe— y el playground libre no.
     reiniciar: z.boolean().optional().default(false),

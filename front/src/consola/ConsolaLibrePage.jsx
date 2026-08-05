@@ -58,7 +58,7 @@ ORDER BY altura_msnm DESC;
  */
 export default function ConsolaLibrePage() {
   const [motor, setMotor] = useState(null)
-  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) ?? SCRIPT_INICIAL)
+  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) || SCRIPT_INICIAL)
   const [tablas, setTablas] = useState([])
   const [ejecucion, setEjecucion] = useState(null)
   const [corriendo, setCorriendo] = useState(false)

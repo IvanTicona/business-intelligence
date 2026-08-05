@@ -36,7 +36,7 @@ function leerLogrados() {
  */
 export default function TallerOltpPage() {
   const [base, setBase] = useState(null)
-  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) ?? caso.scriptInicial)
+  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) || caso.scriptInicial)
   const [ejecucion, setEjecucion] = useState(null)
   const [vista, setVista] = useState('tabla')
   const [tipoGrafico, setTipoGrafico] = useState('barras')
@@ -65,18 +65,38 @@ export default function TallerOltpPage() {
    * cambio, la base es el entregable y no se vacía.
    */
   const correr = useCallback(async () => {
-    const salida = await ejecutarEspacio({ espacio: 'taller', sql: script, reiniciar: true })
+    /*
+     * Todo el cuerpo va protegido y `setBase(true)` en el finally.
+     *
+     * Antes, si el pedido fallaba, la excepción cortaba antes de marcar la
+     * consola como lista y la página quedaba para siempre en "Iniciando
+     * PostgreSQL…", sin editor y sin decir qué pasó. Un fallo tiene que
+     * mostrarse EN la consola, no en lugar de ella.
+     */
+    try {
+      const salida = await ejecutarEspacio({ espacio: 'taller', sql: script, reiniciar: true })
+      const falla = salida.registro?.find(l => !l.ok)
 
-    setEjecucion({
-      registro: salida.registro ?? [],
-      error: salida.error ? { mensaje: salida.error, numero: salida.registro?.find(l => !l.ok)?.numero ?? 1, resumen: salida.registro?.find(l => !l.ok)?.resumen ?? '' } : null,
-      resultado: salida.columns?.length
-        ? { columns: salida.columns, rows: salida.rows, totalFilas: salida.filas, recortado: salida.recortado }
-        : null,
-      tablas: prepararEsquema(salida.tablas),
-      sello: Date.now(),
-    })
-    setBase(true)
+      setEjecucion({
+        registro: salida.registro ?? [],
+        error: salida.error ? { mensaje: salida.error, numero: falla?.numero ?? 1, resumen: falla?.resumen ?? '' } : null,
+        resultado: salida.columns?.length
+          ? { columns: salida.columns, rows: salida.rows, totalFilas: salida.filas, recortado: salida.recortado }
+          : null,
+        tablas: prepararEsquema(salida.tablas),
+        sello: Date.now(),
+      })
+    } catch (err) {
+      setEjecucion({
+        registro: [],
+        error: { mensaje: err.message, numero: 1, resumen: '' },
+        resultado: null,
+        tablas: [],
+        sello: Date.now(),
+      })
+    } finally {
+      setBase(true)
+    }
   }, [script])
 
   // Primera corrida al abrir, para que el diagrama no arranque vacío si el
