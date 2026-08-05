@@ -528,7 +528,9 @@
 .pg-panel-modelo {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
-  height: calc(100vh - 32px);
+  /* 15px menos que el alto disponible: el contenedor llegaba justo al borde de
+     la ventana y quedaba pegado abajo. */
+  height: calc(100vh - 47px);
   padding: 16px;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 18px;

@@ -118,19 +118,31 @@
   text-align: center;
 }
 
-/* El selector de modo, sobre vidrio: el de antd viene con fondo claro. */
+/*
+ * El selector de modo, por el mismo motivo que los campos: la opción elegida va
+ * clara con texto oscuro. Antes era blanco sobre un fondo que dependía de que
+ * nuestro override le ganara al de antd, y cuando no le ganaba quedaba blanco
+ * sobre blanco.
+ */
 .acceso-card .acceso-modo.ant-segmented {
   padding: 3px;
-  background: rgba(9, 20, 50, 0.42);
+  background: rgba(9, 20, 50, 0.5);
 }
 
-.acceso-card .acceso-modo .ant-segmented-item {
-  color: #b9c6ee;
+.acceso-card .acceso-modo .ant-segmented-item,
+.acceso-card .acceso-modo .ant-segmented-item-label {
+  color: #c3cfef;
 }
 
-.acceso-card .acceso-modo .ant-segmented-item-selected {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+.acceso-card .acceso-modo .ant-segmented-item-selected,
+.acceso-card .acceso-modo .ant-segmented-thumb {
+  background: #fff;
+}
+
+.acceso-card .acceso-modo .ant-segmented-item-selected,
+.acceso-card .acceso-modo .ant-segmented-item-selected .ant-segmented-item-label {
+  color: #132b70;
+  font-weight: 600;
 }
 
 .acceso-error {
@@ -141,25 +153,50 @@
   margin-top: 18px;
 }
 
-/* Los campos también van en vidrio. Sin esto quedan blancos y opacos, que es
-   lo que hacía ver la pantalla como un formulario pegado encima de un fondo. */
+/*
+ * Los campos van CLAROS, con texto oscuro, y no en vidrio como el resto de la
+ * tarjeta.
+ *
+ * La versión anterior los ponía translúcidos con texto blanco y se veía bien...
+ * hasta que el navegador mete mano. El autocompletado de Chrome pinta el fondo
+ * del campo con SU color claro y no con el nuestro, así que quedaba texto blanco
+ * sobre fondo blanco: invisible. Pasó en producción.
+ *
+ * Se puede pelear con `-webkit-autofill` —y se hace más abajo— pero apoyar la
+ * legibilidad en ganarle a cada navegador es frágil. Un campo claro con texto
+ * oscuro se lee siempre, lo pinte quien lo pinte.
+ */
 .acceso-card .ant-input,
 .acceso-card .ant-input-affix-wrapper,
 .acceso-card .ant-input-password {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.22);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
-  color: #eef2ff;
+  background: #fff;
+  color: #1c2333;
+}
+
+.acceso-card .ant-input-affix-wrapper input.ant-input {
+  background: transparent;
+  color: #1c2333;
 }
 
 .acceso-card .ant-input::placeholder,
 .acceso-card .ant-input-affix-wrapper input::placeholder {
-  color: #8496c6;
+  color: #8b93a7;
+}
+
+/* Y por si acaso: el autocompletado igual queda legible. */
+.acceso-card input:-webkit-autofill,
+.acceso-card input:-webkit-autofill:hover,
+.acceso-card input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1c2333;
+  box-shadow: inset 0 0 0 1000px #fff;
+  caret-color: #1c2333;
 }
 
 .acceso-card .ant-input-affix-wrapper:hover,
 .acceso-card .ant-input:hover {
-  border-color: rgba(255, 255, 255, 0.34);
+  border-color: #9db4ff;
 }
 
 .acceso-card .ant-input-affix-wrapper-focused,
@@ -169,7 +206,7 @@
 }
 
 .acceso-card .ant-input-password-icon {
-  color: #8496c6;
+  color: #6b7488;
 }
 
 .acceso-card .ant-form-item-explain-error {

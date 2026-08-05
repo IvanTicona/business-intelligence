@@ -9,8 +9,10 @@ import { z } from 'zod'
 import { schemasDisponibles } from '../db/semillas.js'
 import { rolListo, motivoRol } from '../db/rolAlumno.js'
 import { exigirSesion } from '../auth/middleware.js'
+import { limitar } from '../lib/limite.js'
 import { MAX_FILAS, ejecutarSql } from './ejecutor.js'
-import { nombreSchema, poolDeAlumno, prepararAlumno, vaciarEspacio } from './alumnoDb.js'
+import { nombreSchema, poolDeAlumno, prepararAlumno, revisarCuota, vaciarEspacio } from './alumnoDb.js'
+import { palabraInicial, partirSentencias } from './sentencias.js'
 import { leerEsquema } from './esquema.js'
 import { solucionDe, verificarReto } from './verificar.js'
 
@@ -42,6 +44,14 @@ export function rutasSql() {
   const router = Router()
 
   router.use(exigirSesion)
+
+  /*
+   * Un tope general de consultas. No es contra el alumno que practica —240 por
+   * minuto es muchísimo más de lo que alguien escribe— sino contra un script que
+   * se cuelgue reintentando y contra una cuenta que quiera ocupar el motor
+   * entero durante una clase.
+   */
+  router.use(limitar('sql', 240, 60 * 1000))
 
   /** Qué bases hay para consultar. */
   router.get('/bases', (_req, res) => {
@@ -134,6 +144,12 @@ export function rutasSql() {
 
     try {
       await prepararAlumno(id)
+
+      // La cuota se revisa ANTES de ejecutar: dejar que crezca y avisar después
+      // sería avisar cuando el disco ya se llenó.
+      const excedido = await revisarCuota(id, partirSentencias(leido.data.sql).map(palabraInicial))
+      if (excedido) return res.json({ columns: [], rows: [], filas: 0, recortado: false, ms: 0, error: excedido, tablas: [] })
+
       if (leido.data.reiniciar) await vaciarEspacio(id, leido.data.espacio)
 
       const pool = poolDeAlumno(id)

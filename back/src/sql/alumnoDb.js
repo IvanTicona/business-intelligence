@@ -201,6 +201,52 @@ export async function vaciarEspacio(id, espacio) {
   }
 }
 
+/*
+ * Cuánto puede ocupar la base de un alumno.
+ *
+ * upb-sql no tiene ninguna cuota: nada impide que alguien llene el disco del
+ * servidor con un INSERT ... SELECT y deje sin clase al resto. 64 MB alcanzan de
+ * sobra para lo que pide el curso —el dataset más grande son 8 MB— y son poco
+ * comparados con el disco de una VPS.
+ *
+ * Pasado el tope no se bloquea todo: se siguen permitiendo las consultas y lo
+ * que BORRA. Dejar al alumno sin poder liberar su propio espacio lo obligaría a
+ * pedirle al docente que entre a la base.
+ */
+export const CUOTA_BYTES = 64 * 1024 * 1024
+
+const tamanos = new Map()
+const VIGENCIA_MS = 20_000
+
+/** Palabras con las que empieza algo que NO agranda la base. */
+const NO_ENGORDA = new Set(['SELECT', 'WITH', 'VALUES', 'TABLE', 'SHOW', 'EXPLAIN', 'DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'BEGIN', 'COMMIT', 'ROLLBACK'])
+
+/**
+ * ¿Puede correr esto? Devuelve null si sí, o el motivo si no.
+ *
+ * El tamaño se cachea unos segundos: consultarlo en cada tecla de un alumno que
+ * está probando cosas costaría más que lo que protege.
+ */
+export async function revisarCuota(id, palabras) {
+  if (palabras.every(p => NO_ENGORDA.has(p))) return null
+
+  const guardado = tamanos.get(id)
+  const ahora = Date.now()
+  let bytes = guardado && ahora - guardado.medido < VIGENCIA_MS ? guardado.bytes : null
+
+  if (bytes === null) {
+    bytes = (await tamañoDeAlumno(id)).bytes
+    tamanos.set(id, { bytes, medido: ahora })
+  }
+
+  if (bytes < CUOTA_BYTES) return null
+
+  return (
+    `Tu base llegó al límite de ${Math.round(CUOTA_BYTES / 1024 / 1024)} MB y no puede crecer más. ` +
+    'Puedes seguir consultando; para volver a crear o cargar, borra tablas que ya no uses o vacía tu base.'
+  )
+}
+
 /** Cuánto ocupa el trabajo del alumno. Lo usa el panel del docente. */
 export async function tamañoDeAlumno(id) {
   const { rows } = await exigirAdmin().query(
