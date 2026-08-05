@@ -1,0 +1,532 @@
+{
+ "ketal-01": {
+  "base": "ketal",
+  "sql": "SELECT p.categoria, SUM(h.cantidad) AS unidades\nFROM hecho_venta h JOIN dim_producto p ON h.id_producto = p.id_producto\nGROUP BY p.categoria ORDER BY unidades DESC;",
+  "orden": true
+ },
+ "ketal-02": {
+  "base": "ketal",
+  "sql": "SELECT s.macrozona, t.anio, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h\nJOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY s.macrozona, t.anio ORDER BY s.macrozona, t.anio;",
+  "orden": true
+ },
+ "ketal-03": {
+  "base": "ketal",
+  "sql": "SELECT p.nombre, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE p.marca = 'PIL' AND t.anio = 2025\nGROUP BY p.nombre ORDER BY importe DESC;",
+  "orden": true
+ },
+ "ketal-04": {
+  "base": "ketal",
+  "sql": "SELECT s.nombre, SUM(h.cantidad) AS unidades\nFROM hecho_venta h\nJOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025\nGROUP BY s.nombre\nHAVING SUM(h.cantidad) > (\n  SELECT AVG(u) FROM (\n    SELECT SUM(h2.cantidad) AS u\n    FROM hecho_venta h2 JOIN dim_tiempo t2 ON h2.id_tiempo = t2.id_tiempo\n    WHERE t2.anio = 2025 GROUP BY h2.id_sucursal\n  )\n)\nORDER BY unidades DESC;",
+  "orden": true
+ },
+ "ketal-05": {
+  "base": "ketal",
+  "sql": "SELECT t.trimestre, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY t.trimestre ORDER BY t.trimestre;",
+  "orden": true
+ },
+ "ketal-06": {
+  "base": "ketal",
+  "sql": "SELECT t.nombre_mes, ROUND((SUM(h.importe))::numeric, 2) AS importe\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 AND t.trimestre = 1\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "ketal-07": {
+  "base": "ketal",
+  "sql": "SELECT p.categoria, ROUND(((SUM(h.importe) - SUM(h.costo)) / SUM(h.importe) * 100)::numeric, 2) AS margen_pct\nFROM hecho_venta h\nJOIN dim_producto p ON h.id_producto = p.id_producto\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY p.categoria ORDER BY margen_pct DESC;",
+  "orden": true
+ },
+ "ketal-08": {
+  "base": "ketal",
+  "sql": "SELECT t.mes,\n  ROUND((SUM(CASE WHEN t.anio = 2024 THEN h.importe ELSE 0 END))::numeric, 2) AS importe_2024,\n  ROUND((SUM(CASE WHEN t.anio = 2025 THEN h.importe ELSE 0 END))::numeric, 2) AS importe_2025\nFROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "ketal-09": {
+  "base": "ketal",
+  "sql": "SELECT mes, importe, ROUND((SUM(importe) OVER (ORDER BY mes))::numeric, 2) AS acumulado\nFROM (\n  SELECT t.mes AS mes, ROUND((SUM(h.importe))::numeric, 2) AS importe\n  FROM hecho_venta h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY t.mes\n) ORDER BY mes;",
+  "orden": true
+ },
+ "ketal-10": {
+  "base": "ketal",
+  "sql": "SELECT nombre, importe, ROUND((importe * 100.0 / SUM(importe) OVER ())::numeric, 2) AS participacion\nFROM (\n  SELECT s.nombre AS nombre, ROUND((SUM(h.importe))::numeric, 2) AS importe\n  FROM hecho_venta h\n  JOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\n  JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  WHERE t.anio = 2025 GROUP BY s.nombre\n) ORDER BY importe DESC;",
+  "orden": true
+ },
+ "ketal-11": {
+  "base": "ketal",
+  "sql": "SELECT s.macrozona, COUNT(DISTINCT h.id_cliente) AS clientes\nFROM hecho_venta h\nJOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.anio = 2025 GROUP BY s.macrozona ORDER BY s.macrozona;",
+  "orden": true
+ },
+ "ketal-12": {
+  "base": "ketal",
+  "sql": "SELECT c.nombre AS categoria, ROUND((SUM(d.cantidad * d.precio_unitario - d.descuento))::numeric, 2) AS importe\nFROM detalle_venta d\nJOIN venta v ON d.id_venta = v.id_venta\nJOIN producto p ON d.id_producto = p.id_producto\nJOIN categoria c ON p.id_categoria = c.id_categoria\nWHERE v.fecha >= '2025-01-01' AND v.fecha <= '2025-12-31'\nGROUP BY c.nombre ORDER BY importe DESC;",
+  "orden": true
+ },
+ "tel-01": {
+  "base": "teleferico",
+  "sql": "SELECT l.color, COUNT(*) AS viajes\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY viajes DESC;",
+  "orden": true
+ },
+ "tel-02": {
+  "base": "teleferico",
+  "sql": "SELECT o.nombre AS origen, d.nombre AS destino, COUNT(*) AS viajes\nFROM hecho_viaje h\nJOIN dim_estacion o ON h.id_estacion_origen = o.id_estacion\nJOIN dim_estacion d ON h.id_estacion_destino = d.id_estacion\nGROUP BY o.nombre, d.nombre ORDER BY viajes DESC, origen, destino LIMIT 5;",
+  "orden": true
+ },
+ "tel-03": {
+  "base": "teleferico",
+  "sql": "SELECT o.nombre, COUNT(*) AS viajes\nFROM hecho_viaje h JOIN dim_estacion o ON h.id_estacion_origen = o.id_estacion\nWHERE o.ciudad = 'El Alto'\nGROUP BY o.nombre ORDER BY viajes DESC, o.nombre;",
+  "orden": true
+ },
+ "tel-04": {
+  "base": "teleferico",
+  "sql": "SELECT f.nombre, COUNT(*) AS viajes\nFROM hecho_viaje h\nJOIN dim_franja f ON h.id_franja = f.id_franja\nJOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nWHERE t.es_fin_semana = 0\nGROUP BY f.nombre ORDER BY viajes DESC;",
+  "orden": true
+ },
+ "tel-05": {
+  "base": "teleferico",
+  "sql": "SELECT t.dia_semana, COUNT(*) AS viajes\nFROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY viajes DESC;",
+  "orden": true
+ },
+ "tel-06": {
+  "base": "teleferico",
+  "sql": "SELECT l.color, ROUND((AVG(h.duracion_min))::numeric, 1) AS minutos\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY minutos DESC;",
+  "orden": true
+ },
+ "tel-07": {
+  "base": "teleferico",
+  "sql": "SELECT l.color, ROUND((SUM(h.es_transbordo) * 100.0 / COUNT(*))::numeric, 2) AS pct_transbordo\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY pct_transbordo DESC;",
+  "orden": true
+ },
+ "tel-08": {
+  "base": "teleferico",
+  "sql": "SELECT t.nombre_mes, COUNT(*) AS viajes, ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "tel-09": {
+  "base": "teleferico",
+  "sql": "SELECT color, nombre, viajes FROM (\n  SELECT l.color AS color, o.nombre AS nombre, COUNT(*) AS viajes,\n    ROW_NUMBER() OVER (PARTITION BY l.color ORDER BY COUNT(*) DESC, o.nombre) AS puesto\n  FROM hecho_viaje h\n  JOIN dim_linea l ON h.id_linea = l.id_linea\n  JOIN dim_estacion o ON h.id_estacion_origen = o.id_estacion\n  GROUP BY l.color, o.nombre\n) WHERE puesto = 1 ORDER BY color;",
+  "orden": true
+ },
+ "tel-10": {
+  "base": "teleferico",
+  "sql": "SELECT mes, viajes, ROUND((AVG(viajes) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW))::numeric, 1) AS media_movil\nFROM (\n  SELECT t.mes AS mes, COUNT(*) AS viajes\n  FROM hecho_viaje h JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
+  "orden": true
+ },
+ "tel-11": {
+  "base": "teleferico",
+  "sql": "SELECT p.tipo, ROUND((AVG(h.tarifa_pagada))::numeric, 2) AS tarifa_promedio\nFROM hecho_viaje h JOIN dim_pasajero p ON h.id_tipo_pasajero = p.id_tipo_pasajero\nGROUP BY p.tipo ORDER BY tarifa_promedio DESC;",
+  "orden": true
+ },
+ "tel-12": {
+  "base": "teleferico",
+  "sql": "SELECT l.color, COUNT(*) AS viajes,\n  SUM(CASE WHEN h.tarifa_pagada > 0 THEN 1 ELSE 0 END) AS viajes_pagos,\n  ROUND((SUM(h.tarifa_pagada))::numeric, 2) AS recaudacion\nFROM hecho_viaje h JOIN dim_linea l ON h.id_linea = l.id_linea\nGROUP BY l.color ORDER BY recaudacion DESC;",
+  "orden": true
+ },
+ "bso-01": {
+  "base": "bancosol",
+  "sql": "SELECT p.nombre, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d JOIN dim_producto p ON d.id_producto = p.id_producto\nGROUP BY p.nombre ORDER BY monto DESC;",
+  "orden": true
+ },
+ "bso-02": {
+  "base": "bancosol",
+  "sql": "SELECT a.ciudad, COUNT(*) AS clientes\nFROM dim_cliente c JOIN dim_agencia a ON c.id_agencia = a.id_agencia\nGROUP BY a.ciudad ORDER BY clientes DESC;",
+  "orden": true
+ },
+ "bso-03": {
+  "base": "bancosol",
+  "sql": "SELECT t.mes, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d JOIN dim_tiempo t ON d.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "bso-04": {
+  "base": "bancosol",
+  "sql": "SELECT a.nombre, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s\nJOIN dim_agencia a ON s.id_agencia = a.id_agencia\nJOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = 12\nGROUP BY a.nombre ORDER BY saldo DESC;",
+  "orden": true
+ },
+ "bso-05": {
+  "base": "bancosol",
+  "sql": "SELECT t.mes, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "bso-06": {
+  "base": "bancosol",
+  "sql": "SELECT ROUND((SUM(s.saldo_cartera))::numeric, 2) AS cartera_final\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nWHERE t.mes = (SELECT MAX(t2.mes) FROM hecho_saldo_mes s2 JOIN dim_tiempo t2 ON s2.id_tiempo = t2.id_tiempo);",
+  "orden": false
+ },
+ "bso-07": {
+  "base": "bancosol",
+  "sql": "SELECT ROUND((AVG(saldo))::numeric, 2) AS saldo_promedio FROM (\n  SELECT t.mes AS mes, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n);",
+  "orden": false
+ },
+ "bso-08": {
+  "base": "bancosol",
+  "sql": "SELECT c.rubro, COUNT(*) AS operaciones, ROUND((SUM(d.monto))::numeric, 2) AS monto\nFROM hecho_desembolso d\nJOIN dim_cliente c ON d.id_cliente = c.id_cliente\nJOIN dim_producto p ON d.id_producto = p.id_producto\nWHERE p.nombre = 'Microcredito individual'\nGROUP BY c.rubro ORDER BY monto DESC;",
+  "orden": true
+ },
+ "bso-09": {
+  "base": "bancosol",
+  "sql": "SELECT mes, saldo, LAG(saldo) OVER (ORDER BY mes) AS saldo_anterior FROM (\n  SELECT t.mes AS mes, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  GROUP BY t.mes\n) ORDER BY mes;",
+  "orden": true
+ },
+ "bso-10": {
+  "base": "bancosol",
+  "sql": "SELECT nombre, saldo, ROUND((saldo * 100.0 / SUM(saldo) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT a.nombre AS nombre, ROUND((SUM(s.saldo_cartera))::numeric, 2) AS saldo\n  FROM hecho_saldo_mes s\n  JOIN dim_agencia a ON s.id_agencia = a.id_agencia\n  JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY a.nombre\n) ORDER BY saldo DESC;",
+  "orden": true
+ },
+ "bso-11": {
+  "base": "bancosol",
+  "sql": "SELECT a.nombre AS agencia,\n  ROUND((COALESCE(col.monto, 0))::numeric, 2) AS desembolsado,\n  ROUND((COALESCE(car.saldo, 0))::numeric, 2) AS cartera\nFROM dim_agencia a\nLEFT JOIN (\n  SELECT id_agencia, SUM(monto) AS monto FROM hecho_desembolso GROUP BY id_agencia\n) col ON col.id_agencia = a.id_agencia\nLEFT JOIN (\n  SELECT s.id_agencia AS id_agencia, SUM(s.saldo_cartera) AS saldo\n  FROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\n  WHERE t.mes = 12 GROUP BY s.id_agencia\n) car ON car.id_agencia = a.id_agencia\nORDER BY a.nombre;",
+  "orden": true
+ },
+ "bso-12": {
+  "base": "bancosol",
+  "sql": "SELECT t.mes, ROUND((SUM(s.saldo_mora) * 100.0 / SUM(s.saldo_cartera))::numeric, 2) AS indice_mora\nFROM hecho_saldo_mes s JOIN dim_tiempo t ON s.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "ai-01": {
+  "base": "arcoiris",
+  "sql": "SELECT e.nombre, COUNT(*) AS atenciones, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.nombre ORDER BY importe DESC;",
+  "orden": true
+ },
+ "ai-02": {
+  "base": "arcoiris",
+  "sql": "SELECT m.nombre, e.nombre AS especialidad, COUNT(*) AS atenciones\nFROM hecho_atencion a\nJOIN dim_medico m ON a.id_medico = m.id_medico\nJOIN dim_especialidad e ON m.id_especialidad = e.id_especialidad\nGROUP BY m.nombre, e.nombre ORDER BY atenciones DESC, m.nombre LIMIT 5;",
+  "orden": true
+ },
+ "ai-03": {
+  "base": "arcoiris",
+  "sql": "SELECT COUNT(DISTINCT id_paciente) AS pacientes FROM dim_paciente;",
+  "orden": false
+ },
+ "ai-04": {
+  "base": "arcoiris",
+  "sql": "SELECT p.zona, COUNT(*) AS atenciones\nFROM hecho_atencion a JOIN dim_paciente p ON a.id_version_paciente = p.id_version\nGROUP BY p.zona ORDER BY atenciones DESC, p.zona;",
+  "orden": true
+ },
+ "ai-05": {
+  "base": "arcoiris",
+  "sql": "SELECT actual.zona, COUNT(*) AS atenciones\nFROM hecho_atencion a\nJOIN dim_paciente v ON a.id_version_paciente = v.id_version\nJOIN dim_paciente actual ON actual.id_paciente = v.id_paciente AND actual.es_actual = 1\nGROUP BY actual.zona ORDER BY atenciones DESC, actual.zona;",
+  "orden": true
+ },
+ "ai-06": {
+  "base": "arcoiris",
+  "sql": "SELECT e.nombre, COUNT(*) AS casos, ROUND((AVG(a.dias_estancia))::numeric, 1) AS estancia\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nWHERE a.es_internacion = 1\nGROUP BY e.nombre ORDER BY estancia DESC;",
+  "orden": true
+ },
+ "ai-07": {
+  "base": "arcoiris",
+  "sql": "SELECT p.seguro, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_paciente p ON a.id_version_paciente = p.id_version\nGROUP BY p.seguro ORDER BY importe DESC;",
+  "orden": true
+ },
+ "ai-08": {
+  "base": "arcoiris",
+  "sql": "SELECT e.area, ROUND((SUM(a.importe))::numeric, 2) AS importe\nFROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nGROUP BY e.area ORDER BY importe DESC;",
+  "orden": true
+ },
+ "ai-09": {
+  "base": "arcoiris",
+  "sql": "SELECT t.nombre_mes, COUNT(*) AS atenciones\nFROM hecho_atencion a JOIN dim_tiempo t ON a.id_tiempo = t.id_tiempo\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "ai-10": {
+  "base": "arcoiris",
+  "sql": "SELECT CASE WHEN t.es_fin_semana = 1 THEN 'Fin de semana' ELSE 'Habil' END AS tipo_dia,\n  COUNT(*) AS atenciones\nFROM hecho_atencion a\nJOIN dim_tiempo t ON a.id_tiempo = t.id_tiempo\nJOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\nWHERE e.nombre = 'Emergencias'\nGROUP BY tipo_dia ORDER BY atenciones DESC;",
+  "orden": true
+ },
+ "ai-11": {
+  "base": "arcoiris",
+  "sql": "SELECT area, nombre, importe,\n  ROUND((importe * 100.0 / SUM(importe) OVER (PARTITION BY area))::numeric, 2) AS pct_area\nFROM (\n  SELECT e.area AS area, e.nombre AS nombre, ROUND((SUM(a.importe))::numeric, 2) AS importe\n  FROM hecho_atencion a JOIN dim_especialidad e ON a.id_especialidad = e.id_especialidad\n  GROUP BY e.area, e.nombre\n) ORDER BY area, importe DESC;",
+  "orden": true
+ },
+ "ai-12": {
+  "base": "arcoiris",
+  "sql": "SELECT id_paciente, nombre, COUNT(*) AS versiones\nFROM dim_paciente GROUP BY id_paciente, nombre HAVING COUNT(*) > 1 ORDER BY id_paciente;",
+  "orden": true
+ },
+ "ygo-01": {
+  "base": "yaigo",
+  "sql": "SELECT c.categoria, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\nGROUP BY c.categoria ORDER BY subtotal DESC;",
+  "orden": true
+ },
+ "ygo-02": {
+  "base": "yaigo",
+  "sql": "SELECT z.nombre AS zona, COUNT(*) AS envios, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos\nFROM hecho_envio e JOIN dim_zona z ON e.id_zona = z.id_zona\nGROUP BY z.nombre ORDER BY minutos DESC;",
+  "orden": true
+ },
+ "ygo-03": {
+  "base": "yaigo",
+  "sql": "SELECT c.categoria, COUNT(*) AS cancelados\nFROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\nWHERE p.estado = 'Cancelado'\nGROUP BY c.categoria ORDER BY cancelados DESC, c.categoria;",
+  "orden": true
+ },
+ "ygo-04": {
+  "base": "yaigo",
+  "sql": "SELECT z.nombre AS zona,\n  COALESCE(ped.pedidos, 0) AS pedidos,\n  COALESCE(env.envios, 0) AS envios\nFROM dim_zona z\nLEFT JOIN (SELECT id_zona_entrega AS id_zona, COUNT(*) AS pedidos FROM hecho_pedido GROUP BY id_zona_entrega) ped\n  ON ped.id_zona = z.id_zona\nLEFT JOIN (SELECT id_zona, COUNT(*) AS envios FROM hecho_envio GROUP BY id_zona) env\n  ON env.id_zona = z.id_zona\nORDER BY z.nombre;",
+  "orden": true
+ },
+ "ygo-05": {
+  "base": "yaigo",
+  "sql": "SELECT zona, pedidos, envios, ROUND((envios * 100.0 / pedidos)::numeric, 2) AS tasa FROM (\n  SELECT z.nombre AS zona,\n    COALESCE(ped.pedidos, 0) AS pedidos,\n    COALESCE(env.envios, 0) AS envios\n  FROM dim_zona z\n  LEFT JOIN (SELECT id_zona_entrega AS id_zona, COUNT(*) AS pedidos FROM hecho_pedido GROUP BY id_zona_entrega) ped\n    ON ped.id_zona = z.id_zona\n  LEFT JOIN (SELECT id_zona, COUNT(*) AS envios FROM hecho_envio GROUP BY id_zona) env\n    ON env.id_zona = z.id_zona\n) ORDER BY tasa DESC, zona;",
+  "orden": true
+ },
+ "ygo-06": {
+  "base": "yaigo",
+  "sql": "SELECT z.macrozona,\n  ROUND((SUM(COALESCE(ped.subtotal, 0)))::numeric, 2) AS subtotal,\n  ROUND((SUM(COALESCE(env.costo, 0)))::numeric, 2) AS costo_envio\nFROM dim_zona z\nLEFT JOIN (\n  SELECT id_zona_entrega AS id_zona, SUM(subtotal) AS subtotal\n  FROM hecho_pedido WHERE estado = 'Entregado' GROUP BY id_zona_entrega\n) ped ON ped.id_zona = z.id_zona\nLEFT JOIN (\n  SELECT id_zona, SUM(costo_envio) AS costo FROM hecho_envio GROUP BY id_zona\n) env ON env.id_zona = z.id_zona\nGROUP BY z.macrozona ORDER BY z.macrozona;",
+  "orden": true
+ },
+ "ygo-07": {
+  "base": "yaigo",
+  "sql": "SELECT rp.vehiculo, ROUND((AVG(e.minutos_entrega))::numeric, 1) AS minutos, COUNT(*) AS envios\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.vehiculo ORDER BY minutos DESC;",
+  "orden": true
+ },
+ "ygo-08": {
+  "base": "yaigo",
+  "sql": "SELECT t.dia_semana, COUNT(*) AS pedidos\nFROM hecho_pedido p JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY pedidos DESC;",
+  "orden": true
+ },
+ "ygo-09": {
+  "base": "yaigo",
+  "sql": "SELECT t.mes, COUNT(*) AS pedidos, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo\nGROUP BY t.mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "ygo-10": {
+  "base": "yaigo",
+  "sql": "SELECT RANK() OVER (ORDER BY subtotal DESC) AS puesto, nombre, subtotal FROM (\n  SELECT c.nombre AS nombre, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\n  FROM hecho_pedido p JOIN dim_comercio c ON p.id_comercio = c.id_comercio\n  GROUP BY c.nombre\n) ORDER BY subtotal DESC LIMIT 5;",
+  "orden": true
+ },
+ "ygo-11": {
+  "base": "yaigo",
+  "sql": "SELECT z.nombre AS zona, ROUND((SUM(p.subtotal))::numeric, 2) AS subtotal\nFROM hecho_pedido p JOIN dim_zona z ON p.id_zona_entrega = z.id_zona\nWHERE p.estado = 'Entregado'\nGROUP BY z.nombre ORDER BY subtotal DESC;",
+  "orden": true
+ },
+ "ygo-12": {
+  "base": "yaigo",
+  "sql": "SELECT rp.alias, COUNT(*) AS envios, ROUND((SUM(e.distancia_km))::numeric, 2) AS km, ROUND((SUM(e.propina))::numeric, 2) AS propina\nFROM hecho_envio e JOIN dim_repartidor rp ON e.id_repartidor = rp.id_repartidor\nGROUP BY rp.alias ORDER BY km DESC, rp.alias LIMIT 8;",
+  "orden": true
+ },
+ "ent-01": {
+  "base": "entel",
+  "sql": "SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
+  "orden": true
+ },
+ "ent-02": {
+  "base": "entel",
+  "sql": "SELECT pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes a JOIN dim_plan pl ON a.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY datos_gb DESC;",
+  "orden": true
+ },
+ "ent-03": {
+  "base": "entel",
+  "sql": "SELECT t.dia_semana, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_tiempo t ON c.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY datos_gb DESC;",
+  "orden": true
+ },
+ "ent-04": {
+  "base": "entel",
+  "sql": "SELECT\n  (SELECT COUNT(*) FROM hecho_consumo_dia) AS filas_detalle,\n  (SELECT COUNT(*) FROM agregado_consumo_mes) AS filas_agregado;",
+  "orden": false
+ },
+ "ent-05": {
+  "base": "entel",
+  "sql": "SELECT rg.nombre AS region, ROUND((SUM(c.datos_gb))::numeric, 2) AS datos_gb\nFROM hecho_consumo_dia c JOIN dim_region rg ON c.id_region = rg.id_region\nWHERE rg.macroregion = 'Occidente'\nGROUP BY rg.nombre ORDER BY datos_gb DESC;",
+  "orden": true
+ },
+ "ent-06": {
+  "base": "entel",
+  "sql": "SELECT te.nombre AS tecnologia, pl.modalidad, COUNT(*) AS lineas\nFROM dim_linea l\nJOIN dim_tecnologia te ON l.id_tecnologia = te.id_tecnologia\nJOIN dim_plan pl ON l.id_plan = pl.id_plan\nGROUP BY te.nombre, pl.modalidad ORDER BY te.nombre, pl.modalidad;",
+  "orden": true
+ },
+ "ent-07": {
+  "base": "entel",
+  "sql": "SELECT rg.nombre AS region, COUNT(DISTINCT c.id_linea) AS lineas\nFROM hecho_consumo_dia c JOIN dim_region rg ON c.id_region = rg.id_region\nGROUP BY rg.nombre ORDER BY lineas DESC, rg.nombre;",
+  "orden": true
+ },
+ "ent-08": {
+  "base": "entel",
+  "sql": "SELECT pl.nombre AS plan, ROUND((SUM(c.datos_gb) / COUNT(DISTINCT c.id_linea))::numeric, 2) AS gb_por_linea\nFROM hecho_consumo_dia c JOIN dim_plan pl ON c.id_plan = pl.id_plan\nGROUP BY pl.nombre ORDER BY gb_por_linea DESC;",
+  "orden": true
+ },
+ "ent-09": {
+  "base": "entel",
+  "sql": "SELECT mes, ROUND((SUM(datos_gb))::numeric, 2) AS datos_gb\nFROM agregado_consumo_mes GROUP BY mes ORDER BY mes;",
+  "orden": true
+ },
+ "ent-10": {
+  "base": "entel",
+  "sql": "SELECT region, datos_gb, ROUND((datos_gb * 100.0 / SUM(datos_gb) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT rg.nombre AS region, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb\n  FROM agregado_consumo_mes a JOIN dim_region rg ON a.id_region = rg.id_region\n  GROUP BY rg.nombre\n) ORDER BY datos_gb DESC;",
+  "orden": true
+ },
+ "ent-11": {
+  "base": "entel",
+  "sql": "SELECT region, plan, datos_gb FROM (\n  SELECT rg.nombre AS region, pl.nombre AS plan, ROUND((SUM(a.datos_gb))::numeric, 2) AS datos_gb,\n    ROW_NUMBER() OVER (PARTITION BY rg.nombre ORDER BY SUM(a.datos_gb) DESC, pl.nombre) AS puesto\n  FROM agregado_consumo_mes a\n  JOIN dim_region rg ON a.id_region = rg.id_region\n  JOIN dim_plan pl ON a.id_plan = pl.id_plan\n  GROUP BY rg.nombre, pl.nombre\n) WHERE puesto = 1 ORDER BY region;",
+  "orden": true
+ },
+ "ent-12": {
+  "base": "entel",
+  "sql": "SELECT\n  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia))::numeric, 2) AS detalle,\n  ROUND(((SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS agregado,\n  ROUND(((SELECT SUM(datos_gb) FROM hecho_consumo_dia) - (SELECT SUM(datos_gb) FROM agregado_consumo_mes))::numeric, 2) AS diferencia;",
+  "orden": false
+ },
+ "upb-01": {
+  "base": "upb",
+  "sql": "SELECT ca.nombre AS carrera, COUNT(*) AS inscripciones\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.nombre ORDER BY inscripciones DESC;",
+  "orden": true
+ },
+ "upb-02": {
+  "base": "upb",
+  "sql": "SELECT paralelo, COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion GROUP BY paralelo ORDER BY paralelo;",
+  "orden": true
+ },
+ "upb-03": {
+  "base": "upb",
+  "sql": "SELECT m.nombre AS materia, COUNT(*) AS inscripciones\nFROM hecho_inscripcion i\nJOIN dim_materia m ON i.id_materia = m.id_materia\nJOIN dim_periodo p ON i.id_periodo = p.id_periodo\nWHERE p.codigo = '2025-2'\nGROUP BY m.nombre ORDER BY inscripciones DESC, m.nombre;",
+  "orden": true
+ },
+ "upb-04": {
+  "base": "upb",
+  "sql": "SELECT m.nombre AS materia, COUNT(*) AS inscripciones,\n  ROUND((SUM(i.aprobado) * 100.0 / COUNT(*))::numeric, 2) AS tasa\nFROM hecho_inscripcion i JOIN dim_materia m ON i.id_materia = m.id_materia\nGROUP BY m.nombre ORDER BY tasa ASC, m.nombre;",
+  "orden": true
+ },
+ "upb-05": {
+  "base": "upb",
+  "sql": "SELECT ca.nombre AS carrera, SUM(i.creditos) AS creditos\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.nombre ORDER BY creditos DESC;",
+  "orden": true
+ },
+ "upb-06": {
+  "base": "upb",
+  "sql": "SELECT ca.facultad, COUNT(*) AS inscripciones, ROUND((AVG(i.nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.facultad ORDER BY inscripciones DESC;",
+  "orden": true
+ },
+ "upb-07": {
+  "base": "upb",
+  "sql": "SELECT p.codigo, COUNT(*) AS inscripciones, COUNT(DISTINCT i.id_estudiante) AS estudiantes\nFROM hecho_inscripcion i JOIN dim_periodo p ON i.id_periodo = p.id_periodo\nGROUP BY p.codigo ORDER BY p.codigo;",
+  "orden": true
+ },
+ "upb-08": {
+  "base": "upb",
+  "sql": "SELECT p.anio,\n  SUM(CASE WHEN p.semestre = 1 THEN 1 ELSE 0 END) AS sem_1,\n  SUM(CASE WHEN p.semestre = 2 THEN 1 ELSE 0 END) AS sem_2\nFROM hecho_inscripcion i JOIN dim_periodo p ON i.id_periodo = p.id_periodo\nGROUP BY p.anio ORDER BY p.anio;",
+  "orden": true
+ },
+ "upb-09": {
+  "base": "upb",
+  "sql": "SELECT facultad, materia, tasa FROM (\n  SELECT ca.facultad AS facultad, m.nombre AS materia,\n    ROUND((SUM(i.aprobado) * 100.0 / COUNT(*))::numeric, 2) AS tasa,\n    ROW_NUMBER() OVER (PARTITION BY ca.facultad ORDER BY SUM(i.aprobado) * 1.0 / COUNT(*) ASC, m.nombre) AS puesto\n  FROM hecho_inscripcion i\n  JOIN dim_materia m ON i.id_materia = m.id_materia\n  JOIN dim_carrera ca ON m.id_carrera = ca.id_carrera\n  GROUP BY ca.facultad, m.nombre\n) WHERE puesto = 1 ORDER BY facultad;",
+  "orden": true
+ },
+ "upb-10": {
+  "base": "upb",
+  "sql": "SELECT e.nombre, ca.nombre AS carrera, ROUND((AVG(i.nota_final))::numeric, 1) AS promedio, COUNT(*) AS materias\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY e.nombre, ca.nombre ORDER BY promedio DESC, e.nombre LIMIT 10;",
+  "orden": true
+ },
+ "upb-11": {
+  "base": "upb",
+  "sql": "SELECT ca.nombre AS carrera, COUNT(DISTINCT i.id_estudiante) AS estudiantes\nFROM hecho_inscripcion i\nJOIN dim_estudiante e ON i.id_estudiante = e.id_estudiante\nJOIN dim_carrera ca ON e.id_carrera = ca.id_carrera\nGROUP BY ca.nombre ORDER BY estudiantes DESC, ca.nombre;",
+  "orden": true
+ },
+ "upb-12": {
+  "base": "upb",
+  "sql": "SELECT CASE WHEN asistencia_pct < 70 THEN 'Menos de 70'\n            WHEN asistencia_pct <= 85 THEN '70 a 85'\n            ELSE 'Mas de 85' END AS tramo,\n  COUNT(*) AS inscripciones, ROUND((AVG(nota_final))::numeric, 1) AS nota\nFROM hecho_inscripcion GROUP BY tramo ORDER BY tramo;",
+  "orden": true
+ },
+ "cin-01": {
+  "base": "cinemateca",
+  "sql": "SELECT p.titulo, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_pelicula p ON a.id_pelicula = p.id_pelicula\nGROUP BY p.titulo ORDER BY asistentes DESC, p.titulo LIMIT 10;",
+  "orden": true
+ },
+ "cin-02": {
+  "base": "cinemateca",
+  "sql": "SELECT c.nombre AS ciclo, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\nGROUP BY c.nombre ORDER BY asistentes DESC;",
+  "orden": true
+ },
+ "cin-03": {
+  "base": "cinemateca",
+  "sql": "SELECT p.titulo, p.anio\nFROM dim_pelicula p\nLEFT JOIN hecho_funcion f ON f.id_pelicula = p.id_pelicula\nWHERE f.id_funcion IS NULL\nORDER BY p.titulo;",
+  "orden": true
+ },
+ "cin-04": {
+  "base": "cinemateca",
+  "sql": "SELECT p.titulo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_pelicula p ON a.id_pelicula = p.id_pelicula\nGROUP BY p.titulo ORDER BY asistentes DESC, p.titulo LIMIT 10;",
+  "orden": true
+ },
+ "cin-05": {
+  "base": "cinemateca",
+  "sql": "SELECT p.genero, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_pelicula p ON a.id_pelicula = p.id_pelicula\nWHERE p.pais = 'Bolivia'\nGROUP BY p.genero ORDER BY asistentes DESC, p.genero;",
+  "orden": true
+ },
+ "cin-06": {
+  "base": "cinemateca",
+  "sql": "SELECT s.nombre AS sala, f.horario, COUNT(*) AS asistentes\nFROM hecho_asistencia a\nJOIN hecho_funcion f ON a.id_funcion = f.id_funcion\nJOIN dim_sala s ON a.id_sala = s.id_sala\nGROUP BY s.nombre, f.horario ORDER BY s.nombre, f.horario;",
+  "orden": true
+ },
+ "cin-07": {
+  "base": "cinemateca",
+  "sql": "SELECT pu.tipo, COUNT(*) AS asistentes, ROUND((COUNT(*) * pu.precio)::numeric, 2) AS recaudacion\nFROM hecho_asistencia a JOIN dim_publico pu ON a.id_publico = pu.id_publico\nGROUP BY pu.tipo, pu.precio ORDER BY recaudacion DESC;",
+  "orden": true
+ },
+ "cin-08": {
+  "base": "cinemateca",
+  "sql": "SELECT sala, capacidad, ROUND((AVG(pct))::numeric, 2) AS ocupacion_pct FROM (\n  SELECT s.nombre AS sala, s.capacidad AS capacidad, COUNT(*) * 100.0 / s.capacidad AS pct\n  FROM hecho_asistencia a JOIN dim_sala s ON a.id_sala = s.id_sala\n  GROUP BY a.id_funcion, s.nombre, s.capacidad\n) GROUP BY sala, capacidad ORDER BY ocupacion_pct DESC;",
+  "orden": true
+ },
+ "cin-09": {
+  "base": "cinemateca",
+  "sql": "SELECT t.nombre_mes, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_tiempo t ON a.id_tiempo = t.id_tiempo\nGROUP BY t.mes, t.nombre_mes ORDER BY t.mes;",
+  "orden": true
+ },
+ "cin-10": {
+  "base": "cinemateca",
+  "sql": "SELECT t.dia_semana, COUNT(*) AS asistentes\nFROM hecho_asistencia a JOIN dim_tiempo t ON a.id_tiempo = t.id_tiempo\nGROUP BY t.dia_semana ORDER BY asistentes DESC;",
+  "orden": true
+ },
+ "cin-11": {
+  "base": "cinemateca",
+  "sql": "SELECT ciclo, asistentes, ROUND((asistentes * 100.0 / SUM(asistentes) OVER ())::numeric, 2) AS participacion FROM (\n  SELECT c.nombre AS ciclo, COUNT(*) AS asistentes\n  FROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\n  GROUP BY c.nombre\n) ORDER BY asistentes DESC;",
+  "orden": true
+ },
+ "cin-12": {
+  "base": "cinemateca",
+  "sql": "SELECT c.nombre AS ciclo, COUNT(DISTINCT a.id_funcion) AS funciones, COUNT(*) AS asistentes,\n  ROUND((COUNT(*) * 1.0 / COUNT(DISTINCT a.id_funcion))::numeric, 1) AS promedio\nFROM hecho_asistencia a JOIN dim_ciclo c ON a.id_ciclo = c.id_ciclo\nGROUP BY c.nombre ORDER BY promedio DESC;",
+  "orden": true
+ },
+ "p3-q1": {
+  "base": "expocruz",
+  "sql": "SELECT razon_social, ciudad FROM expositor WHERE ciudad = 'Santa Cruz';",
+  "orden": false
+ },
+ "p3-q2": {
+  "base": "expocruz",
+  "sql": "SELECT codigo, superficie_m2 FROM stand ORDER BY superficie_m2 DESC LIMIT 3;",
+  "orden": true
+ },
+ "p3-q3": {
+  "base": "expocruz",
+  "sql": "SELECT e.razon_social, s.nombre FROM expositor e JOIN sector_economico s ON e.id_sector = s.id_sector;",
+  "orden": false
+ },
+ "p3-q4": {
+  "base": "expocruz",
+  "sql": "SELECT ex.razon_social, st.codigo, pa.nombre\n      FROM contrato_stand c\n      JOIN expositor ex ON c.id_expositor = ex.id_expositor\n      JOIN stand st ON c.id_stand = st.id_stand\n      JOIN pabellon pa ON st.id_pabellon = pa.id_pabellon\n      JOIN edicion ed ON c.id_edicion = ed.id_edicion\n      WHERE ed.anio = 2025;",
+  "orden": false
+ },
+ "p3-q5": {
+  "base": "expocruz",
+  "sql": "SELECT forma_pago, SUM(precio) FROM entrada GROUP BY forma_pago;",
+  "orden": false
+ },
+ "p3-q6": {
+  "base": "expocruz",
+  "sql": "SELECT s.nombre, COUNT(*)\n      FROM expositor e\n      JOIN sector_economico s ON e.id_sector = s.id_sector\n      GROUP BY s.nombre\n      HAVING COUNT(*) >= 2;",
+  "orden": false
+ },
+ "p4-kpi1": {
+  "base": "spaziogym",
+  "sql": "SELECT ROUND((SUM(asistio) * 100.0 / SUM(cantidad_reserva))::numeric, 2) FROM hecho_reserva;",
+  "orden": false
+ },
+ "p4-kpi2": {
+  "base": "spaziogym",
+  "sql": "SELECT c.disciplina, SUM(h.asistio)\n      FROM hecho_reserva h\n      JOIN dim_clase c ON h.id_clase = c.id_clase\n      GROUP BY c.disciplina\n      ORDER BY SUM(h.asistio) DESC;",
+  "orden": true
+ },
+ "p4-kpi3": {
+  "base": "spaziogym",
+  "sql": "SELECT s.nombre, ROUND((SUM(h.ingreso_prorrateado))::numeric, 2)\n      FROM hecho_reserva h\n      JOIN dim_sucursal s ON h.id_sucursal = s.id_sucursal\n      GROUP BY s.nombre;",
+  "orden": false
+ },
+ "p4-kpi4": {
+  "base": "spaziogym",
+  "sql": "SELECT t.mes, t.nombre_mes, SUM(h.asistio)\n      FROM hecho_reserva h\n      JOIN dim_tiempo t ON h.id_tiempo = t.id_tiempo\n      GROUP BY t.mes, t.nombre_mes\n      ORDER BY t.mes;",
+  "orden": true
+ }
+}

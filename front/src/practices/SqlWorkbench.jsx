@@ -2,20 +2,21 @@ import { Button } from 'antd'
 import { useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
 import SqlEditor from './SqlEditor.jsx'
-import { compareResults } from '../lib/comparar.js'
-import { ejecutarConsulta } from '../lib/api.js'
+import { ejecutarConsulta, verificarReto } from '../lib/api.js'
 
 /**
  * Editor + ejecución real contra el PostgreSQL del servidor.
- * Si `expectedSql` viene definido, además compara el resultado del alumno
- * contra el de la consulta de referencia, ejecutando ambas sobre la misma base.
+ *
+ * Con `reto`, el veredicto lo da el servidor: se le manda qué reto y qué
+ * escribió el alumno, y él corre la consulta de referencia y compara. Antes la
+ * comparación estaba acá, con la respuesta al lado, y alcanzaba con pisar esa
+ * función desde la consola del navegador para darse por aprobado.
  */
 export default function SqlWorkbench({
   base,
   value,
   onChange,
-  expectedSql,
-  orderMatters = false,
+  reto,
   onSolved,
   disabled,
   rows = 7,
@@ -34,7 +35,10 @@ export default function SqlWorkbench({
       return
     }
 
-    const salida = await ejecutarConsulta({ base, sql: value }).catch(err => ({ error: err.message }))
+    // Sin reto, solo se ejecuta. Con reto, el servidor ejecuta Y corrige.
+    const salida = await (reto ? verificarReto({ reto, sql: value }) : ejecutarConsulta({ base, sql: value })).catch(
+      err => ({ error: err.message }),
+    )
 
     if (salida.error) {
       setResult(null)
@@ -43,20 +47,12 @@ export default function SqlWorkbench({
       return
     }
 
-    const actual = { columns: salida.columns, rows: salida.rows }
-    setResult(actual)
+    setResult({ columns: salida.columns, rows: salida.rows })
 
-    if (!expectedSql) return
+    if (!reto) return
 
-    const esperada = await ejecutarConsulta({ base, sql: expectedSql }).catch(err => ({ error: err.message }))
-    if (esperada.error) {
-      setError(`No se pudo calcular la respuesta esperada: ${esperada.error}`)
-      return
-    }
-
-    const comparison = compareResults(actual, { columns: esperada.columns, rows: esperada.rows }, orderMatters)
-    setVerdict(comparison)
-    if (comparison.ok) onSolved?.()
+    setVerdict({ ok: salida.ok, reason: salida.razon })
+    if (salida.ok) onSolved?.()
   }
 
   return (
@@ -66,7 +62,7 @@ export default function SqlWorkbench({
       <div className="sql-actions">
         <Button type="primary" onClick={execute} disabled={disabled}>
           <PracticeIcon name="play" />
-          {expectedSql ? 'Ejecutar y verificar' : 'Ejecutar'}
+          {reto ? 'Ejecutar y verificar' : 'Ejecutar'}
         </Button>
         {verdict && (
           <span className={`sql-verdict ${verdict.ok ? 'sql-verdict-ok' : 'sql-verdict-bad'}`}>

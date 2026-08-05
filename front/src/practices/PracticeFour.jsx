@@ -261,8 +261,7 @@ export default function PracticeFour({ delivered, onDelivered }) {
                     base="spaziogym"
                     value={queries[activeKpi.id]}
                     onChange={value => setQueries(current => ({ ...current, [activeKpi.id]: value }))}
-                    expectedSql={activeKpi.expectedSql}
-                    orderMatters={activeKpi.orderMatters}
+                    reto={`p4-${activeKpi.id}`}
                     onSolved={() => setSolved(current => ({ ...current, [activeKpi.id]: true }))}
                     disabled={delivered}
                   />

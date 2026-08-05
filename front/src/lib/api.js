@@ -87,6 +87,17 @@ export async function ejecutarConsulta({ base, sql }) {
 }
 
 /**
+ * Corrige un reto.
+ *
+ * El veredicto lo da el servidor, que es donde vive la respuesta correcta.
+ * Antes se comparaba en el navegador y alcanzaba con pisar la función de
+ * comparación desde la consola para darse por aprobado.
+ */
+export function verificarReto({ reto, sql }) {
+  return pedir('/api/sql/verificar', { method: 'POST', body: JSON.stringify({ reto, sql }) })
+}
+
+/**
  * Ejecuta contra la base propia del alumno (`taller` o `libre`).
  *
  * Devuelve además `tablas`, el modelo tal como quedó DESPUÉS de ejecutar, para

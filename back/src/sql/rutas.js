@@ -12,6 +12,7 @@ import { exigirSesion } from '../auth/middleware.js'
 import { MAX_FILAS, ejecutarSql } from './ejecutor.js'
 import { nombreSchema, poolDeAlumno, prepararAlumno, vaciarEspacio } from './alumnoDb.js'
 import { leerEsquema } from './esquema.js'
+import { solucionDe, verificarReto } from './verificar.js'
 
 const consultaSchema = z.object({
   // El identificador de la base, no el nombre del schema: el cliente pide
@@ -68,6 +69,31 @@ export function rutasSql() {
 
       return res.status(500).json({ error: 'No se pudo ejecutar la consulta' })
     }
+  })
+
+  /**
+   * Corrige un reto. El cliente manda QUÉ reto y QUÉ escribió; la respuesta
+   * correcta y la comparación viven acá, así que el veredicto no se fabrica
+   * desde la consola del navegador.
+   */
+  router.post('/verificar', async (req, res) => {
+    const leido = z.object({ reto: z.string().trim().min(1).max(60), sql: z.string().min(1).max(20000) }).safeParse(req.body)
+    if (!leido.success) return res.status(400).json({ error: 'Pedido inválido' })
+
+    try {
+      return res.json(await verificarReto(leido.data.reto, leido.data.sql))
+    } catch (error) {
+      console.error('[sql] verificar:', error)
+
+      return res.status(500).json({ error: 'No se pudo verificar' })
+    }
+  })
+
+  /** La respuesta correcta, cuando el alumno decide verla. */
+  router.get('/solucion/:reto', async (req, res) => {
+    const sql = await solucionDe(req.params.reto)
+
+    return sql ? res.json({ sql }) : res.status(404).json({ error: 'Ese reto no existe' })
   })
 
   // --- El espacio propio del alumno ---------------------------------------

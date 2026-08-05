@@ -140,8 +140,7 @@ export default function PracticeThree({ delivered, onDelivered }) {
                   base="expocruz"
                   value={queries[activeChallenge.id]}
                   onChange={value => setQueries(current => ({ ...current, [activeChallenge.id]: value }))}
-                  expectedSql={activeChallenge.expectedSql}
-                  orderMatters={activeChallenge.orderMatters}
+                  reto={`p3-${activeChallenge.id}`}
                   onSolved={() => setSolved(current => ({ ...current, [activeChallenge.id]: true }))}
                   disabled={delivered}
                 />
