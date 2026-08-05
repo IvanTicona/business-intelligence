@@ -31,6 +31,17 @@ CREATE TABLE prestamo (
 );
 CREATE TABLE vacia (id INTEGER PRIMARY KEY);
 
+-- Tipos que information_schema NO sabe nombrar: devuelve las palabras
+-- USER-DEFINED y ARRAY en vez del tipo. Rompio en produccion.
+CREATE TYPE estado_libro AS ENUM ('nuevo', 'usado');
+CREATE TABLE ejemplar (
+  id_ejemplar SERIAL PRIMARY KEY,
+  id_libro INTEGER REFERENCES libro(id_libro),
+  estado estado_libro NOT NULL DEFAULT 'nuevo',
+  etiquetas TEXT[],
+  extra JSONB
+);
+
 INSERT INTO autor VALUES
   (1, 'Jesus Urzagasti', 'Bolivia', DATE '1941-01-06'),
   (2, 'Yolanda Bedregal', 'Bolivia', DATE '1913-09-21'),
@@ -40,6 +51,9 @@ INSERT INTO libro VALUES
   (2, 'Nazareno', 2, 120.00, TRUE),
   (3, 'Titulo con '' comilla y ; punto y coma', 1, 0.99, FALSE);
 INSERT INTO prestamo VALUES (1, 1, 'devuelto'), (2, 3, NULL);
+INSERT INTO ejemplar (id_libro, estado, etiquetas, extra)
+  VALUES (1, 'usado', ARRAY['subrayado','tapa dura'], '{"nota":"prestado"}'),
+         (2, 'nuevo', ARRAY[]::TEXT[], NULL);
 `
 
 // La MISMA función que corre en el navegador, sin trucos: acepta una base ya
@@ -51,7 +65,7 @@ const vieja = new PGlite()
 await vieja.waitReady
 await vieja.exec(SEMILLA)
 const antes = {}
-for (const t of ['autor', 'libro', 'prestamo', 'vacia']) {
+for (const t of ['autor', 'libro', 'prestamo', 'vacia', 'ejemplar']) {
   antes[t] = (await vieja.query(`SELECT * FROM ${t} ORDER BY 1`)).rows
   console.log(`  ${t.padEnd(10)} ${antes[t].length} fila(s)`)
 }
@@ -85,7 +99,7 @@ console.log('  sentencias:', aplicado.sentencias, '· tablas en el modelo:', apl
 
 console.log('\n=== Los datos llegaron completos ===')
 let bien = !aplicado.error
-for (const t of ['autor', 'libro', 'prestamo', 'vacia']) {
+for (const t of ['autor', 'libro', 'prestamo', 'vacia', 'ejemplar']) {
   const r = await espacio(`SELECT * FROM ${t} ORDER BY 1`)
   const igual = r.filas === antes[t].length
   bien &&= igual && !r.error

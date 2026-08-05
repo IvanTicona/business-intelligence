@@ -77,14 +77,43 @@ export async function volcarBaseVieja(baseYaAbierta = null) {
   }
 
   try {
+    /*
+     * Los tipos salen del catálogo de Postgres y NO de information_schema.
+     *
+     * `information_schema.columns.data_type` no devuelve el tipo: devuelve una
+     * palabra de categoría. Para un enum dice `USER-DEFINED` y para un arreglo
+     * dice `ARRAY`, y con eso se genera `"estado" USER-DEFINED`, que es un error
+     * de sintaxis. Pasó en producción, con ese mensaje exacto.
+     *
+     * `format_type` devuelve el tipo tal como lo escribiría Postgres —
+     * `character varying(80)`, `numeric(10,2)`, `text[]`, `estado_reserva` —
+     * así que además desaparecen los casos especiales de precisión.
+     */
     const { rows: columnas } = await db.query(`
-      SELECT table_name, column_name, data_type, character_maximum_length,
-             numeric_precision, numeric_scale, is_nullable, column_default
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-      ORDER BY table_name, ordinal_position`)
+      SELECT c.relname AS table_name, a.attname AS column_name,
+             format_type(a.atttypid, a.atttypmod) AS tipo,
+             a.attnotnull AS obligatoria,
+             pg_get_expr(d.adbin, d.adrelid) AS defecto
+      FROM pg_attribute a
+      JOIN pg_class c ON c.oid = a.attrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+      WHERE n.nspname = 'public' AND c.relkind = 'r' AND a.attnum > 0 AND NOT a.attisdropped
+      ORDER BY c.relname, a.attnum`)
 
     if (columnas.length === 0) return { sql: '', tablas: 0, filas: 0 }
+
+    /*
+     * Los tipos que el alumno haya creado él mismo tienen que existir del otro
+     * lado antes que las tablas que los usan.
+     */
+    const { rows: enums } = await db.query(`
+      SELECT t.typname AS nombre, string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder) AS valores
+      FROM pg_type t
+      JOIN pg_enum e ON e.enumtypid = t.oid
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE n.nspname = 'public'
+      GROUP BY t.typname`)
 
     const { rows: primarias } = await db.query(`
       SELECT tc.table_name, kcu.column_name, kcu.ordinal_position
@@ -105,16 +134,18 @@ export async function volcarBaseVieja(baseYaAbierta = null) {
     const partes = ['-- Tu base, tal como estaba guardada en este navegador.']
     let totalFilas = 0
 
+    for (const e of enums) partes.push(`\nCREATE TYPE ${id(e.nombre)} AS ENUM (${e.valores});`)
+
     for (const tabla of tablas) {
       const cols = columnas.filter(c => c.table_name === tabla)
       const pk = primarias.filter(p => p.table_name === tabla).map(p => id(p.column_name))
 
       const definicion = cols.map(c => {
-        const trozos = [id(c.column_name), tipoDe(c)]
-        if (c.is_nullable === 'NO') trozos.push('NOT NULL')
+        const trozos = [id(c.column_name), c.tipo]
+        if (c.obligatoria) trozos.push('NOT NULL')
         // Los DEFAULT de secuencia (nextval) no se copian: la secuencia no
         // existe del otro lado y el valor real ya viaja en los INSERT.
-        if (c.column_default && !/nextval\(/i.test(c.column_default)) trozos.push(`DEFAULT ${c.column_default}`)
+        if (c.defecto && !/nextval\(/i.test(c.defecto)) trozos.push(`DEFAULT ${c.defecto}`)
 
         return '  ' + trozos.join(' ')
       })
@@ -173,21 +204,10 @@ function literal(valor) {
   if (typeof valor === 'number') return Number.isFinite(valor) ? String(valor) : 'NULL'
   if (typeof valor === 'boolean') return valor ? 'TRUE' : 'FALSE'
   if (valor instanceof Date) return `'${valor.toISOString()}'`
+  // Un arreglo tiene que salir como ARRAY[...]; como JSON no entraría en una
+  // columna text[]. El vacío se deja que Postgres lo tipe según la columna.
+  if (Array.isArray(valor)) return valor.length ? `ARRAY[${valor.map(literal).join(', ')}]` : "'{}'"
   if (typeof valor === 'object') return `'${JSON.stringify(valor).replaceAll("'", "''")}'::jsonb`
 
   return `'${String(valor).replaceAll("'", "''")}'`
-}
-
-/** Reconstruye el tipo con su precisión, que information_schema devuelve aparte. */
-function tipoDe(columna) {
-  const tipo = columna.data_type
-
-  if (tipo === 'character varying' || tipo === 'character') {
-    return columna.character_maximum_length ? `${tipo}(${columna.character_maximum_length})` : tipo
-  }
-  if (tipo === 'numeric' && columna.numeric_precision) {
-    return `numeric(${columna.numeric_precision}, ${columna.numeric_scale ?? 0})`
-  }
-
-  return tipo
 }
