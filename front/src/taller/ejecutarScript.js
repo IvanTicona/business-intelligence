@@ -3,15 +3,22 @@
  *
  * Dos decisiones que valen la pena explicar:
  *
- * 1. Cada ejecución arranca de una base VACÍA. Correr dos veces un CREATE TABLE
- *    fallaría con "table already exists", y obligar al alumno a acordarse de
- *    borrar la base antes de cada intento sería una molestia sin valor
- *    didáctico. Con la base recreada, el script ES el estado: lo que está
- *    escrito es exactamente lo que existe.
- *
- * 2. Se corre sentencia por sentencia y no todo junto, para poder decir CUÁL
+ * 1. Se corre sentencia por sentencia y no todo junto, para poder decir CUÁL
  *    falló. Un "syntax error" sobre un script de cuarenta líneas no le enseña
  *    nada a nadie.
+ *
+ * 2. Vaciar la base antes de correr es OPCIONAL, y las dos consolas eligen
+ *    distinto porque enseñan cosas distintas:
+ *
+ *    - El taller vacía siempre. Ahí el entregable es el script, y con la base
+ *      recreada el script ES el estado: lo que está escrito es exactamente lo
+ *      que existe. Correr dos veces un CREATE TABLE fallaría, y obligar al
+ *      alumno a acordarse de borrar antes de cada intento sería una molestia
+ *      sin valor didáctico.
+ *
+ *    - El playground NO vacía. Ahí la base es el entregable y tiene que
+ *      comportarse como una sesión de verdad: las sentencias se acumulan y lo
+ *      que hiciste ayer sigue estando hoy.
  */
 
 /**
@@ -97,13 +104,15 @@ function resumir(sentencia) {
 }
 
 /**
- * @param {object} db      base de PGlite, ya creada y vacía
- * @param {string} script
+ * @param {object}  db                  base de PGlite ya creada
+ * @param {string}  script
+ * @param {object}  [opciones]
+ * @param {boolean} [opciones.reiniciar=true]  vaciar el esquema antes de correr
  * @returns {Promise<{registro: Array, resultado: object|null, error: object|null}>}
  *          La base queda poblada: de ahí lee el diagrama.
  */
-export async function ejecutarScript(db, script) {
-  await db.reiniciar()
+export async function ejecutarScript(db, script, { reiniciar = true } = {}) {
+  if (reiniciar) await db.reiniciar()
 
   const sentencias = partirSentencias(script)
   const registro = []

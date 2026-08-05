@@ -18,6 +18,35 @@
   white-space: nowrap;
 }
 
+/* La base no se pudo guardar: se avisa, no se esconde. */
+.libre-aviso-temporal {
+  margin: 0 0 12px;
+  padding: 9px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 132, 12, 0.28);
+  background: rgba(250, 173, 20, 0.09);
+  color: #6b4a05;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.libre-descartar {
+  display: block;
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8a5a06;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.libre-descartar:hover {
+  color: #5c3c02;
+}
+
 /* Sin especificación al pie, el diagrama y el esquema se reparten el alto. */
 .libre-page .pg-panel-modelo {
   grid-template-rows: auto minmax(0, 1.8fr) auto minmax(0, 1fr);
