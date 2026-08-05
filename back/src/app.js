@@ -146,6 +146,30 @@ app.post('/api/submissions', exigirSesion, async (req, res) => {
   }
 })
 
+/*
+ * Qué entregó ESTA cuenta.
+ *
+ * Hasta ahora el front se lo creía a una marca en el localStorage del navegador,
+ * que no sabía nada de cuentas. Con el login eso empezó a mentir: el alumno que
+ * había entregado antes veía "entregada" con una cuenta que en el servidor no
+ * tiene ninguna entrega, y el docente no lo veía en su panorama. La verdad la
+ * tiene el servidor.
+ */
+app.get('/api/submissions/mias', exigirSesion, async (req, res) => {
+  try {
+    const { rows } = await exigirAdmin().query(
+      'SELECT practice_id FROM practice_submissions WHERE usuario_id = $1',
+      [req.usuario.id],
+    )
+
+    return res.json({ entregadas: rows.map(r => r.practice_id) })
+  } catch (error) {
+    console.error('[entregas] mias:', error)
+
+    return res.status(500).json({ message: 'No se pudieron leer tus entregas' })
+  }
+})
+
 app.get('/api/admin/submissions', soloDocente, async (req, res) => {
   try {
     exigirAdmin()

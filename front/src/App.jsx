@@ -6,7 +6,7 @@ import { FirmaEntrega } from './practices/PracticeShell.jsx'
 import PracticeTwo from './practices/PracticeTwo.jsx'
 import PracticeThree from './practices/PracticeThree.jsx'
 import PracticeFour from './practices/PracticeFour.jsx'
-import { apiUrl, submitPractice as enviarPractica } from './lib/api.js'
+import { apiUrl, misEntregas, submitPractice as enviarPractica } from './lib/api.js'
 // La pantalla de acceso la ve todo el mundo antes que cualquier otra cosa, así
 // que no va en diferido: dejar la pantalla en blanco mientras baja sería peor.
 import AccesoPage from './auth/AccesoPage.jsx'
@@ -830,15 +830,27 @@ function Curso() {
 
   const menuItems = useMemo(() => buildMenuItems(practiceStatus), [practiceStatus])
 
+  /*
+   * Qué entregó ESTA cuenta lo dice el servidor, no el navegador.
+   *
+   * Antes salía de una marca en localStorage que no sabía nada de cuentas, y con
+   * el login empezó a mentir en las dos direcciones: al que había entregado
+   * antes le mostraba "entregada" con una cuenta que en el servidor no tiene
+   * nada, y al que entraba desde otra computadora le ofrecía entregar de nuevo.
+   * La marca vieja se borra para que no quede dando vueltas.
+   */
   useEffect(() => {
-    const savedStatus = window.localStorage.getItem(practiceStatusStorageKey)
-    if (!savedStatus) return
+    let vivo = true
 
-    try {
-      setPracticeStatus(JSON.parse(savedStatus))
-    } catch {
-      setPracticeStatus({})
-    }
+    misEntregas()
+      .then(entregadas => {
+        if (!vivo) return
+        setPracticeStatus(Object.fromEntries(entregadas.map(id => [id, 'delivered'])))
+        window.localStorage.removeItem(practiceStatusStorageKey)
+      })
+      .catch(() => {})
+
+    return () => { vivo = false }
   }, [])
 
   useEffect(() => {
@@ -863,10 +875,10 @@ function Curso() {
     setRouteIndex(current => Math.max(current - 1, 0))
   }
 
+  // Ya no se guarda nada en el navegador: la entrega quedó registrada en el
+  // servidor y de ahí se relee en la próxima carga.
   function markDelivered(practiceKey) {
-    const nextStatus = { ...practiceStatus, [practiceKey]: 'delivered' }
-    setPracticeStatus(nextStatus)
-    window.localStorage.setItem(practiceStatusStorageKey, JSON.stringify(nextStatus))
+    setPracticeStatus(previo => ({ ...previo, [practiceKey]: 'delivered' }))
   }
 
   return (

@@ -5,6 +5,7 @@ import ModelDiagram from '../playground/ModelDiagram.jsx'
 import SchemaPanel from '../playground/SchemaPanel.jsx'
 import { ejecutarEspacio, leerEspacio, vaciarEspacio } from '../lib/api.js'
 import { prepararEsquema } from '../taller/esquemaVivo.js'
+import { hayBaseVieja, olvidarBaseVieja, volcarBaseVieja } from './migrarDelNavegador.js'
 import { RegistroSentencias, ResultadoConsola } from './piezas.jsx'
 import '../playground/playground.css'
 import '../taller/taller.css'
@@ -66,17 +67,32 @@ export default function ConsolaLibrePage() {
   const [mostrarRegistro, setMostrarRegistro] = useState(false)
   const sello = useRef(0)
 
+  const [mudanza, setMudanza] = useState(null)
+
   useEffect(() => {
     let viva = true
 
     // Se dibuja lo que YA hay en el servidor, sin ejecutar nada: volver a
     // correr el script duplicaría los INSERT de la sesión anterior.
     leerEspacio('libre')
-      .then(({ tablas: guardadas }) => {
+      .then(async ({ tablas: guardadas }) => {
         if (!viva) return
         sello.current += 1
         setTablas(prepararEsquema(guardadas))
         setMotor({ listo: true, motivo: null })
+
+        /*
+         * Quien ya venía trabajando tiene su base en el navegador y la del
+         * servidor vacía. Si el servidor está vacío, se muda sin preguntar: es
+         * lo que el alumno espera y no hay nada que pisar. Si ya construyó algo
+         * acá, se le pregunta, porque mezclar dos bases sin avisar sería peor
+         * que perder una.
+         */
+        if (!(await hayBaseVieja())) return
+        if (!viva) return
+
+        if (guardadas.length === 0) await mudar()
+        else setMudanza({ estado: 'preguntar' })
       })
       .catch(err => {
         if (viva) setMotor({ listo: false, motivo: err.message })
@@ -84,6 +100,41 @@ export default function ConsolaLibrePage() {
 
     return () => { viva = false }
   }, [])
+
+  async function mudar() {
+    setMudanza({ estado: 'trabajando' })
+
+    try {
+      const volcado = await volcarBaseVieja()
+
+      if (!volcado.sql) {
+        await olvidarBaseVieja()
+        setMudanza(null)
+
+        return
+      }
+
+      const salida = await ejecutarEspacio({ espacio: 'libre', sql: volcado.sql })
+      if (salida.error) {
+        // No se borra la base vieja: si algo falló, sigue siendo la única copia.
+        setMudanza({ estado: 'falló', motivo: salida.error })
+
+        return
+      }
+
+      await olvidarBaseVieja()
+      sello.current += 1
+      setTablas(prepararEsquema(salida.tablas))
+      setMudanza({ estado: 'hecho', ...volcado })
+    } catch (err) {
+      setMudanza({ estado: 'falló', motivo: err.message })
+    }
+  }
+
+  async function descartarMudanza() {
+    await olvidarBaseVieja({ borrar: false })
+    setMudanza(null)
+  }
 
   useEffect(() => {
     window.localStorage.setItem(CLAVE_GUARDADO, script)
@@ -158,6 +209,8 @@ export default function ConsolaLibrePage() {
             {motor && !motor.listo && (
               <p className="libre-aviso-temporal">No se pudo abrir tu base: {motor.motivo}</p>
             )}
+
+            {mudanza && <AvisoMudanza mudanza={mudanza} onMudar={mudar} onDescartar={descartarMudanza} />}
 
             {motor?.listo && (
               <>
@@ -269,5 +322,49 @@ export default function ConsolaLibrePage() {
         </aside>
       </section>
     </div>
+  )
+}
+
+/**
+ * La mudanza, contada al alumno.
+ *
+ * Se le dice qué pasó y cuánto se trajo, no un "listo" a secas: el que venía
+ * trabajando quiere saber que están sus tablas y sus filas, no que un proceso
+ * terminó.
+ */
+function AvisoMudanza({ mudanza, onMudar, onDescartar }) {
+  if (mudanza.estado === 'trabajando') {
+    return <p className="libre-mudanza">Trayendo la base que tenías guardada en este navegador…</p>
+  }
+
+  if (mudanza.estado === 'hecho') {
+    return (
+      <p className="libre-mudanza libre-mudanza-ok">
+        Listo: se trajeron <strong>{mudanza.tablas} tabla(s)</strong> y <strong>{mudanza.filas} fila(s)</strong> desde
+        este navegador. De ahora en adelante tu base vive en el servidor y la vas a encontrar igual desde cualquier
+        computadora.
+      </p>
+    )
+  }
+
+  if (mudanza.estado === 'falló') {
+    return (
+      <p className="libre-mudanza libre-mudanza-mal">
+        No se pudo traer tu base guardada: {mudanza.motivo}
+        <span> No se borró nada: sigue en este navegador. Avisa al docente.</span>
+        <button type="button" className="libre-descartar" onClick={onMudar}>Intentar de nuevo</button>
+      </p>
+    )
+  }
+
+  return (
+    <p className="libre-mudanza">
+      Tienes una base guardada en este navegador, de antes de que el curso pasara al servidor. Acá ya construiste
+      algo, así que no la traemos sin preguntarte: si la traes, sus tablas se suman a las que ya tienes.
+      <span className="libre-mudanza-acciones">
+        <button type="button" className="pg-boton pg-boton-primario" onClick={onMudar}>Traer mi base</button>
+        <button type="button" className="libre-descartar" onClick={onDescartar}>No, dejarla</button>
+      </span>
+    </p>
   )
 }

@@ -131,6 +131,13 @@ const MAX_ANSWER_LENGTH = 5000
  * viajaba en el cuerpo y el servidor le creía, así que cualquiera podía
  * entregar en nombre de otro.
  */
+/** Qué prácticas entregó esta cuenta. La verdad la tiene el servidor. */
+export async function misEntregas() {
+  const { entregadas } = await pedir('/api/submissions/mias')
+
+  return entregadas
+}
+
 export async function submitPractice({ practiceId, answers }) {
   const cleanAnswers = Object.fromEntries(
     Object.entries(answers)
