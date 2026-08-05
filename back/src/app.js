@@ -8,6 +8,7 @@ import { cargarUsuario, exigirDocente, exigirSesion } from './auth/middleware.js
 import { rutasAuth } from './auth/rutas.js'
 import { rutasSql } from './sql/rutas.js'
 import { rutasDocente } from './docente/rutas.js'
+import { rutasTrabajo } from './trabajo/rutas.js'
 
 const app = express()
 const adminToken = process.env.ADMIN_TOKEN ?? ''
@@ -92,6 +93,7 @@ app.use(express.json({ limit: '1mb' }))
 app.use(cargarUsuario)
 app.use('/api/auth', rutasAuth())
 app.use('/api/sql', rutasSql())
+app.use('/api/trabajo', rutasTrabajo())
 
 // Entra el rol 'docente' o el token de siempre, que se retira en la fase 4
 // cuando el panel pase a autenticarse con la cuenta.

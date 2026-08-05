@@ -3,9 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import SqlEditor from '../practices/SqlEditor.jsx'
 import ModelDiagram from '../playground/ModelDiagram.jsx'
 import SchemaPanel from '../playground/SchemaPanel.jsx'
-import { ejecutarEspacio, leerEspacio, vaciarEspacio } from '../lib/api.js'
+import { ejecutarEspacio, leerEspacio, leerTrabajo, vaciarEspacio } from '../lib/api.js'
+import { elegir, guardar, leerLocal } from '../lib/trabajoLocal.js'
 import { prepararEsquema } from '../taller/esquemaVivo.js'
-import { borrarBaseVieja, hayBaseVieja, olvidarBaseVieja, volcarBaseVieja } from './migrarDelNavegador.js'
+import { hayBaseVieja, olvidarBaseVieja, volcarBaseVieja } from './migrarDelNavegador.js'
 import { RegistroSentencias, ResultadoConsola } from './piezas.jsx'
 import '../playground/playground.css'
 import '../taller/taller.css'
@@ -58,7 +59,7 @@ ORDER BY altura_msnm DESC;
  */
 export default function ConsolaLibrePage() {
   const [motor, setMotor] = useState(null)
-  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) || SCRIPT_INICIAL)
+  const [script, setScript] = useState(() => leerLocal(CLAVE_GUARDADO, SCRIPT_INICIAL))
   const [tablas, setTablas] = useState([])
   const [ejecucion, setEjecucion] = useState(null)
   const [corriendo, setCorriendo] = useState(false)
@@ -122,18 +123,21 @@ export default function ConsolaLibrePage() {
         return
       }
 
+      /*
+       * Terminó bien: no se le dice nada. Para el alumno esto no es un evento,
+       * es que su base está donde la dejó. Anunciarlo lo obliga a entender un
+       * detalle de infraestructura que no le sirve para nada.
+       *
+       * La copia vieja igual NO se borra —sigue en su navegador por si algo no
+       * cuadra— pero eso tampoco necesita saberlo ahora.
+       */
       await olvidarBaseVieja()
       sello.current += 1
       setTablas(prepararEsquema(salida.tablas))
-      setMudanza({ estado: 'hecho', ...volcado })
+      setMudanza(null)
     } catch (err) {
       setMudanza({ estado: 'falló', motivo: err.message })
     }
-  }
-
-  async function liberarEspacio() {
-    await borrarBaseVieja()
-    setMudanza(null)
   }
 
   async function descartarMudanza() {
@@ -141,9 +145,23 @@ export default function ConsolaLibrePage() {
     setMudanza(null)
   }
 
+  const [sincronizado, setSincronizado] = useState(false)
+
+  // Lo que trae de otra computadora gana, pero solo al abrir.
   useEffect(() => {
-    window.localStorage.setItem(CLAVE_GUARDADO, script)
-  }, [script])
+    let vivo = true
+    leerTrabajo().then(t => {
+      if (!vivo) return
+      setScript(elegir(t['libre-script'], CLAVE_GUARDADO, SCRIPT_INICIAL))
+      setSincronizado(true)
+    })
+
+    return () => { vivo = false }
+  }, [])
+
+  useEffect(() => {
+    if (sincronizado) guardar(CLAVE_GUARDADO, 'libre-script', script)
+  }, [script, sincronizado])
 
   const correr = useCallback(async (reiniciar = false) => {
     if (!motor?.listo || corriendo) return
@@ -215,7 +233,7 @@ export default function ConsolaLibrePage() {
               <p className="libre-aviso-temporal">No se pudo abrir tu base: {motor.motivo}</p>
             )}
 
-            {mudanza && <AvisoMudanza mudanza={mudanza} onMudar={mudar} onDescartar={descartarMudanza} onLiberar={liberarEspacio} />}
+            {mudanza && <AvisoMudanza mudanza={mudanza} onMudar={mudar} onDescartar={descartarMudanza} />}
 
             {motor?.listo && (
               <>
@@ -337,28 +355,8 @@ export default function ConsolaLibrePage() {
  * trabajando quiere saber que están sus tablas y sus filas, no que un proceso
  * terminó.
  */
-function AvisoMudanza({ mudanza, onMudar, onDescartar, onLiberar }) {
-  if (mudanza.estado === 'trabajando') {
-    return <p className="libre-mudanza">Trayendo la base que tenías guardada en este navegador…</p>
-  }
-
-  if (mudanza.estado === 'hecho') {
-    return (
-      <p className="libre-mudanza libre-mudanza-ok">
-        Listo: se trajeron <strong>{mudanza.tablas} tabla(s)</strong> y <strong>{mudanza.filas} fila(s)</strong> desde
-        este navegador. De ahora en adelante tu base vive en el servidor y la vas a encontrar igual desde cualquier
-        computadora.
-        {/* La copia vieja NO se borra sola: si algo no cuadra, sigue estando. */}
-        <span className="libre-mudanza-nota">
-          Revisa que esté todo. La copia anterior sigue guardada en este navegador por las dudas; cuando estés
-          seguro, puedes liberar ese espacio.
-        </span>
-        <span className="libre-mudanza-acciones">
-          <button type="button" className="libre-descartar" onClick={onLiberar}>Liberar el espacio</button>
-        </span>
-      </p>
-    )
-  }
+function AvisoMudanza({ mudanza, onMudar, onDescartar }) {
+  if (mudanza.estado === 'trabajando') return null
 
   if (mudanza.estado === 'falló') {
     return (

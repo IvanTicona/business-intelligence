@@ -1,77 +1,136 @@
 /* ==========================================================================
    PANTALLA DE ACCESO
-   Es lo primero que ve el alumno del curso, así que se parece a los slides:
-   el mismo azul y el mismo aire, no un formulario de administración.
+   Dos paneles: a la izquierda qué es la materia, a la derecha el formulario.
+   El azul es el de la UPB (#132B70), llevado a un degradado oscuro para que el
+   formulario en vidrio se lea encima.
    ========================================================================== */
 
 .acceso-fondo {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 20px;
   background:
-    radial-gradient(1100px 520px at 12% -10%, rgba(19, 43, 112, 0.16), transparent 60%),
-    radial-gradient(900px 460px at 108% 108%, rgba(19, 43, 112, 0.12), transparent 62%),
-    #f4f6fb;
+    radial-gradient(900px 500px at 15% 0%, rgba(56, 89, 190, 0.5), transparent 62%),
+    radial-gradient(760px 460px at 100% 100%, rgba(20, 132, 122, 0.32), transparent 60%),
+    linear-gradient(135deg, #0a1533 0%, #132b70 52%, #0d1c46 100%);
 }
 
-.acceso-card {
-  width: min(430px, 100%);
-  border-radius: 18px;
-  border: 1px solid rgba(19, 43, 112, 0.1);
-  box-shadow: 0 24px 60px rgba(19, 43, 112, 0.14);
-}
-
-.acceso-marca {
-  margin-bottom: 18px;
-}
-
-/* Membrete del curso. Quien llega tiene que reconocer dónde está ANTES de que
-   se le pida una contraseña: una pantalla de acceso sin marca es indistinguible
-   de una pantalla de phishing. */
-.acceso-membrete {
+.acceso-panel {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: minmax(0, 1fr) 400px;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(19, 43, 112, 0.1);
+  gap: 8px;
+  width: 100%;
+  max-width: 920px;
 }
 
-.acceso-membrete img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  border-radius: 10px;
-  background: #f4f4f5;
+/* --- Panel izquierdo ---------------------------------------------------- */
+
+.acceso-hero {
+  padding: 40px 44px;
+  color: #fff;
 }
 
-.acceso-membrete strong {
+.acceso-hero-titulo {
+  margin: 0 0 14px;
+  font-size: 43px;
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+}
+
+.acceso-hero-bajada {
+  margin: 0 0 26px;
+  max-width: 34ch;
+  color: #b9c6ee;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.acceso-hero-sql {
+  margin: 0;
+  padding: 17px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+  color: #a9bbe8;
+  font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.85;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.acceso-hero-sql b {
+  color: #8fb6ff;
+  font-weight: 600;
+}
+
+.acceso-hero-sql i {
+  color: #5fd6b0;
+  font-style: normal;
+}
+
+.acceso-hero-cifras {
+  display: flex;
+  gap: 34px;
+  margin-top: 28px;
+}
+
+.acceso-hero-cifras strong {
   display: block;
-  color: #132b70;
-  font-size: 14.5px;
-  font-weight: 700;
-  line-height: 1.2;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.1;
 }
 
-.acceso-membrete span {
-  display: block;
-  margin-top: 2px;
-  color: #71717a;
+.acceso-hero-cifras span {
+  color: #93a4d4;
   font-size: 12.5px;
 }
 
-.acceso-titulo.ant-typography {
-  margin: 0 0 6px;
-  color: #132b70;
+/* --- Panel derecho ------------------------------------------------------ */
+
+.acceso-formulario {
+  display: grid;
+  place-items: center;
+  padding: 20px 4px;
 }
 
-.acceso-bajada.ant-typography {
-  margin: 0;
-  color: #5a6480;
-  font-size: 13.5px;
-  line-height: 1.55;
+.acceso-card {
+  width: 100%;
+  padding: 30px 28px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 26px 60px rgba(4, 12, 34, 0.42);
+}
+
+.acceso-titulo {
+  margin: 0 0 18px;
+  color: #fff;
+  font-size: 21px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* El selector de modo, sobre vidrio: el de antd viene con fondo claro. */
+.acceso-card .acceso-modo.ant-segmented {
+  padding: 3px;
+  background: rgba(9, 20, 50, 0.42);
+}
+
+.acceso-card .acceso-modo .ant-segmented-item {
+  color: #b9c6ee;
+}
+
+.acceso-card .acceso-modo .ant-segmented-item-selected {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
 .acceso-error {
@@ -79,88 +138,75 @@
 }
 
 .acceso-form {
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
-.acceso-form .ant-form-item:last-of-type {
-  margin-bottom: 18px;
+/* Los campos también van en vidrio. Sin esto quedan blancos y opacos, que es
+   lo que hacía ver la pantalla como un formulario pegado encima de un fondo. */
+.acceso-card .ant-input,
+.acceso-card .ant-input-affix-wrapper,
+.acceso-card .ant-input-password {
+  border-color: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #eef2ff;
 }
 
-.acceso-pie.ant-typography {
-  display: block;
-  margin-top: 16px;
-  color: #7c869e;
-  font-size: 12.5px;
-  text-align: center;
+.acceso-card .ant-input::placeholder,
+.acceso-card .ant-input-affix-wrapper input::placeholder {
+  color: #8496c6;
 }
 
-/* La barra de identidad, entre la marca y el menú. */
-.sesion-barra {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin: 0 16px 10px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: rgba(19, 43, 112, 0.05);
+.acceso-card .ant-input-affix-wrapper:hover,
+.acceso-card .ant-input:hover {
+  border-color: rgba(255, 255, 255, 0.34);
 }
 
-.sesion-barra-chica {
-  justify-content: center;
-  margin: 0 12px 10px;
-  padding: 9px 0;
+.acceso-card .ant-input-affix-wrapper-focused,
+.acceso-card .ant-input:focus {
+  border-color: #7aa2ff;
+  box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.18);
 }
 
-.sesion-salir {
-  margin-left: auto;
-  padding: 3px 9px;
-  border: 1px solid rgba(19, 43, 112, 0.18);
-  border-radius: 999px;
-  background: #fff;
-  color: #132b70;
-  font-size: 12px;
+.acceso-card .ant-input-password-icon {
+  color: #8496c6;
+}
+
+.acceso-card .ant-form-item-explain-error {
+  color: #ffb4b4;
+}
+
+.acceso-boton.ant-btn {
+  height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3a6bd8, #6b5ce7);
+  font-size: 15.5px;
   font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
 }
 
-.sesion-salir:hover {
-  border-color: #132b70;
-  background: #132b70;
-  color: #fff;
+.acceso-boton.ant-btn:hover {
+  background: linear-gradient(135deg, #4b7bea, #7c6df5);
 }
 
-.sesion-nombre {
-  overflow: hidden;
-  color: #132b70;
-  font-size: 13px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* --- Angosto: el panel de la izquierda sobra ---------------------------- */
+
+@media (max-width: 900px) {
+  .acceso-panel {
+    grid-template-columns: minmax(0, 400px);
+    justify-content: center;
+  }
+
+  .acceso-hero {
+    display: none;
+  }
 }
 
-.sesion-rol {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(19, 43, 112, 0.08);
-  color: #132b70;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-/* El pie cambia de texto entre pestañas y cambiaba de alto con él, moviendo la
-   tarjeta entera. Con dos líneas reservadas, la tarjeta queda quieta. */
-.acceso-pie.ant-typography {
-  min-height: 34px;
-}
-
-/* En pantallas bajas —las de un laboratorio— la tarjeta no debe quedar cortada
-   arriba: se alinea al tope y la página desplaza. */
-@media (max-height: 700px) {
+/* En pantallas bajas —las de un laboratorio— la tarjeta no debe quedar
+   cortada arriba: la página desplaza. */
+@media (max-height: 720px) {
   .acceso-fondo {
     align-items: start;
-    padding-top: 32px;
+    padding-top: 26px;
   }
 }

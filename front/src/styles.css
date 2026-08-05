@@ -1865,3 +1865,9 @@ select,
   outline: 2px solid #132b70;
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   PIE DE SESIÓN
+   Vive acá y no en acceso.css porque es parte del menú del curso, no de la
+   pantalla de acceso.
+   ========================================================================== */

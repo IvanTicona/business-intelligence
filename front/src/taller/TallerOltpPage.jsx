@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SqlEditor from '../practices/SqlEditor.jsx'
 import ModelDiagram from '../playground/ModelDiagram.jsx'
 import { RegistroSentencias, ResultadoConsola } from '../consola/piezas.jsx'
-import { ejecutarEspacio } from '../lib/api.js'
+import { ejecutarEspacio, leerTrabajo } from '../lib/api.js'
+import { elegir, guardar, leerLocal } from '../lib/trabajoLocal.js'
 import { caso } from './caso-sagarnaga.js'
 import { prepararEsquema } from './esquemaVivo.js'
 import { verificarPaso } from './verificarPaso.js'
@@ -19,9 +20,9 @@ const CLAVE_GUARDADO = 'bi-course-taller-oltp'
 const CLAVE_LOGRADOS = 'bi-course-taller-oltp-pasos'
 const MAX_FILAS = 300
 
-function leerLogrados() {
+function aConjunto(texto) {
   try {
-    return new Set(JSON.parse(window.localStorage.getItem(CLAVE_LOGRADOS) ?? '[]'))
+    return new Set(JSON.parse(texto || '[]'))
   } catch {
     return new Set()
   }
@@ -36,7 +37,7 @@ function leerLogrados() {
  */
 export default function TallerOltpPage() {
   const [base, setBase] = useState(null)
-  const [script, setScript] = useState(() => window.localStorage.getItem(CLAVE_GUARDADO) || caso.scriptInicial)
+  const [script, setScript] = useState(() => leerLocal(CLAVE_GUARDADO, caso.scriptInicial))
   const [ejecucion, setEjecucion] = useState(null)
   const [vista, setVista] = useState('tabla')
   const [tipoGrafico, setTipoGrafico] = useState('barras')
@@ -51,12 +52,38 @@ export default function TallerOltpPage() {
    * nunca vería los doce completos: el avance es un registro de lo que ya
    * demostró, no una afirmación sobre el estado de este instante.
    */
-  const [logrados, setLogrados] = useState(leerLogrados)
+  const [logrados, setLogrados] = useState(() => aConjunto(leerLocal(CLAVE_LOGRADOS)))
 
-  // El script del alumno es su trabajo: no se pierde al recargar.
+  /*
+   * Lo que trae de OTRA computadora gana sobre lo que haya en esta. Solo la
+   * primera vez: después manda lo que el alumno esté escribiendo acá.
+   */
+  const [sincronizado, setSincronizado] = useState(false)
+
   useEffect(() => {
-    window.localStorage.setItem(CLAVE_GUARDADO, script)
-  }, [script])
+    let vivo = true
+
+    leerTrabajo().then(t => {
+      if (!vivo) return
+      const suyo = elegir(t['taller-script'], CLAVE_GUARDADO, caso.scriptInicial)
+      if (suyo !== script) {
+        setScript(suyo)
+        setEjecucion(null)
+      }
+      setLogrados(aConjunto(elegir(t['taller-pasos'], CLAVE_LOGRADOS, '[]')))
+      setSincronizado(true)
+    })
+
+    return () => { vivo = false }
+    // Solo al montar: después el servidor no vuelve a pisar lo que se escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // El script del alumno es su trabajo: al instante en este navegador, y al
+  // servidor un momento después para que lo encuentre en cualquier otro.
+  useEffect(() => {
+    if (sincronizado) guardar(CLAVE_GUARDADO, 'taller-script', script)
+  }, [script, sincronizado])
 
   /*
    * Cada corrida vacía la base y ejecuta el script entero. Acá eso es lo
@@ -139,7 +166,7 @@ export default function TallerOltpPage() {
 
     const union = new Set([...logrados, ...nuevos])
     setLogrados(union)
-    window.localStorage.setItem(CLAVE_LOGRADOS, JSON.stringify([...union]))
+    guardar(CLAVE_LOGRADOS, 'taller-pasos', JSON.stringify([...union]))
   }, [estadoDePasos, logrados])
 
   const resueltos = logrados.size
@@ -152,7 +179,7 @@ export default function TallerOltpPage() {
     setScript(caso.scriptInicial)
     setEjecucion(null)
     setLogrados(new Set())
-    window.localStorage.removeItem(CLAVE_LOGRADOS)
+    guardar(CLAVE_LOGRADOS, 'taller-pasos', '[]')
   }
 
   return (

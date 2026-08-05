@@ -1,23 +1,24 @@
-import { Alert, Button, Card, Form, Input, Segmented, Typography } from 'antd'
+import { Alert, Button, Form, Input, Segmented } from 'antd'
 import { useState } from 'react'
 import { useSesion } from './sesion.jsx'
 import './acceso.css'
 
-const { Paragraph, Text, Title } = Typography
-
 /**
  * Puerta de entrada al curso.
  *
- * Registro e ingreso en la misma pantalla: son dos formularios casi idénticos y
- * separarlos en dos vistas obliga al alumno a adivinar cuál le toca. El alta es
- * abierta, así que la mayoría llega acá la primera vez sin cuenta.
+ * Dos paneles: a la izquierda qué es esto, a la derecha el formulario. El de la
+ * izquierda desaparece en pantallas angostas, donde el formulario es lo único
+ * que importa.
+ *
+ * Registro e ingreso comparten pantalla: son dos formularios casi idénticos y
+ * separarlos obliga al alumno a adivinar cuál le toca. Como el alta es abierta,
+ * la mayoría llega acá sin cuenta la primera vez.
  */
 export default function AccesoPage() {
   const { entrar, crearCuenta } = useSesion()
   const [modo, setModo] = useState('ingreso')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
-  const [form] = Form.useForm()
 
   const esRegistro = modo === 'registro'
 
@@ -37,88 +38,102 @@ export default function AccesoPage() {
 
   return (
     <div className="acceso-fondo">
-      <Card className="acceso-card">
-        <div className="acceso-marca">
-          <div className="acceso-membrete">
-            <img src="/image1.png" alt="" />
+      <div className="acceso-panel">
+        <section className="acceso-hero">
+          <h1 className="acceso-hero-titulo">
+            Inteligencia
+            <br />
+            de Negocios
+          </h1>
+          <p className="acceso-hero-bajada">
+            Modela, consulta y construye bases de datos sobre PostgreSQL de verdad.
+          </p>
+
+          {/* Una consulta, no un eslogan: dice de qué se trata la materia mejor
+              que cualquier frase. */}
+          <pre className="acceso-hero-sql">
+            <code>
+              <b>SELECT</b> concepto, practica{'\n'}
+              <b>FROM</b> curso.inteligencia_negocios{'\n'}
+              <b>WHERE</b> base = <i>&apos;PostgreSQL real&apos;</i>{'\n'}
+              <b>ORDER BY</b> aprendizaje <b>DESC</b>;
+            </code>
+          </pre>
+
+          <div className="acceso-hero-cifras">
             <div>
-              <strong>Inteligencia de Negocios</strong>
-              <span>Universidad Privada Boliviana</span>
+              <strong>5</strong>
+              <span>capítulos</span>
+            </div>
+            <div>
+              <strong>4</strong>
+              <span>prácticas</span>
+            </div>
+            <div>
+              <strong>106</strong>
+              <span>retos SQL</span>
             </div>
           </div>
-          <Title level={3} className="acceso-titulo">
-            {esRegistro ? 'Crea tu cuenta' : 'Entra al curso'}
-          </Title>
-          <Paragraph className="acceso-bajada">
-            Tu cuenta guarda tus entregas y tus bases de datos, así que puedes seguir desde
-            cualquier computadora.
-          </Paragraph>
-        </div>
+        </section>
 
-        <Segmented
-          block
-          value={modo}
-          onChange={valor => {
-            setModo(valor)
-            setError(null)
-          }}
-          options={[
-            { label: 'Ya tengo cuenta', value: 'ingreso' },
-            { label: 'Soy nuevo', value: 'registro' },
-          ]}
-        />
+        <section className="acceso-formulario">
+          <div className="acceso-card">
+            <h2 className="acceso-titulo">{esRegistro ? 'Crea tu cuenta' : 'Entra al curso'}</h2>
 
-        {error && <Alert className="acceso-error" type="error" message={error} showIcon />}
-
-        <Form form={form} layout="vertical" onFinish={enviar} requiredMark={false} className="acceso-form">
-          {esRegistro && (
-            <Form.Item
-              name="nombre"
-              label="Nombre y apellido"
-              rules={[{ required: true, min: 2, message: 'Escribe tu nombre completo' }]}
-            >
-              <Input size="large" autoComplete="name" placeholder="Ana Mamani" />
-            </Form.Item>
-          )}
-
-          <Form.Item
-            name="correo"
-            label="Correo"
-            rules={[
-              { required: true, message: 'Escribe tu correo' },
-              { pattern: /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/, message: 'Ese correo no parece válido' },
-            ]}
-          >
-            <Input size="large" autoComplete="email" placeholder="nombre@upb.edu" />
-          </Form.Item>
-
-          <Form.Item
-            name="clave"
-            label="Contraseña"
-            rules={[
-              { required: true, message: 'Escribe tu contraseña' },
-              ...(esRegistro ? [{ min: 8, message: 'Necesita 8 caracteres o más' }] : []),
-            ]}
-            extra={esRegistro ? '8 caracteres o más.' : null}
-          >
-            <Input.Password
-              size="large"
-              autoComplete={esRegistro ? 'new-password' : 'current-password'}
-              placeholder="••••••••"
+            <Segmented
+              block
+              className="acceso-modo"
+              value={modo}
+              onChange={valor => {
+                setModo(valor)
+                setError(null)
+              }}
+              options={[
+                { label: 'Ya tengo cuenta', value: 'ingreso' },
+                { label: 'Soy nuevo', value: 'registro' },
+              ]}
             />
-          </Form.Item>
 
-          <Button type="primary" size="large" htmlType="submit" block loading={enviando}>
-            {esRegistro ? 'Crear cuenta y entrar' : 'Entrar'}
-          </Button>
-        </Form>
+            {error && <Alert className="acceso-error" type="error" message={error} showIcon />}
 
-        <Text className="acceso-pie">
-          {esRegistro
-            ? 'Usa tu correo institucional para que el docente pueda reconocerte.'
-            : 'Tu trabajo se guarda en el servidor: lo encuentras igual desde cualquier computadora.'}
-        </Text>
-      </Card>
+            <Form layout="vertical" onFinish={enviar} requiredMark={false} className="acceso-form">
+              {esRegistro && (
+                <Form.Item name="nombre" rules={[{ required: true, min: 2, message: 'Escribe tu nombre completo' }]}>
+                  <Input size="large" autoComplete="name" placeholder="Nombre y apellido" />
+                </Form.Item>
+              )}
+
+              <Form.Item
+                name="correo"
+                rules={[
+                  { required: true, message: 'Escribe tu correo' },
+                  { pattern: /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/, message: 'Ese correo no parece válido' },
+                ]}
+              >
+                <Input size="large" autoComplete="email" placeholder="Correo" />
+              </Form.Item>
+
+              <Form.Item
+                name="clave"
+                rules={[
+                  { required: true, message: 'Escribe tu contraseña' },
+                  ...(esRegistro ? [{ min: 8, message: 'Necesita 8 caracteres o más' }] : []),
+                ]}
+              >
+                <Input.Password
+                  size="large"
+                  autoComplete={esRegistro ? 'new-password' : 'current-password'}
+                  placeholder={esRegistro ? 'Contraseña (8 caracteres o más)' : 'Contraseña'}
+                />
+              </Form.Item>
+
+              <Button type="primary" size="large" htmlType="submit" block loading={enviando} className="acceso-boton">
+                {esRegistro ? 'Crear cuenta' : 'Entrar'}
+              </Button>
+            </Form>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

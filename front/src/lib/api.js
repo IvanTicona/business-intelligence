@@ -155,3 +155,29 @@ export async function submitPractice({ practiceId, answers }) {
     body: JSON.stringify({ practiceId, answers: cleanAnswers }),
   })
 }
+
+// --- Trabajo del alumno (scripts y avance) ---------------------------------
+
+/**
+ * Lo que no es una base pero también es suyo: el texto de sus scripts y su
+ * avance en el taller. Vive en el servidor para que lo siga entre computadoras,
+ * igual que su base.
+ */
+export async function leerTrabajo() {
+  try {
+    const { trabajo } = await pedir('/api/trabajo')
+
+    return trabajo
+  } catch {
+    // Sin conexión se sigue con lo que haya en el navegador: perder el borrador
+    // por un corte de red sería peor que mostrarlo desactualizado.
+    return {}
+  }
+}
+
+/** Guarda una clave. No lanza: es un guardado de fondo, no una acción del alumno. */
+export function guardarTrabajo(clave, valor) {
+  return pedir(`/api/trabajo/${clave}`, { method: 'PUT', body: JSON.stringify({ valor: String(valor) }) }).catch(
+    () => {},
+  )
+}
