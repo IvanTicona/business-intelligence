@@ -36,12 +36,22 @@ export async function hayBaseVieja() {
   }
 }
 
-/** Se llama cuando la mudanza terminó bien, o cuando el alumno la descarta. */
-export async function olvidarBaseVieja({ borrar = true } = {}) {
+/**
+ * Marca la mudanza como hecha para no volver a ofrecerla.
+ *
+ * NO borra la base vieja, y eso es a propósito. La primera versión sí lo hacía
+ * "porque la mudanza salió bien", y salir bien incluye traer cero filas: si
+ * alguna vez el volcado se equivoca y trae menos de lo que había, borrar deja al
+ * alumno sin la única copia y sin forma de darse cuenta. Ocupa espacio en su
+ * disco, sí; perder su trabajo es peor. Se libera con `borrarBaseVieja()`,
+ * cuando alguien lo pide a conciencia.
+ */
+export async function olvidarBaseVieja() {
   window.localStorage.setItem(YA_MUDADA, new Date().toISOString())
+}
 
-  if (!borrar) return
-
+/** Libera el espacio de la base vieja. Solo a pedido explícito. */
+export async function borrarBaseVieja() {
   try {
     const almacenes = await indexedDB.databases()
     const objetivo = almacenes.map(a => a.name).find(n => n?.endsWith(BASE_VIEJA))

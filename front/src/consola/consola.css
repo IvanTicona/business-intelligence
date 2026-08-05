@@ -82,3 +82,10 @@
   gap: 12px;
   margin-top: 10px;
 }
+
+.libre-mudanza-nota {
+  display: block;
+  margin-top: 6px;
+  opacity: 0.85;
+  font-size: 12.5px;
+}

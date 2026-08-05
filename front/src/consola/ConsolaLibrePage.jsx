@@ -5,7 +5,7 @@ import ModelDiagram from '../playground/ModelDiagram.jsx'
 import SchemaPanel from '../playground/SchemaPanel.jsx'
 import { ejecutarEspacio, leerEspacio, vaciarEspacio } from '../lib/api.js'
 import { prepararEsquema } from '../taller/esquemaVivo.js'
-import { hayBaseVieja, olvidarBaseVieja, volcarBaseVieja } from './migrarDelNavegador.js'
+import { borrarBaseVieja, hayBaseVieja, olvidarBaseVieja, volcarBaseVieja } from './migrarDelNavegador.js'
 import { RegistroSentencias, ResultadoConsola } from './piezas.jsx'
 import '../playground/playground.css'
 import '../taller/taller.css'
@@ -131,8 +131,13 @@ export default function ConsolaLibrePage() {
     }
   }
 
+  async function liberarEspacio() {
+    await borrarBaseVieja()
+    setMudanza(null)
+  }
+
   async function descartarMudanza() {
-    await olvidarBaseVieja({ borrar: false })
+    await olvidarBaseVieja()
     setMudanza(null)
   }
 
@@ -210,7 +215,7 @@ export default function ConsolaLibrePage() {
               <p className="libre-aviso-temporal">No se pudo abrir tu base: {motor.motivo}</p>
             )}
 
-            {mudanza && <AvisoMudanza mudanza={mudanza} onMudar={mudar} onDescartar={descartarMudanza} />}
+            {mudanza && <AvisoMudanza mudanza={mudanza} onMudar={mudar} onDescartar={descartarMudanza} onLiberar={liberarEspacio} />}
 
             {motor?.listo && (
               <>
@@ -332,7 +337,7 @@ export default function ConsolaLibrePage() {
  * trabajando quiere saber que están sus tablas y sus filas, no que un proceso
  * terminó.
  */
-function AvisoMudanza({ mudanza, onMudar, onDescartar }) {
+function AvisoMudanza({ mudanza, onMudar, onDescartar, onLiberar }) {
   if (mudanza.estado === 'trabajando') {
     return <p className="libre-mudanza">Trayendo la base que tenías guardada en este navegador…</p>
   }
@@ -343,6 +348,14 @@ function AvisoMudanza({ mudanza, onMudar, onDescartar }) {
         Listo: se trajeron <strong>{mudanza.tablas} tabla(s)</strong> y <strong>{mudanza.filas} fila(s)</strong> desde
         este navegador. De ahora en adelante tu base vive en el servidor y la vas a encontrar igual desde cualquier
         computadora.
+        {/* La copia vieja NO se borra sola: si algo no cuadra, sigue estando. */}
+        <span className="libre-mudanza-nota">
+          Revisa que esté todo. La copia anterior sigue guardada en este navegador por las dudas; cuando estés
+          seguro, puedes liberar ese espacio.
+        </span>
+        <span className="libre-mudanza-acciones">
+          <button type="button" className="libre-descartar" onClick={onLiberar}>Liberar el espacio</button>
+        </span>
       </p>
     )
   }
