@@ -1565,3 +1565,61 @@
 .submit-card .entrega-firma {
   margin-bottom: 14px;
 }
+
+/* ==========================================================================
+   PRÁCTICA YA ENTREGADA
+   Se abre igual que antes de entregar; lo que cambia es que arriba está lo que
+   escribió y abajo el envío está cerrado.
+   ========================================================================== */
+
+.entrega-hecha {
+  margin-bottom: 18px;
+  border: 1px solid rgba(23, 128, 74, 0.28);
+  background: rgba(23, 128, 74, 0.05);
+}
+
+.entrega-hecha-cabecera {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 10px;
+}
+
+.entrega-hecha-cabecera strong {
+  display: block;
+  color: #14532d;
+  font-size: 14.5px;
+}
+
+.entrega-hecha-cabecera span {
+  display: block;
+  margin-top: 2px;
+  color: #4a5573;
+  font-size: 13px;
+}
+
+.entrega-hecha-lista {
+  margin: 16px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.entrega-hecha-lista dt {
+  color: #132b70;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.entrega-hecha-lista dd {
+  margin: 4px 0 0;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #27272a;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}

@@ -131,7 +131,12 @@ const MAX_ANSWER_LENGTH = 5000
  * viajaba en el cuerpo y el servidor le creía, así que cualquiera podía
  * entregar en nombre de otro.
  */
-/** Qué prácticas entregó esta cuenta. La verdad la tiene el servidor. */
+/**
+ * Qué entregó esta cuenta, CON sus respuestas.
+ *
+ * Devuelve `{ 'practice-1': { respuestas, entregadaEn }, ... }`. Las respuestas
+ * vienen para que el alumno pueda volver a ver lo que escribió.
+ */
 export async function misEntregas() {
   const { entregadas } = await pedir('/api/submissions/mias')
 

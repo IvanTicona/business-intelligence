@@ -160,11 +160,20 @@ app.post('/api/submissions', exigirSesion, async (req, res) => {
 app.get('/api/submissions/mias', exigirSesion, async (req, res) => {
   try {
     const { rows } = await exigirAdmin().query(
-      'SELECT practice_id FROM practice_submissions WHERE usuario_id = $1',
+      'SELECT practice_id, answers, created_at FROM practice_submissions WHERE usuario_id = $1',
       [req.usuario.id],
     )
 
-    return res.json({ entregadas: rows.map(r => r.practice_id) })
+    /*
+     * Van también las RESPUESTAS. El alumno que ya entregó tiene que poder
+     * volver a ver qué escribió: antes la práctica quedaba deshabilitada en el
+     * menú y su trabajo desaparecía de su vista para siempre.
+     */
+    return res.json({
+      entregadas: Object.fromEntries(
+        rows.map(r => [r.practice_id, { respuestas: r.answers ?? {}, entregadaEn: r.created_at }]),
+      ),
+    })
   } catch (error) {
     console.error('[entregas] mias:', error)
 

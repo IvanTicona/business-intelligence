@@ -31,7 +31,7 @@ export function usePracticeSubmit({ practiceId, onDelivered }) {
     try {
       await submitPractice({ practiceId, answers: validation.answers })
       setState({ status: 'success', message: 'Práctica enviada correctamente.' })
-      onDelivered()
+      onDelivered(validation.answers)
     } catch (error) {
       setState({ status: 'error', message: error.message ?? 'No se pudo enviar la práctica.' })
     }
@@ -173,5 +173,52 @@ export function PracticeLayout({ children }) {
     >
       {children}
     </motion.main>
+  )
+}
+
+/**
+ * Lo que el alumno ya entregó, para que pueda volver a verlo.
+ *
+ * Antes, entregar dejaba la práctica deshabilitada en el menú y su trabajo
+ * desaparecía de su vista para siempre. Ahora la práctica se abre igual, con lo
+ * escrito arriba y el envío cerrado.
+ *
+ * Se muestran las respuestas guardadas y no se rellenan los controles de la
+ * actividad, y esa distinción importa: lo que se entrega es un RESUMEN de lo que
+ * el alumno hizo —cuántos retos resolvió, qué clasificó— y no el estado exacto
+ * de cada control. Rellenarlos con eso mostraría algo que no es lo que entregó.
+ */
+export function EntregaHecha({ entrega, campos }) {
+  if (!entrega) return null
+
+  const fecha = entrega.entregadaEn
+    ? new Date(entrega.entregadaEn).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+
+  const respuestas = campos
+    .map(campo => [campo.label, entrega.respuestas?.[campo.key]])
+    .filter(([, valor]) => typeof valor === 'string' && valor.trim())
+
+  return (
+    <Card className="practice-card entrega-hecha">
+      <div className="entrega-hecha-cabecera">
+        <PracticeIcon name="check" />
+        <div>
+          <strong>Ya entregaste esta práctica</strong>
+          {fecha && <span>El {fecha}. Puedes revisarla, pero ya no se puede modificar.</span>}
+        </div>
+      </div>
+
+      {respuestas.length > 0 && (
+        <dl className="entrega-hecha-lista">
+          {respuestas.map(([etiqueta, valor]) => (
+            <div key={etiqueta}>
+              <dt>{etiqueta}</dt>
+              <dd>{valor}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </Card>
   )
 }

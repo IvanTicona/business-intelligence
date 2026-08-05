@@ -4,9 +4,16 @@ import PracticeIcon from './PracticeIcon.jsx'
 import { ejecutarConsulta } from '../lib/api.js'
 import SqlWorkbench from './SqlWorkbench.jsx'
 import SchemaDiagram, { tablasEnConsulta } from './SchemaDiagram.jsx'
-import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit } from './PracticeShell.jsx'
+import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit, EntregaHecha } from './PracticeShell.jsx'
 
 import { sqlChallenges } from './data/expocruz.js'
+
+const CAMPOS_ENTREGA = [
+  { key: 'solvedCount', label: 'Retos resueltos' },
+  { key: 'queries', label: 'Consultas SQL' },
+  { key: 'freeQuery', label: 'Consulta propia' },
+  { key: 'reflection', label: 'Reflexión' },
+]
 
 const BASE = 'expocruz'
 const { Paragraph } = Typography
@@ -18,7 +25,7 @@ const objectives = [
   'Convertir una pregunta de negocio en una consulta.',
 ]
 
-export default function PracticeThree({ delivered, onDelivered }) {
+export default function PracticeThree({ delivered, onDelivered, entrega }) {
   const [db, setDb] = useState(null)
   const [dbError, setDbError] = useState('')
   const [stage, setStage] = useState(0)
@@ -91,6 +98,7 @@ export default function PracticeThree({ delivered, onDelivered }) {
   if (dbError) {
     return (
       <PracticeLayout>
+      <EntregaHecha entrega={entrega} campos={CAMPOS_ENTREGA} />
         <Card className="practice-card">
           <Paragraph>{dbError}</Paragraph>
         </Card>

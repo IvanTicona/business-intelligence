@@ -845,7 +845,7 @@ function Curso() {
     misEntregas()
       .then(entregadas => {
         if (!vivo) return
-        setPracticeStatus(Object.fromEntries(entregadas.map(id => [id, 'delivered'])))
+        setPracticeStatus(entregadas)
         window.localStorage.removeItem(practiceStatusStorageKey)
       })
       .catch(() => {})
@@ -877,8 +877,11 @@ function Curso() {
 
   // Ya no se guarda nada en el navegador: la entrega quedó registrada en el
   // servidor y de ahí se relee en la próxima carga.
-  function markDelivered(practiceKey) {
-    setPracticeStatus(previo => ({ ...previo, [practiceKey]: 'delivered' }))
+  function markDelivered(practiceKey, respuestas) {
+    setPracticeStatus(previo => ({
+      ...previo,
+      [practiceKey]: { respuestas: respuestas ?? {}, entregadaEn: new Date().toISOString() },
+    }))
   }
 
   return (
@@ -914,7 +917,7 @@ function Curso() {
           items={menuItems}
           onClick={({ key }) => {
             if (isDisabled(key)) return
-            if (!isPracticeDelivered(key, practiceStatus)) setSelectedKey(key)
+            setSelectedKey(key)
           }}
           className="course-menu"
           inlineCollapsed={collapsed}
@@ -959,7 +962,8 @@ function Curso() {
               <Playground
                 key={selectedKey}
                 delivered={isPracticeDelivered(selectedKey, practiceStatus)}
-                onDelivered={() => markDelivered(selectedKey)}
+                entrega={practiceStatus[selectedKey]}
+                onDelivered={respuestas => markDelivered(selectedKey, respuestas)}
               />
             )
           })()
@@ -994,7 +998,9 @@ function buildMenuItems(practiceStatus) {
 
       return {
         ...item,
-        disabled: blocked || delivered,
+        // Entregada NO es deshabilitada: se puede entrar a verla. Solo el
+        // contenido bloqueado por el docente sigue sin abrirse.
+        disabled: blocked,
         icon: <CourseMenuIcon name={menuIconFor(item.key)} />,
         label: (
           <span className="course-menu-label">
@@ -1009,7 +1015,7 @@ function buildMenuItems(practiceStatus) {
 }
 
 function isPracticeDelivered(key, practiceStatus) {
-  return key.startsWith('practice') && practiceStatus[key] === 'delivered'
+  return key.startsWith('practice') && Boolean(practiceStatus[key])
 }
 
 function BlockedContent({ title }) {
@@ -1075,15 +1081,30 @@ Primero identifica:
 
 No propongas soluciones todavía.`
 
-function PracticeOnePlayground({ delivered, onDelivered }) {
+const CAMPOS_ENTREGA_P1 = [
+  { key: 'rowMeaning', label: '¿Qué representa cada fila?' },
+  { key: 'businessContext', label: '¿Qué negocio usaría estos datos?' },
+  { key: 'importantData', label: 'Información importante' },
+  { key: 'problems', label: 'Problemas del CSV' },
+  { key: 'aiCritique', label: 'Qué aceptarías o corregirías de la IA' },
+]
+
+function PracticeOnePlayground({ delivered, onDelivered, entrega }) {
   const datasetSheetUrl = 'https://docs.google.com/spreadsheets/d/1UH5uNvUW8_beBv_3LCabQUmImeYKeHzE7W814foIfFU/edit?usp=sharing'
-  const [answers, setAnswers] = useState({
+  /*
+   * Acá las respuestas entregadas coinciden campo por campo con el estado, así
+   * que la práctica se abre RELLENADA con lo que el alumno escribió. En las
+   * otras tres no se puede: lo que se entrega es un resumen de lo que hizo
+   * —cuántos retos resolvió, qué clasificó— y no el estado de cada control.
+   */
+  const [answers, setAnswers] = useState(() => ({
     rowMeaning: '',
     businessContext: '',
     importantData: '',
     problems: '',
     aiCritique: '',
-  })
+    ...(entrega?.respuestas ?? {}),
+  }))
   const [submitState, setSubmitState] = useState({ status: 'idle', message: '' })
   const objectives = [
     'Entender qué representa cada fila del dataset.',
@@ -1102,6 +1123,7 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
   // Usa el mismo envío que las otras tres prácticas en vez de su propio fetch:
   // eran dos caminos que había que acordarse de cambiar juntos.
   async function submitPractice() {
+    if (delivered) return
     if (Object.values(answers).some(valor => !valor.trim())) {
       setSubmitState({ status: 'error', message: 'Completa todos los campos antes de enviar.' })
       return
@@ -1112,7 +1134,9 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
     try {
       await enviarPractica({ practiceId: 'practice-1', answers })
       setSubmitState({ status: 'success', message: 'Práctica enviada correctamente.' })
-      onDelivered()
+      // Con las respuestas: así al volver a entrar se ve rellenada sin tener
+      // que recargar para que vengan del servidor.
+      onDelivered(answers)
     } catch (error) {
       setSubmitState({ status: 'error', message: error.message ?? 'No se pudo enviar la práctica.' })
     }

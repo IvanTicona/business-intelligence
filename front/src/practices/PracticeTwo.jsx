@@ -7,12 +7,21 @@ import {
   PracticeLayout,
   StageTracker,
   usePracticeSubmit,
+  EntregaHecha,
 } from './PracticeShell.jsx'
 import {
   cardinalityQuestions,
   conceptCards,
   primaryKeyQuestions,
 } from './data/expocruz.js'
+
+const CAMPOS_ENTREGA = [
+  { key: 'classificationScore', label: 'Entidades y atributos' },
+  { key: 'primaryKeys', label: 'Claves primarias' },
+  { key: 'cardinalities', label: 'Cardinalidades' },
+  { key: 'kpis', label: 'KPIs propuestos' },
+  { key: 'reflection', label: 'Reflexión' },
+]
 
 const { Paragraph } = Typography
 const { TextArea } = Input
@@ -24,7 +33,7 @@ const objectives = [
   'Escribir KPIs que el modelo pueda responder de verdad.',
 ]
 
-export default function PracticeTwo({ delivered, onDelivered }) {
+export default function PracticeTwo({ delivered, onDelivered, entrega }) {
   const [stage, setStage] = useState(0)
   const [classifications, setClassifications] = useState({})
   const [pkAnswers, setPkAnswers] = useState({})
@@ -74,6 +83,7 @@ export default function PracticeTwo({ delivered, onDelivered }) {
 
   return (
     <PracticeLayout>
+      <EntregaHecha entrega={entrega} campos={CAMPOS_ENTREGA} />
       {/* Mismo esqueleto que la Práctica 3: dos contenedores, titulo dentro de
           la tarjeta de trabajo y el diagrama fijo a la derecha. */}
       <section className="practice-grid practice-grid-schema practice-grid-mer">

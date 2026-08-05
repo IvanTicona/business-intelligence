@@ -4,7 +4,7 @@ import PracticeIcon from './PracticeIcon.jsx'
 import { ejecutarConsulta } from '../lib/api.js'
 import SqlWorkbench from './SqlWorkbench.jsx'
 import StarCanvas from './StarCanvas.jsx'
-import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit } from './PracticeShell.jsx'
+import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit, EntregaHecha } from './PracticeShell.jsx'
 
 import {
   businessGoals,
@@ -14,6 +14,14 @@ import {
   metricOptions,
   oltpTables,
 } from './data/spaziogym.js'
+
+const CAMPOS_ENTREGA = [
+  { key: 'grain', label: 'Grain del hecho' },
+  { key: 'factDesign', label: 'Diseño en estrella' },
+  { key: 'kpiDefinitions', label: 'Definición de KPIs' },
+  { key: 'kpiQueries', label: 'Consultas de KPIs' },
+  { key: 'reflection', label: 'Reflexión' },
+]
 
 const BASE = 'spaziogym'
 const { Paragraph } = Typography
@@ -26,7 +34,7 @@ const objectives = [
   'Escribir SQL sobre la estrella y comparar el esfuerzo contra el OLTP.',
 ]
 
-export default function PracticeFour({ delivered, onDelivered }) {
+export default function PracticeFour({ delivered, onDelivered, entrega }) {
   const [db, setDb] = useState(null)
   const [dbError, setDbError] = useState('')
   const [stage, setStage] = useState(0)
@@ -111,6 +119,7 @@ export default function PracticeFour({ delivered, onDelivered }) {
   if (dbError) {
     return (
       <PracticeLayout>
+      <EntregaHecha entrega={entrega} campos={CAMPOS_ENTREGA} />
         <Card className="practice-card">
           <Paragraph>{dbError}</Paragraph>
         </Card>
