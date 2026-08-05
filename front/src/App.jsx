@@ -908,8 +908,6 @@ function Curso() {
           </button>
         </div>
 
-        <BarraSesion colapsado={collapsed} />
-
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
@@ -922,15 +920,7 @@ function Curso() {
           inlineCollapsed={collapsed}
         />
 
-        {!collapsed && (
-          <div className="sidebar-footer">
-            <img src="/image1.png" alt="" />
-            <div>
-              <strong>Paul Landaeta</strong>
-              <span>Universidad Privada Boliviana</span>
-            </div>
-          </div>
-        )}
+        <PieDeSesion colapsado={collapsed} />
       </Sider>
 
       <Content className="course-content">
@@ -2353,29 +2343,44 @@ function Compuerta() {
 }
 
 /**
- * Quién está usando la aplicación, arriba del menú.
+ * Quién está usando la aplicación, al pie del menú.
  *
- * Está a la vista siempre y no escondida en un desplegable a propósito: en un
+ * Está siempre a la vista y no escondido en un desplegable a propósito: en un
  * laboratorio de la universidad se comparten computadoras, y entregar una
- * práctica con la sesión de un compañero es un problema real.
+ * práctica con la sesión de un compañero es un problema real. Por eso el nombre
+ * de quien tiene la sesión abierta y la salida están en el mismo lugar.
  */
-function BarraSesion({ colapsado }) {
+function PieDeSesion({ colapsado }) {
   const { usuario, cerrar } = useSesion()
-  if (!usuario) return null
 
+  const salir = (
+    <button type="button" className="sesion-salir" onClick={cerrar} title="Cerrar sesión" aria-label="Cerrar sesión">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
+        <path d="M11 12h9m0 0-3-3m3 3-3 3" />
+      </svg>
+    </button>
+  )
+
+  // Con el menú plegado no entra el nombre: queda la marca y, si hay sesión,
+  // la salida debajo. Sin sesión (el panel docente por su ruta) solo la marca.
   if (colapsado) {
     return (
-      <div className="sesion-barra sesion-barra-chica" title={`${usuario.nombre} · ${usuario.correo}`}>
-        <span className="sesion-rol">{usuario.nombre.slice(0, 1).toUpperCase()}</span>
+      <div className="sidebar-footer sidebar-footer-chico">
+        <img src="/image1.png" alt="Universidad Privada Boliviana" />
+        {usuario && salir}
       </div>
     )
   }
 
   return (
-    <div className="sesion-barra">
-      <span className="sesion-nombre" title={usuario.correo}>{usuario.nombre}</span>
-      {usuario.rol === 'docente' && <span className="sesion-rol">docente</span>}
-      <button type="button" className="sesion-salir" onClick={cerrar}>Salir</button>
+    <div className="sidebar-footer">
+      <img src="/image1.png" alt="" />
+      <div className="sidebar-footer-datos">
+        <strong title={usuario?.correo}>{usuario?.nombre ?? 'Universidad Privada Boliviana'}</strong>
+        <span>{usuario ? 'Universidad Privada Boliviana' : 'Panel docente'}</span>
+      </div>
+      {usuario && salir}
     </div>
   )
 }

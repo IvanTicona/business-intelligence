@@ -260,7 +260,7 @@ export default function ConsolaLibrePage() {
                   <SqlEditor
                     value={script}
                     onChange={setScript}
-                    rows={20}
+                    rows={13}
                     placeholder="-- Escribe SQL. Ctrl + Enter también ejecuta."
                     onSubmit={() => correr(false)}
                   />

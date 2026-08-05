@@ -39,7 +39,13 @@ export default function AccesoPage() {
     <div className="acceso-fondo">
       <Card className="acceso-card">
         <div className="acceso-marca">
-          <span className="acceso-materia">Inteligencia de Negocios</span>
+          <div className="acceso-membrete">
+            <img src="/image1.png" alt="" />
+            <div>
+              <strong>Inteligencia de Negocios</strong>
+              <span>Universidad Privada Boliviana</span>
+            </div>
+          </div>
           <Title level={3} className="acceso-titulo">
             {esRegistro ? 'Crea tu cuenta' : 'Entra al curso'}
           </Title>
@@ -110,7 +116,7 @@ export default function AccesoPage() {
         <Text className="acceso-pie">
           {esRegistro
             ? 'Usa tu correo institucional para que el docente pueda reconocerte.'
-            : '¿Todavía no tienes cuenta? Cambia a "Soy nuevo" aquí arriba.'}
+            : 'Tu trabajo se guarda en el servidor: lo encuentras igual desde cualquier computadora.'}
         </Text>
       </Card>
     </div>
