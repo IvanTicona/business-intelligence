@@ -3,9 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import SqlEditor from '../practices/SqlEditor.jsx'
 import ModelDiagram from '../playground/ModelDiagram.jsx'
 import SchemaPanel from '../playground/SchemaPanel.jsx'
-import { abrirBasePersistente, pedirDescarte } from '../lib/sqlEngine.js'
-import { ejecutarScript } from '../taller/ejecutarScript.js'
-import { leerEsquema } from '../taller/esquemaVivo.js'
+import { ejecutarEspacio, leerEspacio, vaciarEspacio } from '../lib/api.js'
+import { prepararEsquema } from '../taller/esquemaVivo.js'
 import { RegistroSentencias, ResultadoConsola } from './piezas.jsx'
 import '../playground/playground.css'
 import '../taller/taller.css'
@@ -14,7 +13,7 @@ import './consola.css'
 const { Paragraph } = Typography
 
 const CLAVE_GUARDADO = 'bi-course-consola-libre'
-const NOMBRE_BASE = 'bi-course-playground'
+
 const MAX_FILAS = 500
 
 const SCRIPT_INICIAL = `-- Playground · PostgreSQL 18
@@ -23,8 +22,8 @@ const SCRIPT_INICIAL = `-- Playground · PostgreSQL 18
 -- quieras, cargalo, consultalo y rompelo.
 --
 -- Funciona como una sesion de verdad: las sentencias se APLICAN sobre la base
--- que ya existe y quedan guardadas en este navegador. Si cierras la pestania y
--- vuelves maniana, tus tablas y tus datos siguen ahi.
+-- que ya existe y quedan guardadas en el SERVIDOR. Si entras desde otra
+-- computadora, tus tablas y tus datos siguen ahi.
 
 CREATE TABLE ciudad (
   id_ciudad INTEGER PRIMARY KEY,
@@ -43,20 +42,6 @@ FROM ciudad
 ORDER BY altura_msnm DESC;
 `
 
-/** Por qué esta base no es la de siempre. Callarlo sería peor que decirlo. */
-const AVISOS = {
-  'otra-pestana':
-    'Ya tienes el Playground abierto en otra pestaña. Para no dañar la base guardada, esta ' +
-    'pestaña trabaja sobre una copia temporal que se pierde al cerrarla.',
-  almacenamiento:
-    'No se pudo abrir tu base guardada; pasa en modo incógnito, cuando el almacenamiento está ' +
-    'lleno o si quedó a medio escribir. Puedes trabajar igual, pero lo que hagas se pierde al ' +
-    'cerrar la pestaña.',
-  descartada:
-    'Se descartó la base anterior, así que esta empieza vacía. Lo que hagas a partir de ahora ' +
-    'se guarda normalmente.',
-}
-
 /**
  * Playground: una base PostgreSQL propia, sin consigna.
  *
@@ -65,10 +50,10 @@ const AVISOS = {
  * cumplir: es el lugar para probar una idea, reproducir un ejemplo de clase o
  * equivocarse sin que nadie corrija.
  *
- * A diferencia del taller, la base NO se vacía en cada ejecución y vive en
- * IndexedDB. Es la única forma de que el trabajo se acumule entre sesiones, que
- * es como funciona cualquier base de verdad: hoy creas las tablas, mañana las
- * cargas y pasado las consultas.
+ * A diferencia del taller, la base NO se vacía en cada ejecución y vive en el
+ * servidor, con su propio rol de Postgres. El trabajo se acumula entre sesiones,
+ * como en cualquier base de verdad: hoy creas las tablas, mañana las cargas y
+ * pasado las consultas.
  */
 export default function ConsolaLibrePage() {
   const [motor, setMotor] = useState(null)
@@ -84,17 +69,18 @@ export default function ConsolaLibrePage() {
   useEffect(() => {
     let viva = true
 
-    abrirBasePersistente(NOMBRE_BASE).then(async abierta => {
-      if (!viva) return
-      // Se dibuja lo que YA hay guardado, sin ejecutar nada: volver a correr el
-      // script duplicaría los INSERT de la sesión anterior.
-      const guardadas = await leerEsquema(abierta.db)
-      if (!viva) return
-
-      sello.current += 1
-      setTablas(guardadas)
-      setMotor(abierta)
-    })
+    // Se dibuja lo que YA hay en el servidor, sin ejecutar nada: volver a
+    // correr el script duplicaría los INSERT de la sesión anterior.
+    leerEspacio('libre')
+      .then(({ tablas: guardadas }) => {
+        if (!viva) return
+        sello.current += 1
+        setTablas(prepararEsquema(guardadas))
+        setMotor({ listo: true, motivo: null })
+      })
+      .catch(err => {
+        if (viva) setMotor({ listo: false, motivo: err.message })
+      })
 
     return () => { viva = false }
   }, [])
@@ -104,36 +90,42 @@ export default function ConsolaLibrePage() {
   }, [script])
 
   const correr = useCallback(async (reiniciar = false) => {
-    if (!motor || corriendo) return
+    if (!motor?.listo || corriendo) return
     setCorriendo(true)
 
     try {
-      const salida = await ejecutarScript(motor.db, script, { reiniciar })
+      const salida = await ejecutarEspacio({ espacio: 'libre', sql: script, reiniciar })
+      const falla = salida.registro?.find(l => !l.ok)
 
       sello.current += 1
-      setTablas(await leerEsquema(motor.db))
+      setTablas(prepararEsquema(salida.tablas))
       setEjecucion({
-        registro: salida.registro,
-        error: salida.error,
-        resultado: salida.resultado
-          ? {
-              ...salida.resultado,
-              rows: salida.resultado.rows.slice(0, MAX_FILAS),
-              totalFilas: salida.resultado.rows.length,
-              recortado: salida.resultado.rows.length > MAX_FILAS,
-            }
+        registro: salida.registro ?? [],
+        error: salida.error ? { mensaje: salida.error, numero: falla?.numero ?? 1, resumen: falla?.resumen ?? '' } : null,
+        resultado: salida.columns?.length
+          ? { columns: salida.columns, rows: salida.rows, totalFilas: salida.filas, recortado: salida.recortado }
           : null,
       })
+    } catch (err) {
+      setEjecucion({ registro: [], error: { mensaje: err.message, numero: 1, resumen: '' }, resultado: null })
     } finally {
       setCorriendo(false)
     }
   }, [motor, script, corriendo])
 
-  // El borrado corre en el arranque siguiente, con la base todavía sin abrir:
-  // es el único momento en que IndexedDB lo deja hacer sin quedarse esperando.
-  function descartarYRecargar() {
-    pedirDescarte(NOMBRE_BASE)
-    window.location.reload()
+  /** Deja la base vacía sin ejecutar nada. Distinto de "Vaciar", que borra el editor. */
+  async function vaciarLaBase() {
+    if (corriendo) return
+    setCorriendo(true)
+
+    try {
+      await vaciarEspacio('libre')
+      sello.current += 1
+      setTablas([])
+      setEjecucion(null)
+    } finally {
+      setCorriendo(false)
+    }
   }
 
   return (
@@ -163,18 +155,11 @@ export default function ConsolaLibrePage() {
 
             {!motor && <Paragraph className="pg-aviso">Abriendo tu base…</Paragraph>}
 
-            {motor?.motivo && (
-              <p className="libre-aviso-temporal">
-                {AVISOS[motor.motivo]}
-                {motor.motivo === 'almacenamiento' && (
-                  <button type="button" className="libre-descartar" onClick={descartarYRecargar}>
-                    Descartar la base guardada e intentar de nuevo
-                  </button>
-                )}
-              </p>
+            {motor && !motor.listo && (
+              <p className="libre-aviso-temporal">No se pudo abrir tu base: {motor.motivo}</p>
             )}
 
-            {motor && (
+            {motor?.listo && (
               <>
                 <div className="pg-editor-bloque">
                   <div className="pg-editor-barra">
@@ -192,14 +177,14 @@ export default function ConsolaLibrePage() {
                       </button>
 
                       <Popconfirm
-                        title="Empezar de cero"
-                        description="Se borran todas tus tablas y sus datos, y se corre el script sobre la base vacía."
-                        okText="Borrar y correr"
+                        title="Vaciar tu base"
+                        description="Se borran todas tus tablas y sus datos del servidor. El script del editor no se toca."
+                        okText="Borrar todo"
                         cancelText="Cancelar"
-                        onConfirm={() => correr(true)}
+                        onConfirm={vaciarLaBase}
                       >
                         <button type="button" className="pg-boton pg-boton-fantasma" disabled={corriendo}>
-                          Empezar de cero
+                          Vaciar mi base
                         </button>
                       </Popconfirm>
 
@@ -258,7 +243,7 @@ export default function ConsolaLibrePage() {
               <span className="practice-panel-label">Tu base</span>
               <span className="pg-panel-pista">
                 {tablas.length
-                  ? `${tablas.length} tabla${tablas.length === 1 ? '' : 's'}${motor?.persistente ? ' · guardada' : ''}`
+                  ? `${tablas.length} tabla${tablas.length === 1 ? '' : 's'} · guardada en el servidor`
                   : 'Todavía no hay tablas'}
               </span>
             </div>

@@ -10,6 +10,8 @@ import { schemasDisponibles } from '../db/semillas.js'
 import { rolListo, motivoRol } from '../db/rolAlumno.js'
 import { exigirSesion } from '../auth/middleware.js'
 import { MAX_FILAS, ejecutarSql } from './ejecutor.js'
+import { nombreSchema, poolDeAlumno, prepararAlumno, vaciarEspacio } from './alumnoDb.js'
+import { leerEsquema } from './esquema.js'
 
 const consultaSchema = z.object({
   // El identificador de la base, no el nombre del schema: el cliente pide
@@ -65,6 +67,88 @@ export function rutasSql() {
       console.error('[sql] fallo inesperado:', error)
 
       return res.status(500).json({ error: 'No se pudo ejecutar la consulta' })
+    }
+  })
+
+  // --- El espacio propio del alumno ---------------------------------------
+
+  const espacioSchema = z.object({
+    espacio: z.enum(['taller', 'libre']),
+    sql: z.string().min(1).max(50000),
+    // El taller vacía en cada corrida —ahí el entregable es el script, y con la
+    // base recreada lo escrito ES lo que existe— y el playground libre no.
+    reiniciar: z.boolean().optional().default(false),
+  })
+
+  /**
+   * Ejecuta contra la base del propio alumno.
+   *
+   * El id SIEMPRE sale de la sesión, nunca del cuerpo del pedido: es lo que
+   * hace imposible operar sobre la base de un compañero. Y el pool con el que
+   * se ejecuta es el de SU rol de Postgres, así que aunque alguien lograra
+   * nombrar el schema de otro, la base se lo niega.
+   */
+  router.post('/espacio', async (req, res) => {
+    if (!rolListo) {
+      return res.status(503).json({ error: `El motor de consultas no está disponible (${motivoRol}). Avisa al docente.` })
+    }
+
+    const leido = espacioSchema.safeParse(req.body)
+    if (!leido.success) return res.status(400).json({ error: 'Pedido inválido' })
+
+    const { id } = req.usuario
+    const schema = nombreSchema(id, leido.data.espacio)
+
+    try {
+      await prepararAlumno(id)
+      if (leido.data.reiniciar) await vaciarEspacio(id, leido.data.espacio)
+
+      const pool = poolDeAlumno(id)
+      const salida = await ejecutarSql(leido.data.sql, schema, { pool, propio: true })
+
+      // El diagrama se dibuja con lo que quedó DESPUÉS de ejecutar, en el mismo
+      // viaje: pedirlo aparte mostraría el modelo anterior por un instante.
+      const tablas = await leerEsquema(pool, schema)
+
+      return res.json({ ...salida, tablas })
+    } catch (error) {
+      console.error('[sql] espacio:', error)
+
+      return res.status(500).json({ error: 'No se pudo ejecutar' })
+    }
+  })
+
+  /** El modelo actual, sin ejecutar nada. Se pide al abrir la consola. */
+  router.get('/espacio/:espacio', async (req, res) => {
+    const espacio = req.params.espacio
+    if (!['taller', 'libre'].includes(espacio)) return res.status(400).json({ error: 'Espacio inválido' })
+
+    try {
+      await prepararAlumno(req.usuario.id)
+      const pool = poolDeAlumno(req.usuario.id)
+
+      return res.json({ tablas: await leerEsquema(pool, nombreSchema(req.usuario.id, espacio)) })
+    } catch (error) {
+      console.error('[sql] esquema:', error)
+
+      return res.status(500).json({ error: 'No se pudo leer tu base' })
+    }
+  })
+
+  /** Vacía el espacio. Es lo que hay detrás de "Empezar de cero". */
+  router.delete('/espacio/:espacio', async (req, res) => {
+    const espacio = req.params.espacio
+    if (!['taller', 'libre'].includes(espacio)) return res.status(400).json({ error: 'Espacio inválido' })
+
+    try {
+      await prepararAlumno(req.usuario.id)
+      await vaciarEspacio(req.usuario.id, espacio)
+
+      return res.json({ tablas: [] })
+    } catch (error) {
+      console.error('[sql] vaciar:', error)
+
+      return res.status(500).json({ error: 'No se pudo vaciar tu base' })
     }
   })
 

@@ -86,6 +86,27 @@ export async function ejecutarConsulta({ base, sql }) {
   return pedir('/api/sql/consulta', { method: 'POST', body: JSON.stringify({ base, sql }) })
 }
 
+/**
+ * Ejecuta contra la base propia del alumno (`taller` o `libre`).
+ *
+ * Devuelve además `tablas`, el modelo tal como quedó DESPUÉS de ejecutar, para
+ * que el diagrama se dibuje en el mismo viaje. Pedirlo aparte mostraría el
+ * modelo anterior por un instante.
+ */
+export function ejecutarEspacio({ espacio, sql, reiniciar = false }) {
+  return pedir('/api/sql/espacio', { method: 'POST', body: JSON.stringify({ espacio, sql, reiniciar }) })
+}
+
+/** El modelo actual del espacio, sin ejecutar nada. */
+export function leerEspacio(espacio) {
+  return pedir(`/api/sql/espacio/${espacio}`)
+}
+
+/** Vacía el espacio. Es lo que hay detrás de "Empezar de cero". */
+export function vaciarEspacio(espacio) {
+  return pedir(`/api/sql/espacio/${espacio}`, { method: 'DELETE' })
+}
+
 // --- Entregas --------------------------------------------------------------
 
 // Espejo de las reglas del backend (zod). Validamos aquí también para dar un

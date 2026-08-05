@@ -19,56 +19,22 @@ const ESPACIO_Y = 60
  * consulta por tabla, veinte tablas serían sesenta viajes al motor en cada
  * tecla que toca el alumno.
  */
-export async function leerEsquema(db) {
-  if (!db) return []
+/**
+ * Acomoda en el lienzo las tablas que devolvió el servidor.
+ *
+ * La LECTURA del catálogo se hace en el backend, que es donde vive la base del
+ * alumno. Acá queda solo la parte de presentación: dónde va cada caja y con qué
+ * nombre corto se muestra cada tipo.
+ */
+export function prepararEsquema(tablas) {
+  if (!Array.isArray(tablas) || tablas.length === 0) return []
 
-  const columnas = (await db.query(`
-    SELECT table_name, column_name, data_type, is_nullable, ordinal_position
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-    ORDER BY table_name, ordinal_position`)).rows
-
-  if (!columnas.length) return []
-
-  const primarias = (await db.query(`
-    SELECT tc.table_name, kcu.column_name
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
-    WHERE tc.table_schema = 'public' AND tc.constraint_type = 'PRIMARY KEY'`)).rows
-
-  const foraneas = (await db.query(`
-    SELECT tc.table_name, kcu.column_name, ccu.table_name AS destino
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
-    JOIN information_schema.constraint_column_usage ccu
-      ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
-    WHERE tc.table_schema = 'public' AND tc.constraint_type = 'FOREIGN KEY'`)).rows
-
-  const esPk = new Set(primarias.map(p => `${p.table_name}.${p.column_name}`))
-  const destinoFk = new Map(foraneas.map(f => [`${f.table_name}.${f.column_name}`, f.destino]))
-
-  const porTabla = new Map()
-  for (const c of columnas) {
-    if (!porTabla.has(c.table_name)) porTabla.set(c.table_name, [])
-    porTabla.get(c.table_name).push({
-      nombre: c.column_name,
-      tipo: tipoCorto(c.data_type),
-      pk: esPk.has(`${c.table_name}.${c.column_name}`),
-      fk: destinoFk.get(`${c.table_name}.${c.column_name}`),
-      obligatoria: c.is_nullable === 'NO',
-    })
-  }
-
-  const leidas = [...porTabla.entries()].map(([nombre, cols]) => ({
-    nombre,
-    columnas: cols,
-    referencias: [...new Set(foraneas.filter(f => f.table_name === nombre).map(f => f.destino))]
-      .filter(t => t !== nombre),
-  }))
-
-  return acomodar(leidas)
+  return acomodar(
+    tablas.map(t => ({
+      ...t,
+      columnas: t.columnas.map(c => ({ ...c, tipo: tipoCorto(c.tipo) })),
+    })),
+  )
 }
 
 /**

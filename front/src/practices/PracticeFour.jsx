@@ -1,10 +1,11 @@
 import { Card, Input, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
+import { ejecutarConsulta } from '../lib/api.js'
 import SqlWorkbench from './SqlWorkbench.jsx'
 import StarCanvas from './StarCanvas.jsx'
 import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit } from './PracticeShell.jsx'
-import { createDatabase } from '../lib/sqlEngine.js'
+
 import {
   businessGoals,
   dimensionOptions,
@@ -12,9 +13,9 @@ import {
   kpiChallenges,
   metricOptions,
   oltpTables,
-  spazioGymSeedSql,
 } from './data/spaziogym.js'
 
+const BASE = 'spaziogym'
 const { Paragraph } = Typography
 const { TextArea } = Input
 
@@ -41,15 +42,18 @@ export default function PracticeFour({ delivered, onDelivered }) {
   const [ownQuery, setOwnQuery] = useState('')
   const [reflection, setReflection] = useState('')
 
+  /*
+   * La base ya no se arma en el navegador: vive en el servidor, sembrada una
+   * vez para todo el curso. Solo se comprueba que responda, para avisar si el
+   * alumno se quedó sin conexión antes de que se pelee con la consola.
+   */
   useEffect(() => {
     let cancelled = false
 
-    createDatabase(spazioGymSeedSql)
-      .then(database => {
-        if (!cancelled) setDb(database)
-      })
+    ejecutarConsulta({ base: BASE, sql: 'SELECT 1' })
+      .then(() => { if (!cancelled) setDb(true) })
       .catch(() => {
-        if (!cancelled) setDbError('No se pudo iniciar el motor SQL en este navegador.')
+        if (!cancelled) setDbError('No se pudo conectar con la base del curso. Revisa tu conexión.')
       })
 
     return () => {
@@ -254,7 +258,7 @@ export default function PracticeFour({ delivered, onDelivered }) {
                       y el resultado anterior no queda colgado. */}
                   <SqlWorkbench
                     key={activeKpi.id}
-                    db={db}
+                    base="spaziogym"
                     value={queries[activeKpi.id]}
                     onChange={value => setQueries(current => ({ ...current, [activeKpi.id]: value }))}
                     expectedSql={activeKpi.expectedSql}
@@ -286,7 +290,7 @@ export default function PracticeFour({ delivered, onDelivered }) {
                   onChange={event => setOwnKpi(event.target.value)}
                 />
               </label>
-              {db && <SqlWorkbench db={db} value={ownQuery} onChange={setOwnQuery} disabled={delivered} rows={8} />}
+              {db && <SqlWorkbench base="spaziogym" value={ownQuery} onChange={setOwnQuery} disabled={delivered} rows={8} />}
               <label className="practice-field">
                 <span>¿Cuántos JOINs te habría costado este mismo KPI sobre el OLTP? ¿Qué ganaste con la estrella?</span>
                 <TextArea disabled={delivered} rows={4} value={reflection} onChange={event => setReflection(event.target.value)} />

@@ -2,15 +2,16 @@ import { Button } from 'antd'
 import { useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
 import SqlEditor from './SqlEditor.jsx'
-import { compareResults, runQuery } from '../lib/sqlEngine.js'
+import { compareResults } from '../lib/comparar.js'
+import { ejecutarConsulta } from '../lib/api.js'
 
 /**
- * Editor + ejecución real contra PostgreSQL en el navegador.
+ * Editor + ejecución real contra el PostgreSQL del servidor.
  * Si `expectedSql` viene definido, además compara el resultado del alumno
  * contra el de la consulta de referencia, ejecutando ambas sobre la misma base.
  */
 export default function SqlWorkbench({
-  db,
+  base,
   value,
   onChange,
   expectedSql,
@@ -33,21 +34,27 @@ export default function SqlWorkbench({
       return
     }
 
-    let actual
-    try {
-      actual = await runQuery(db, value)
-    } catch (sqlError) {
+    const salida = await ejecutarConsulta({ base, sql: value }).catch(err => ({ error: err.message }))
+
+    if (salida.error) {
       setResult(null)
-      setError(traducirError(sqlError))
+      // El servidor ya traduce el error de Postgres con su posición y su pista.
+      setError(salida.error)
       return
     }
 
+    const actual = { columns: salida.columns, rows: salida.rows }
     setResult(actual)
 
     if (!expectedSql) return
 
-    const expected = await runQuery(db, expectedSql)
-    const comparison = compareResults(actual, expected, orderMatters)
+    const esperada = await ejecutarConsulta({ base, sql: expectedSql }).catch(err => ({ error: err.message }))
+    if (esperada.error) {
+      setError(`No se pudo calcular la respuesta esperada: ${esperada.error}`)
+      return
+    }
+
+    const comparison = compareResults(actual, { columns: esperada.columns, rows: esperada.rows }, orderMatters)
     setVerdict(comparison)
     if (comparison.ok) onSolved?.()
   }
@@ -122,43 +129,4 @@ export function SchemaExplorer({ tables, title = 'Esquema disponible' }) {
       ))}
     </div>
   )
-}
-
-// Postgres responde en inglés y con jerga; traducimos los errores más frecuentes
-// para que el alumno sepa qué corregir en vez de googlear el mensaje.
-/**
- * Traduce el error de Postgres a algo accionable.
- *
- * Postgres trae más que el mensaje: código, posición del carácter y a veces una
- * pista propia. Se aprovechan todos: la diferencia entre "syntax error" y
- * "syntax error en la posición 42" es enorme para quien está aprendiendo.
- *
- * Los códigos son estables (los define el estándar), así que se usan en lugar
- * de reconocer el texto del mensaje, que cambia entre versiones.
- */
-function traducirError(error) {
-  const mensaje = (typeof error === 'string' ? error : error?.message ?? '').split('\n')[0]
-  const codigo = typeof error === 'object' ? error?.code : undefined
-  const posicion = typeof error === 'object' && error?.position ? ` (posición ${error.position})` : ''
-
-  const ayuda = {
-    // undefined_column
-    '42703': 'Esa columna no existe. Revisa el nombre en el esquema de la derecha, o el alias de la tabla.',
-    // undefined_table
-    '42P01': 'Esa tabla no existe. Fíjate en el esquema los nombres exactos.',
-    // syntax_error
-    '42601': 'Error de sintaxis: suele ser una coma de más, un paréntesis sin cerrar o una palabra clave mal escrita.',
-    // ambiguous_column
-    '42702': 'La columna existe en más de una tabla del JOIN. Prefíjala con el alias, por ejemplo e.id_sector.',
-    // grouping_error
-    '42803': 'Toda columna que no esté dentro de una función de agregación tiene que aparecer en el GROUP BY.',
-    // undefined_function
-    '42883': 'Esa función no existe con esos tipos. Si es ROUND con dos argumentos, el primero debe ser numeric: prueba con ::numeric.',
-    // datatype_mismatch
-    '42804': 'Los tipos no coinciden. Postgres no convierte solo entre texto y número: castea con :: si hace falta.',
-    // division_by_zero
-    '22012': 'División por cero. Protege el denominador con NULLIF(divisor, 0).',
-  }[codigo]
-
-  return ayuda ? `${mensaje}${posicion}. ${ayuda}` : `${mensaje}${posicion}`
 }

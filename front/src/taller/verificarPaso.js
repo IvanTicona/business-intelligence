@@ -1,4 +1,4 @@
-import { contarFilas, verificarEsquema } from './esquemaVivo.js'
+import { verificarEsquema } from './esquemaVivo.js'
 
 /**
  * Decide si un paso del taller está resuelto, mirando la base que el alumno
@@ -6,9 +6,14 @@ import { contarFilas, verificarEsquema } from './esquemaVivo.js'
  *
  * Devuelve siempre `{ ok, problemas[] }`. Los problemas están escritos para el
  * alumno: "a reserva le falta la columna estado", no un stack trace.
+ *
+ * Ya no recibe una base sino `tablas` —el modelo que devolvió el servidor, con
+ * el conteo exacto de filas de cada una— y `correr`, con la que pide ejecutar
+ * SQL en el espacio del alumno. Así esta función no sabe ni le importa dónde
+ * vive la base.
  */
-export async function verificarPaso(paso, { db, tablas, modelo }) {
-  if (!db) return { ok: false, problemas: ['Ejecuta el script para empezar.'] }
+export async function verificarPaso(paso, { tablas, modelo, correr }) {
+  if (!tablas) return { ok: false, problemas: ['Ejecuta el script para empezar.'] }
 
   const { verificar } = paso
 
@@ -23,7 +28,7 @@ export async function verificarPaso(paso, { db, tablas, modelo }) {
   if (verificar.tipo === 'filas') {
     const problemas = []
     for (const [tabla, minimo] of Object.entries(verificar.minimos)) {
-      const reales = await contarFilas(db, tabla)
+      const reales = tablas.find(t => t.nombre === tabla)?.filas ?? 0
       if (reales < minimo) {
         problemas.push(`${tabla} tiene ${reales} fila(s) y necesita ${minimo}.`)
       }
@@ -32,7 +37,7 @@ export async function verificarPaso(paso, { db, tablas, modelo }) {
   }
 
   if (verificar.tipo === 'consulta') {
-    return verificarConsulta(db, paso)
+    return verificarConsulta(correr, paso)
   }
 
   return { ok: false, problemas: ['Este paso no tiene forma de verificarse.'] }
@@ -44,19 +49,20 @@ export async function verificarPaso(paso, { db, tablas, modelo }) {
  * Ambas se corren sobre la misma base, así que si el alumno cargó los datos
  * pedidos, la comparación es sobre las mismas filas.
  */
-async function verificarConsulta(db, paso) {
+async function verificarConsulta(correr, paso) {
   const { resultadoDelAlumno } = paso
   if (!resultadoDelAlumno || !resultadoDelAlumno.columns?.length) {
     return { ok: false, problemas: ['Tu script todavía no termina en una consulta que devuelva filas.'] }
   }
 
-  let esperado
-  try {
-    const salida = await db.query(paso.verificar.sql, [], { rowMode: 'array' })
-    esperado = { columns: salida.fields.map(f => f.name), rows: salida.rows }
-  } catch (error) {
-    return { ok: false, problemas: [`No se pudo calcular la respuesta esperada: ${error.message}`] }
+  // La respuesta esperada se calcula sobre LA MISMA base del alumno, así que si
+  // cargó los datos pedidos, la comparación es sobre las mismas filas.
+  const salida = await correr(paso.verificar.sql)
+  if (salida.error) {
+    return { ok: false, problemas: [`No se pudo calcular la respuesta esperada: ${salida.error}`] }
   }
+
+  const esperado = { columns: salida.columns, rows: salida.rows }
 
   if (resultadoDelAlumno.columns.length !== esperado.columns.length) {
     return {

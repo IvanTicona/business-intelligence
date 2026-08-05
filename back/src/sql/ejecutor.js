@@ -38,13 +38,13 @@ const DEVUELVE_FILAS = new Set(['SELECT', 'WITH', 'VALUES', 'TABLE', 'SHOW', 'EX
  * @param {string[]} [opciones.extra]  schemas adicionales para el search_path
  * @returns {Promise<{columns, rows, filas, recortado, ms, error}>}
  */
-export async function ejecutarSql(sql, schema, { extra = [] } = {}) {
+export async function ejecutarSql(sql, schema, { extra = [], pool = null, propio = false } = {}) {
   const consulta = String(sql ?? '').trim()
   if (!consulta) return fallo('Escribe una consulta.')
 
   const caminos = [schema, ...extra].filter(Boolean)
   for (const s of caminos) {
-    if (!schemasDisponibles.has(s) && !/^alumno_\d+(_[a-z0-9_]{1,30})?$/.test(s)) {
+    if (!schemasDisponibles.has(s) && !/^alumno_\d+_[a-z]{1,20}$/.test(s)) {
       return fallo(`La base "${s}" no existe.`)
     }
   }
@@ -58,8 +58,15 @@ export async function ejecutarSql(sql, schema, { extra = [] } = {}) {
   const sentencias = partirSentencias(consulta)
   if (sentencias.length === 0) return fallo('Escribe una consulta.')
 
-  const cliente = await exigirAlumno().connect()
+  /*
+   * Sin `pool`, el rol compartido de solo lectura: sirve para las bases del
+   * curso, que son iguales para todos. Con `pool`, el del propio alumno, que en
+   * Postgres es una identidad distinta y solo tiene permisos sobre lo suyo. Ese
+   * es el aislamiento: no lo pone este código, lo pone la base.
+   */
+  const cliente = await (pool ?? exigirAlumno()).connect()
   const arranque = performance.now()
+  const registro = []
 
   try {
     await cliente.query('BEGIN')
@@ -80,25 +87,58 @@ export async function ejecutarSql(sql, schema, { extra = [] } = {}) {
           : await directo(cliente, sentencia)
 
         if (parcial.columns.length > 0 || sentencias.length === 1) salida = parcial
+
+        registro.push({
+          numero,
+          tipo: etiqueta(sentencia),
+          resumen: resumir(sentencia),
+          ok: true,
+          detalle: parcial.columns.length ? `${parcial.filas} fila(s)` : `${parcial.filas} fila(s) afectada(s)`,
+        })
       } catch (err) {
         // Con varias sentencias, decir CUÁL falló. Un "syntax error" sobre un
         // script de cuarenta líneas no le enseña nada a nadie.
         err.sentencia = sentencias.length > 1 ? numero : null
+        registro.push({
+          numero,
+          tipo: etiqueta(sentencia),
+          resumen: resumir(sentencia),
+          ok: false,
+          detalle: mensajeDeError(err, propio),
+        })
+        err.registro = registro
         throw err
       }
     }
 
     await cliente.query('COMMIT')
 
-    return { ...salida, sentencias: sentencias.length, ms: Math.round(performance.now() - arranque), error: null }
+    return { ...salida, registro, sentencias: sentencias.length, ms: Math.round(performance.now() - arranque), error: null }
   } catch (err) {
     await cliente.query('ROLLBACK').catch(() => {})
 
-    return fallo(mensajeDeError(err), Math.round(performance.now() - arranque))
+    return {
+      ...fallo(mensajeDeError(err, propio), Math.round(performance.now() - arranque)),
+      registro: err.registro ?? registro,
+      sentencias: sentencias.length,
+    }
   } finally {
     cliente.release()
   }
 }
+
+/** Primeras palabras útiles, para etiquetar la sentencia en el registro. */
+function etiqueta(sentencia) {
+  const inicial = palabraInicial(sentencia)
+  if (!['CREATE', 'DROP', 'ALTER'].includes(inicial)) return inicial
+
+  const limpia = sentencia.replace(/^\s*(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s)+/, '')
+  const segunda = limpia.split(/\s+/)[1] ?? ''
+
+  return `${inicial} ${segunda.toUpperCase()}`.trim()
+}
+
+const resumir = sentencia => sentencia.replace(/\s+/g, ' ').trim().slice(0, 70)
 
 /*
  * Se piden MAX_FILAS + 1 para saber si había más sin tener que contarlas: si
@@ -143,15 +183,23 @@ function fallo(mensaje, ms = 0) {
  * detalle. Se aprovechan, porque para el alumno la diferencia entre "syntax
  * error" y "syntax error en la posición 42, quizás quisiste..." es enorme.
  */
-function mensajeDeError(err) {
+function mensajeDeError(err, propio = false) {
   // 57014 es la consulta cancelada por statement_timeout. El mensaje que da
   // Postgres ("canceling statement due to statement timeout") no le dice al
   // alumno qué hacer.
   if (err.code === '57014') {
     return `Tu consulta tardó más de ${TIEMPO_MAXIMO} y se detuvo. Suele pasar por un JOIN sin condición: revisa que cada tabla que sumas tenga su ON.`
   }
+  /*
+   * El mismo código de Postgres significa cosas distintas según dónde esté
+   * parado el alumno, y decirle la equivocada lo manda a buscar el problema al
+   * lugar equivocado. En su propia base tiene permiso para todo, así que un
+   * "permiso denegado" ahí solo puede ser que apuntó afuera.
+   */
   if (err.code === '42501') {
-    return 'No tienes permiso para eso. Las bases del laboratorio son de solo lectura: puedes consultarlas, no modificarlas.'
+    return propio
+      ? 'No tienes permiso para eso. En tu base puedes hacer lo que quieras, pero fuera de ella no: las bases del curso son de solo lectura y las de tus compañeros no se tocan.'
+      : 'No tienes permiso para eso. Las bases del laboratorio son de solo lectura: puedes consultarlas, no modificarlas.'
   }
 
   const partes = [String(err.message ?? 'Error al ejecutar').split('\n')[0]]

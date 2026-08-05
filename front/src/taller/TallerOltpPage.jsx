@@ -3,10 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SqlEditor from '../practices/SqlEditor.jsx'
 import ModelDiagram from '../playground/ModelDiagram.jsx'
 import { RegistroSentencias, ResultadoConsola } from '../consola/piezas.jsx'
-import { crearBaseVacia } from '../lib/sqlEngine.js'
+import { ejecutarEspacio } from '../lib/api.js'
 import { caso } from './caso-sagarnaga.js'
-import { ejecutarScript } from './ejecutarScript.js'
-import { leerEsquema } from './esquemaVivo.js'
+import { prepararEsquema } from './esquemaVivo.js'
 import { verificarPaso } from './verificarPaso.js'
 // El taller reutiliza la distribución y el diagrama del laboratorio, así que
 // necesita su hoja de estilos: sin esto las clases pg-* quedan sin definir y
@@ -54,47 +53,37 @@ export default function TallerOltpPage() {
    */
   const [logrados, setLogrados] = useState(leerLogrados)
 
-  // La base se crea UNA vez y se reutiliza: cada ejecución vacía su esquema en
-  // lugar de levantar otra instancia, que cuesta más de un segundo.
-  useEffect(() => {
-    let viva = true
-    crearBaseVacia().then(db => { if (viva) setBase(db) })
-    return () => { viva = false }
-  }, [])
-
   // El script del alumno es su trabajo: no se pierde al recargar.
   useEffect(() => {
     window.localStorage.setItem(CLAVE_GUARDADO, script)
   }, [script])
 
+  /*
+   * Cada corrida vacía la base y ejecuta el script entero. Acá eso es lo
+   * correcto: el entregable del taller es el SCRIPT, y con la base recreada lo
+   * que está escrito es exactamente lo que existe. En el playground libre, en
+   * cambio, la base es el entregable y no se vacía.
+   */
   const correr = useCallback(async () => {
-    if (!base) return
-
-    const salida = await ejecutarScript(base, script)
-
-    const resultado = salida.resultado
-      ? {
-          ...salida.resultado,
-          rows: salida.resultado.rows.slice(0, MAX_FILAS),
-          totalFilas: salida.resultado.rows.length,
-          recortado: salida.resultado.rows.length > MAX_FILAS,
-        }
-      : null
+    const salida = await ejecutarEspacio({ espacio: 'taller', sql: script, reiniciar: true })
 
     setEjecucion({
-      registro: salida.registro,
-      error: salida.error,
-      resultado,
-      tablas: await leerEsquema(base),
+      registro: salida.registro ?? [],
+      error: salida.error ? { mensaje: salida.error, numero: salida.registro?.find(l => !l.ok)?.numero ?? 1, resumen: salida.registro?.find(l => !l.ok)?.resumen ?? '' } : null,
+      resultado: salida.columns?.length
+        ? { columns: salida.columns, rows: salida.rows, totalFilas: salida.filas, recortado: salida.recortado }
+        : null,
+      tablas: prepararEsquema(salida.tablas),
       sello: Date.now(),
     })
-  }, [base, script])
+    setBase(true)
+  }, [script])
 
-  // Primera corrida apenas la base está lista, para que el diagrama no
-  // arranque vacío si el alumno ya tenía trabajo guardado.
+  // Primera corrida al abrir, para que el diagrama no arranque vacío si el
+  // alumno ya tenía trabajo guardado.
   useEffect(() => {
-    if (base && !ejecucion) correr()
-  }, [base, ejecucion, correr])
+    if (!ejecucion) correr()
+  }, [ejecucion, correr])
 
   const tablas = ejecucion?.tablas ?? []
 
@@ -103,21 +92,25 @@ export default function TallerOltpPage() {
   const [estadoDePasos, setEstadoDePasos] = useState(new Map())
 
   useEffect(() => {
-    if (!ejecucion || !base) return
+    if (!ejecucion) return
     let viva = true
+
+    // Con qué correr la consulta esperada de los pasos que comparan resultados.
+    // No reinicia: tiene que verse la base tal como el alumno la dejó.
+    const correrEnMiBase = sql => ejecutarEspacio({ espacio: 'taller', sql })
 
     Promise.all(
       caso.pasos.map(async paso => [
         paso.id,
         await verificarPaso(
           { ...paso, resultadoDelAlumno: ejecucion.resultado },
-          { db: base, tablas, modelo: caso.modelo },
+          { tablas, modelo: caso.modelo, correr: correrEnMiBase },
         ),
       ]),
     ).then(pares => { if (viva) setEstadoDePasos(new Map(pares)) })
 
     return () => { viva = false }
-  }, [ejecucion, base, tablas])
+  }, [ejecucion, tablas])
 
   // Lo que se acaba de resolver se suma a lo ya logrado.
   useEffect(() => {

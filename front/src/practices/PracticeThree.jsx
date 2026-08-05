@@ -1,12 +1,14 @@
 import { Card, Input, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
+import { ejecutarConsulta } from '../lib/api.js'
 import SqlWorkbench from './SqlWorkbench.jsx'
 import SchemaDiagram, { tablasEnConsulta } from './SchemaDiagram.jsx'
 import { InlineSubmit, PracticeLayout, StageTracker, usePracticeSubmit } from './PracticeShell.jsx'
-import { createDatabase } from '../lib/sqlEngine.js'
-import { expocruzSeedSql, sqlChallenges } from './data/expocruz.js'
 
+import { sqlChallenges } from './data/expocruz.js'
+
+const BASE = 'expocruz'
 const { Paragraph } = Typography
 const { TextArea } = Input
 
@@ -29,15 +31,18 @@ export default function PracticeThree({ delivered, onDelivered }) {
   const [freeQuestion, setFreeQuestion] = useState('')
   const [reflection, setReflection] = useState('')
 
+  /*
+   * La base ya no se arma en el navegador: vive en el servidor, sembrada una
+   * vez para todo el curso. Solo se comprueba que responda, para avisar si el
+   * alumno se quedó sin conexión antes de que se pelee con la consola.
+   */
   useEffect(() => {
     let cancelled = false
 
-    createDatabase(expocruzSeedSql)
-      .then(database => {
-        if (!cancelled) setDb(database)
-      })
+    ejecutarConsulta({ base: BASE, sql: 'SELECT 1' })
+      .then(() => { if (!cancelled) setDb(true) })
       .catch(() => {
-        if (!cancelled) setDbError('No se pudo iniciar el motor SQL en este navegador.')
+        if (!cancelled) setDbError('No se pudo conectar con la base del curso. Revisa tu conexión.')
       })
 
     return () => {
@@ -132,7 +137,7 @@ export default function PracticeThree({ delivered, onDelivered }) {
                     montar y el resultado anterior no queda colgado en pantalla. */}
                 <SqlWorkbench
                   key={activeChallenge.id}
-                  db={db}
+                  base="expocruz"
                   value={queries[activeChallenge.id]}
                   onChange={value => setQueries(current => ({ ...current, [activeChallenge.id]: value }))}
                   expectedSql={activeChallenge.expectedSql}
@@ -160,7 +165,7 @@ export default function PracticeThree({ delivered, onDelivered }) {
                   />
                 </label>
                 <SqlWorkbench
-                  db={db}
+                  base="expocruz"
                   value={freeQuery}
                   onChange={setFreeQuery}
                   disabled={delivered}
