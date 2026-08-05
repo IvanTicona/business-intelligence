@@ -1,15 +1,14 @@
 import cors from 'cors'
 import express from 'express'
-import pg from 'pg'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-
-const { Pool } = pg
+import { exigirAdmin, poolAdmin as pool } from './db/pools.js'
+import { motivoRol, rolListo } from './db/rolAlumno.js'
+import { cargarUsuario, exigirDocente, exigirSesion } from './auth/middleware.js'
+import { rutasAuth } from './auth/rutas.js'
 
 const app = express()
 const adminToken = process.env.ADMIN_TOKEN ?? ''
-const databaseUrl = process.env.DATABASE_URL
-const databaseSsl = process.env.DATABASE_SSL !== 'false'
 
 if (!adminToken) {
   throw new Error('ADMIN_TOKEN es obligatorio: sin token el panel docente queda abierto a cualquiera')
@@ -60,34 +59,58 @@ const practiceConfigs = {
   },
 }
 
-const pool = databaseUrl
-  ? new Pool({
-      connectionString: databaseUrl,
-      ssl: databaseSsl ? { rejectUnauthorized: false } : false,
-    })
-  : null
-
+/*
+ * `studentIdentifier` ya no viaja en el cuerpo. Antes el alumno escribía su
+ * nombre a mano y el servidor le creía: cualquiera podía entregar como
+ * cualquiera, y "Juan Pérez" y "juan perez" contaban como dos personas en el
+ * panorama. Ahora sale de la sesión y no hay forma de suplantarlo.
+ */
 const submissionSchema = z.object({
   practiceId: z.enum(['practice-1', 'practice-2', 'practice-3', 'practice-4']),
-  studentIdentifier: z.string().min(2).max(160),
   answers: z.record(z.string(), z.string().min(1).max(5000)),
 })
 
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }))
+/*
+ * Detrás de nginx, sin esto `req.secure` sería siempre false y `req.ip` sería
+ * siempre la IP del proxy: la cookie saldría sin `Secure` y el límite de
+ * intentos contaría a todo el curso como un solo visitante. El backend no
+ * publica puerto, así que las cabeceras solo pueden venir de nginx.
+ */
+app.set('trust proxy', true)
+
+/*
+ * `credentials: true` porque la sesión viaja en cookie. En Docker no hace falta
+ * —nginx sirve todo desde el mismo origen— pero en desarrollo el front corre en
+ * otro puerto y sin esto el navegador no manda la cookie.
+ */
+app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true, credentials: true }))
 app.use(express.json({ limit: '1mb' }))
 
+// Antes de cualquier ruta: deja `req.usuario` puesto (o null) para todas.
+app.use(cargarUsuario)
+app.use('/api/auth', rutasAuth())
+
+// Entra el rol 'docente' o el token de siempre, que se retira en la fase 4
+// cuando el panel pase a autenticarse con la cuenta.
+const soloDocente = exigirDocente(adminToken)
+
+/*
+ * El healthcheck reporta si el rol del alumno quedó disponible. Sin esto, un
+ * despliegue con la base a medio configurar se ve idéntico a uno sano hasta que
+ * un alumno abre una consola en clase y no anda.
+ */
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' })
+  res.json({ status: 'ok', motorAlumno: rolListo ? 'listo' : motivoRol })
 })
 
-app.post('/api/submissions', async (req, res) => {
+app.post('/api/submissions', exigirSesion, async (req, res) => {
   const parsed = submissionSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ message: 'Datos de entrega inválidos', issues: parsed.error.issues })
   }
 
   try {
-    await ensureDatabase()
+    exigirAdmin()
     const submission = parsed.data
     const config = practiceConfigs[submission.practiceId]
     const missingFields = config.fields
@@ -99,23 +122,29 @@ app.post('/api/submissions', async (req, res) => {
     }
 
     const id = randomUUID()
+    const { id: usuarioId, nombre, correo } = req.usuario
 
     await pool.query(
-      `INSERT INTO practice_submissions (id, practice_id, student_identifier, answers)
-       VALUES ($1, $2, $3, $4::jsonb)`,
-      [id, submission.practiceId, submission.studentIdentifier, JSON.stringify(submission.answers)],
+      `INSERT INTO practice_submissions (id, practice_id, student_identifier, answers, usuario_id)
+       VALUES ($1, $2, $3, $4::jsonb, $5)`,
+      [id, submission.practiceId, `${nombre} <${correo}>`, JSON.stringify(submission.answers), usuarioId],
     )
 
     res.status(201).json({ id, status: 'delivered' })
   } catch (error) {
+    // 23505 es el índice que permite una sola entrega por práctica y cuenta.
+    if (error.code === '23505') {
+      return res.status(409).json({ message: 'Ya entregaste esta práctica' })
+    }
+
     console.error(error)
     res.status(500).json({ message: 'No se pudo registrar la entrega' })
   }
 })
 
-app.get('/api/admin/submissions', requireAdmin, async (req, res) => {
+app.get('/api/admin/submissions', soloDocente, async (req, res) => {
   try {
-    await ensureDatabase()
+    exigirAdmin()
     const practiceId = normalizePracticeId(req.query.practiceId)
     const { rows } = await findSubmissions(practiceId)
 
@@ -126,9 +155,9 @@ app.get('/api/admin/submissions', requireAdmin, async (req, res) => {
   }
 })
 
-app.get('/api/admin/submissions.csv', requireAdmin, async (req, res) => {
+app.get('/api/admin/submissions.csv', soloDocente, async (req, res) => {
   try {
-    await ensureDatabase()
+    exigirAdmin()
     const practiceId = normalizePracticeId(req.query.practiceId)
     const config = practiceConfigs[practiceId]
     const { rows } = await findSubmissions(practiceId)
@@ -150,9 +179,9 @@ app.get('/api/admin/submissions.csv', requireAdmin, async (req, res) => {
  * quién va quedando atrás y qué ejercicio traba a más gente. Todo sale de
  * practice_submissions: no hay tabla nueva ni login.
  */
-app.get('/api/admin/panorama', requireAdmin, async (_req, res) => {
+app.get('/api/admin/panorama', soloDocente, async (_req, res) => {
   try {
-    await ensureDatabase()
+    exigirAdmin()
 
     const practicas = Object.keys(practiceConfigs)
 
@@ -222,15 +251,6 @@ app.get('/api/admin/panorama', requireAdmin, async (_req, res) => {
   }
 })
 
-function requireAdmin(req, res, next) {
-  const providedToken = req.header('x-admin-token') ?? req.query.token
-  if (providedToken !== adminToken) {
-    return res.status(401).json({ message: 'Acceso docente no autorizado' })
-  }
-
-  next()
-}
-
 function normalizePracticeId(value) {
   const practiceId = typeof value === 'string' ? value : 'practice-1'
   return practiceConfigs[practiceId] ? practiceId : 'practice-1'
@@ -244,20 +264,6 @@ function findSubmissions(practiceId) {
      ORDER BY created_at DESC`,
     [practiceId],
   )
-}
-
-async function ensureDatabase() {
-  if (!pool) throw new Error('DATABASE_URL no configurado')
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS practice_submissions (
-      id TEXT PRIMARY KEY,
-      practice_id TEXT NOT NULL,
-      student_identifier TEXT NOT NULL,
-      answers JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `)
 }
 
 function formatSubmission(row) {

@@ -1544,3 +1544,24 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Con qué cuenta se firma la entrega. Reemplaza al campo donde el alumno
+   escribía su nombre a mano: ahora sale de la sesión y no se puede cambiar. */
+.entrega-firma {
+  margin: 0;
+  color: #4a5573;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.entrega-firma strong {
+  color: #132b70;
+}
+
+.entrega-firma span {
+  color: #7c869e;
+}
+
+.submit-card .entrega-firma {
+  margin-bottom: 14px;
+}

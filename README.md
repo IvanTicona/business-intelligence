@@ -90,7 +90,20 @@ poco común para no chocar con lo que ya corra en la VPS.
 `VITE_API_URL` queda vacío en Docker: el front pega a `/api` en su mismo origen,
 así que no hay CORS ni URL de backend horneada en el bundle.
 
-La tabla `practice_submissions` se crea sola (`CREATE TABLE IF NOT EXISTS`), no hay migraciones.
+El esquema se aplica con migraciones: archivos `.sql` numerados en
+`back/src/db/migraciones/`, que el backend corre al arrancar y anota en la tabla
+`schema_migrations`. Si una falla, el contenedor no levanta — es preferible a
+atender pedidos contra un esquema a medias.
+
+Una migración ya aplicada **no se edita**: el runner guarda una huella de cada
+archivo y aborta si cambió, porque editarla dejaría tu base y la de la VPS
+distintas sin que nadie se entere. Para cambiar algo, agregá una migración nueva.
+
+El rol de Postgres que ejecuta el SQL de los alumnos (`bi_alumno`) también lo
+crea el backend al arrancar, y es idempotente. No va en el script de arranque de
+la imagen de Postgres porque ese solo corre con el volumen vacío, y el de la VPS
+ya tiene datos. Necesitás `DATABASE_ALUMNO_PASSWORD` en el `.env`; si falta, el
+resto de la aplicación funciona pero las consolas no, y `/health` lo dice.
 
 ### Operación
 

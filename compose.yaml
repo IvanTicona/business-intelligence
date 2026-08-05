@@ -35,9 +35,17 @@ services:
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-bi}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bi_course}
+      # Segunda conexión, con el rol pobre que ejecuta el SQL de los alumnos.
+      # Misma base, usuario distinto: el aislamiento es por permisos, no por
+      # instancia. El rol lo crea el backend al arrancar.
+      DATABASE_ALUMNO_URL: postgresql://bi_alumno:${DATABASE_ALUMNO_PASSWORD}@db:5432/${POSTGRES_DB:-bi_course}
+      DATABASE_ALUMNO_PASSWORD: ${DATABASE_ALUMNO_PASSWORD:?definí DATABASE_ALUMNO_PASSWORD en el .env}
       # Postgres del contenedor no habla SSL. Sin esto: "server does not support SSL connections"
       DATABASE_SSL: "false"
       ADMIN_TOKEN: ${ADMIN_TOKEN:?definí ADMIN_TOKEN en el .env}
+      # Correos que nacen (o pasan a ser) docentes. Separados por coma.
+      # Sin esto no habría forma de tener un docente salvo un UPDATE a mano.
+      DOCENTE_CORREO: ${DOCENTE_CORREO:-}
       # nginx sirve todo desde el mismo origen, así que CORS no entra en juego
       CORS_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost}
     depends_on:

@@ -1,25 +1,25 @@
-import { Button, Card, Input, Tag, Typography } from 'antd'
+import { Button, Card, Tag, Typography } from 'antd'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import PracticeIcon from './PracticeIcon.jsx'
 import { submitPractice } from '../lib/api.js'
+import { useUsuario } from '../auth/sesion.jsx'
 
 const { Title, Paragraph } = Typography
 
 /**
  * Estado de envío compartido por las prácticas. Centraliza el contrato con el
  * backend para que cada playground solo se preocupe por armar sus respuestas.
+ *
+ * Ya no pide el nombre: la entrega sale firmada por la sesión. Antes el alumno
+ * lo escribía a mano en cada práctica, y eso hacía dos daños a la vez —cualquiera
+ * podía entregar en nombre de otro, y el mismo alumno aparecía varias veces en
+ * el panorama según cómo hubiera escrito su nombre ese día.
  */
 export function usePracticeSubmit({ practiceId, onDelivered }) {
-  const [studentId, setStudentId] = useState('')
   const [state, setState] = useState({ status: 'idle', message: '' })
 
   async function send(buildAnswers) {
-    if (!studentId.trim()) {
-      setState({ status: 'error', message: 'Escribe tu nombre o código de estudiante.' })
-      return
-    }
-
     const validation = buildAnswers()
     if (validation.error) {
       setState({ status: 'error', message: validation.error })
@@ -29,7 +29,7 @@ export function usePracticeSubmit({ practiceId, onDelivered }) {
     setState({ status: 'loading', message: '' })
 
     try {
-      await submitPractice({ practiceId, studentIdentifier: studentId, answers: validation.answers })
+      await submitPractice({ practiceId, answers: validation.answers })
       setState({ status: 'success', message: 'Práctica enviada correctamente.' })
       onDelivered()
     } catch (error) {
@@ -37,7 +37,19 @@ export function usePracticeSubmit({ practiceId, onDelivered }) {
     }
   }
 
-  return { studentId, setStudentId, state, setState, send }
+  return { state, setState, send }
+}
+
+/** Con qué cuenta se va a firmar la entrega. */
+export function FirmaEntrega() {
+  const usuario = useUsuario()
+  if (!usuario) return null
+
+  return (
+    <p className="entrega-firma">
+      Se entrega a nombre de <strong>{usuario.nombre}</strong> <span>({usuario.correo})</span>
+    </p>
+  )
 }
 
 export function PracticeHero({ practiceLabel, title, description, objectives }) {
@@ -90,8 +102,7 @@ export function StageTracker({ stages, activeStage, onSelect }) {
 }
 
 export function SubmitCard({ delivered, submit, hint }) {
-  const { studentId, setStudentId, state, send } = submit.controls
-  const disabled = delivered || state.status === 'loading'
+  const { state, send } = submit.controls
 
   return (
     <Card className="practice-card submit-card">
@@ -100,10 +111,7 @@ export function SubmitCard({ delivered, submit, hint }) {
         <span>Entrega</span>
       </div>
       {hint && <Paragraph className="submit-hint">{hint}</Paragraph>}
-      <label className="practice-field">
-        <span>Nombre completo o código de estudiante</span>
-        <Input disabled={disabled} value={studentId} onChange={event => setStudentId(event.target.value)} />
-      </label>
+      <FirmaEntrega />
       <Button
         type="primary"
         size="large"
@@ -128,16 +136,14 @@ export function SubmitCard({ delivered, submit, hint }) {
  * empujaba la página fuera de pantalla.
  */
 export function InlineSubmit({ delivered, submit, hint }) {
-  const { studentId, setStudentId, state, send } = submit.controls
-  const disabled = delivered || state.status === 'loading'
+  const { state, send } = submit.controls
 
   return (
     <div className="inline-submit">
       <div className="inline-submit-row">
-        <label className="inline-submit-field">
-          <span>Nombre completo o código de estudiante</span>
-          <Input disabled={disabled} value={studentId} onChange={event => setStudentId(event.target.value)} />
-        </label>
+        <div className="inline-submit-field">
+          <FirmaEntrega />
+        </div>
         <Button
           type="primary"
           size="large"

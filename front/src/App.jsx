@@ -2,10 +2,15 @@ import { Button, Card, Input, Layout, Menu, Tag, Typography } from 'antd'
 import { motion } from 'framer-motion'
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import PracticeIcon from './practices/PracticeIcon.jsx'
+import { FirmaEntrega } from './practices/PracticeShell.jsx'
 import PracticeTwo from './practices/PracticeTwo.jsx'
 import PracticeThree from './practices/PracticeThree.jsx'
 import PracticeFour from './practices/PracticeFour.jsx'
-import { apiUrl } from './lib/api.js'
+import { apiUrl, submitPractice as enviarPractica } from './lib/api.js'
+// La pantalla de acceso la ve todo el mundo antes que cualquier otra cosa, así
+// que no va en diferido: dejar la pantalla en blanco mientras baja sería peor.
+import AccesoPage from './auth/AccesoPage.jsx'
+import { ProveedorSesion, useSesion } from './auth/sesion.jsx'
 
 // El laboratorio arrastra su CSS y sus bases: que no pese en la carga inicial
 // de quien solo viene a ver los capítulos.
@@ -812,7 +817,7 @@ const PracticePlaygrounds = {
   'practice-4': PracticeFour,
 }
 
-export default function App() {
+function Curso() {
   const [collapsed, setCollapsed] = useState(false)
   const [selectedKey, setSelectedKey] = useState(theoryItems[0].key)
   const [routeIndex, setRouteIndex] = useState(0)
@@ -890,6 +895,8 @@ export default function App() {
             </svg>
           </button>
         </div>
+
+        <BarraSesion colapsado={collapsed} />
 
         <Menu
           mode="inline"
@@ -1069,7 +1076,6 @@ No propongas soluciones todavía.`
 function PracticeOnePlayground({ delivered, onDelivered }) {
   const datasetSheetUrl = 'https://docs.google.com/spreadsheets/d/1UH5uNvUW8_beBv_3LCabQUmImeYKeHzE7W814foIfFU/edit?usp=sharing'
   const [answers, setAnswers] = useState({
-    studentId: '',
     rowMeaning: '',
     businessContext: '',
     importantData: '',
@@ -1084,18 +1090,17 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
     'Usar IA como apoyo y validar sus respuestas.',
   ]
 
-  // Solo para el contador del panel: el nombre no cuenta como respuesta.
-  const respondidas = ['rowMeaning', 'businessContext', 'importantData', 'problems', 'aiCritique']
-    .filter(clave => answers[clave].trim()).length
+  const respondidas = Object.values(answers).filter(valor => valor.trim()).length
 
   function updateAnswer(key, value) {
     setAnswers(current => ({ ...current, [key]: value }))
     setSubmitState({ status: 'idle', message: '' })
   }
 
+  // Usa el mismo envío que las otras tres prácticas en vez de su propio fetch:
+  // eran dos caminos que había que acordarse de cambiar juntos.
   async function submitPractice() {
-    const requiredValues = Object.values(answers).map(value => value.trim())
-    if (requiredValues.some(value => !value)) {
+    if (Object.values(answers).some(valor => !valor.trim())) {
       setSubmitState({ status: 'error', message: 'Completa todos los campos antes de enviar.' })
       return
     }
@@ -1103,28 +1108,11 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
     setSubmitState({ status: 'loading', message: '' })
 
     try {
-      const response = await fetch(apiUrl('/api/submissions'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          practiceId: 'practice-1',
-          studentIdentifier: answers.studentId.trim(),
-          answers: {
-            rowMeaning: answers.rowMeaning.trim(),
-            businessContext: answers.businessContext.trim(),
-            importantData: answers.importantData.trim(),
-            problems: answers.problems.trim(),
-            aiCritique: answers.aiCritique.trim(),
-          },
-        }),
-      })
-
-      if (!response.ok) throw new Error('No se pudo enviar la práctica')
-
+      await enviarPractica({ practiceId: 'practice-1', answers })
       setSubmitState({ status: 'success', message: 'Práctica enviada correctamente.' })
       onDelivered()
-    } catch {
-      setSubmitState({ status: 'error', message: 'No se pudo enviar. Revisa que el backend esté disponible.' })
+    } catch (error) {
+      setSubmitState({ status: 'error', message: error.message ?? 'No se pudo enviar la práctica.' })
     }
   }
 
@@ -1184,14 +1172,9 @@ function PracticeOnePlayground({ delivered, onDelivered }) {
 
             <div className="inline-submit">
               <div className="inline-submit-row">
-                <label className="inline-submit-field">
-                  <span>Nombre completo o código de estudiante</span>
-                  <Input
-                    disabled={delivered || submitState.status === 'loading'}
-                    value={answers.studentId}
-                    onChange={event => updateAnswer('studentId', event.target.value)}
-                  />
-                </label>
+                <div className="inline-submit-field">
+                  <FirmaEntrega />
+                </div>
                 <Button
                   type="primary"
                   size="large"
@@ -2312,5 +2295,75 @@ function SlideBody({ slide, revealStep, focusIndex }) {
       <Title className="slide-title">{slide.title}</Title>
       {slide.text && <Paragraph className="slide-copy">{slide.text}</Paragraph>}
     </>
+  )
+}
+
+/*
+ * COMPUERTA DE ACCESO
+ *
+ * Sin router: la aplicación navega por estado de menú y meterle uno solo para
+ * el login sería un refactor de dos mil líneas para una decisión de dos ramas.
+ * Acá basta con elegir qué se renderiza.
+ *
+ * El panel del docente sigue entrando por su ruta y su token, sin pasar por
+ * esta compuerta: hoy Paul lo usa así y romperlo lo dejaría sin ver las
+ * entregas. Pasa a autenticarse con su cuenta en la fase 4.
+ */
+export default function App() {
+  // El proveedor envuelve SIEMPRE, incluida la ruta del docente: el curso usa
+  // la sesión adentro (la barra de identidad, la firma de la entrega) y sin él
+  // esos componentes revientan. En la ruta del docente simplemente no hay
+  // usuario, así que no se muestran.
+  const esRutaDocente = window.location.pathname.startsWith('/docente/entregas')
+
+  return (
+    <ProveedorSesion>
+      {esRutaDocente ? <Curso /> : <Compuerta />}
+    </ProveedorSesion>
+  )
+}
+
+function Compuerta() {
+  const { usuario, cargando } = useSesion()
+
+  // Mientras se le pregunta al servidor quién es. Es un ida y vuelta corto, y
+  // mostrar el login antes de saberlo haría parpadear la pantalla a quien ya
+  // tiene la sesión abierta.
+  if (cargando) {
+    return (
+      <div className="acceso-fondo">
+        <span className="acceso-materia">Cargando tu sesión…</span>
+      </div>
+    )
+  }
+
+  return usuario ? <Curso /> : <AccesoPage />
+}
+
+/**
+ * Quién está usando la aplicación, arriba del menú.
+ *
+ * Está a la vista siempre y no escondida en un desplegable a propósito: en un
+ * laboratorio de la universidad se comparten computadoras, y entregar una
+ * práctica con la sesión de un compañero es un problema real.
+ */
+function BarraSesion({ colapsado }) {
+  const { usuario, cerrar } = useSesion()
+  if (!usuario) return null
+
+  if (colapsado) {
+    return (
+      <div className="sesion-barra sesion-barra-chica" title={`${usuario.nombre} · ${usuario.correo}`}>
+        <span className="sesion-rol">{usuario.nombre.slice(0, 1).toUpperCase()}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="sesion-barra">
+      <span className="sesion-nombre" title={usuario.correo}>{usuario.nombre}</span>
+      {usuario.rol === 'docente' && <span className="sesion-rol">docente</span>}
+      <button type="button" className="sesion-salir" onClick={cerrar}>Salir</button>
+    </div>
   )
 }

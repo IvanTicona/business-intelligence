@@ -1,0 +1,128 @@
+/* ==========================================================================
+   PANTALLA DE ACCESO
+   Es lo primero que ve el alumno del curso, así que se parece a los slides:
+   el mismo azul y el mismo aire, no un formulario de administración.
+   ========================================================================== */
+
+.acceso-fondo {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(1100px 520px at 12% -10%, rgba(19, 43, 112, 0.16), transparent 60%),
+    radial-gradient(900px 460px at 108% 108%, rgba(19, 43, 112, 0.12), transparent 62%),
+    #f4f6fb;
+}
+
+.acceso-card {
+  width: min(440px, 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(19, 43, 112, 0.1);
+  box-shadow: 0 24px 60px rgba(19, 43, 112, 0.14);
+}
+
+.acceso-marca {
+  margin-bottom: 18px;
+}
+
+.acceso-materia {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(19, 43, 112, 0.08);
+  color: #132b70;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.acceso-titulo.ant-typography {
+  margin: 0 0 6px;
+  color: #132b70;
+}
+
+.acceso-bajada.ant-typography {
+  margin: 0;
+  color: #5a6480;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.acceso-error {
+  margin-top: 16px;
+}
+
+.acceso-form {
+  margin-top: 20px;
+}
+
+.acceso-form .ant-form-item:last-of-type {
+  margin-bottom: 18px;
+}
+
+.acceso-pie.ant-typography {
+  display: block;
+  margin-top: 16px;
+  color: #7c869e;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* La barra de identidad, entre la marca y el menú. */
+.sesion-barra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 16px 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(19, 43, 112, 0.05);
+}
+
+.sesion-barra-chica {
+  justify-content: center;
+  margin: 0 12px 10px;
+  padding: 9px 0;
+}
+
+.sesion-salir {
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid rgba(19, 43, 112, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: #132b70;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sesion-salir:hover {
+  border-color: #132b70;
+  background: #132b70;
+  color: #fff;
+}
+
+.sesion-nombre {
+  overflow: hidden;
+  color: #132b70;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sesion-rol {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(19, 43, 112, 0.08);
+  color: #132b70;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}

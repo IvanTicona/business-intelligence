@@ -7,24 +7,85 @@ export function apiUrl(path) {
 }
 
 /**
- * Envía una entrega al backend. Todas las prácticas comparten este contrato:
- * el backend rechaza valores vacíos, así que recortamos y filtramos antes.
+ * Toda llamada al backend pasa por acá.
+ *
+ * `credentials: 'include'` es lo que hace que viaje la cookie de sesión. En
+ * Docker el front y el backend comparten origen y la cookie iría igual, pero en
+ * desarrollo el front corre en otro puerto y sin esto el navegador no la manda:
+ * el alumno vería "necesitás iniciar sesión" con la sesión abierta.
  */
+async function pedir(path, opciones = {}) {
+  const respuesta = await fetch(apiUrl(path), {
+    credentials: 'include',
+    ...opciones,
+    headers: opciones.body ? { 'Content-Type': 'application/json', ...opciones.headers } : opciones.headers,
+  })
+
+  if (respuesta.status === 204) return null
+
+  const cuerpo = await respuesta.json().catch(() => null)
+  if (!respuesta.ok) {
+    const error = new Error(cuerpo?.message ?? 'No se pudo completar la operación')
+    error.estado = respuesta.status
+    throw error
+  }
+
+  return cuerpo
+}
+
+// --- Identidad -------------------------------------------------------------
+
+/** Devuelve el usuario o null. No lanza si no hay sesión: no tener es normal. */
+export async function quienSoy() {
+  try {
+    const { usuario } = await pedir('/api/auth/yo')
+
+    return usuario
+  } catch {
+    return null
+  }
+}
+
+export async function registrarse({ correo, clave, nombre }) {
+  const { usuario } = await pedir('/api/auth/registro', {
+    method: 'POST',
+    body: JSON.stringify({ correo, clave, nombre }),
+  })
+
+  return usuario
+}
+
+export async function ingresar({ correo, clave }) {
+  const { usuario } = await pedir('/api/auth/ingreso', {
+    method: 'POST',
+    body: JSON.stringify({ correo, clave }),
+  })
+
+  return usuario
+}
+
+export function salir() {
+  return pedir('/api/auth/salida', { method: 'POST' })
+}
+
+export function cambiarClave({ actual, nueva }) {
+  return pedir('/api/auth/clave', { method: 'POST', body: JSON.stringify({ actual, nueva }) })
+}
+
+// --- Entregas --------------------------------------------------------------
+
 // Espejo de las reglas del backend (zod). Validamos aquí también para dar un
 // mensaje que diga QUÉ corregir, en vez del "Datos de entrega inválidos".
 const MAX_ANSWER_LENGTH = 5000
-const MIN_STUDENT_LENGTH = 2
-const MAX_STUDENT_LENGTH = 160
 
-export async function submitPractice({ practiceId, studentIdentifier, answers }) {
-  const student = studentIdentifier.trim()
-  if (student.length < MIN_STUDENT_LENGTH) {
-    throw new Error('El nombre o código de estudiante necesita al menos 2 caracteres.')
-  }
-  if (student.length > MAX_STUDENT_LENGTH) {
-    throw new Error(`El nombre o código no puede superar los ${MAX_STUDENT_LENGTH} caracteres.`)
-  }
-
+/**
+ * Envía una entrega.
+ *
+ * Ya no lleva el nombre del alumno: lo pone el servidor desde la sesión. Antes
+ * viajaba en el cuerpo y el servidor le creía, así que cualquiera podía
+ * entregar en nombre de otro.
+ */
+export async function submitPractice({ practiceId, answers }) {
   const cleanAnswers = Object.fromEntries(
     Object.entries(answers)
       .map(([key, value]) => [key, String(value ?? '').trim()])
@@ -36,16 +97,8 @@ export async function submitPractice({ practiceId, studentIdentifier, answers })
     throw new Error(`El campo "${tooLong[0]}" tiene ${tooLong[1].length} caracteres y el máximo es ${MAX_ANSWER_LENGTH}. Acorta el contenido.`)
   }
 
-  const response = await fetch(apiUrl('/api/submissions'), {
+  return pedir('/api/submissions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ practiceId, studentIdentifier: student, answers: cleanAnswers }),
+    body: JSON.stringify({ practiceId, answers: cleanAnswers }),
   })
-
-  if (!response.ok) {
-    const detail = await response.json().catch(() => null)
-    throw new Error(detail?.message ?? 'No se pudo enviar la práctica')
-  }
-
-  return response.json()
 }
