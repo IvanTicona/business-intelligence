@@ -2,7 +2,7 @@ import { Card, Segmented, Select, Tag, Typography } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import PracticeIcon from '../practices/PracticeIcon.jsx'
 import SqlEditor from '../practices/SqlEditor.jsx'
-import { createDatabase, runQuery } from '../lib/sqlEngine.js'
+import { ejecutarConsulta } from '../lib/api.js'
 import { analizarConsulta } from './analizarConsulta.js'
 import { BLOQUES_POR_ID, cargarDataset, catalogo } from './datasets/index.js'
 import ModelDiagram from './ModelDiagram.jsx'
@@ -12,7 +12,9 @@ import './playground.css'
 
 const { Paragraph } = Typography
 
-const MAX_FILAS = 500
+// El mismo tope que aplica el servidor. Acá solo se usa para el texto que
+// avisa que el resultado está recortado.
+const MAX_FILAS = 1000
 const BASE_INICIAL = catalogo[0]?.id
 
 /**
@@ -23,7 +25,6 @@ const BASE_INICIAL = catalogo[0]?.id
 export default function PlaygroundPage() {
   const [baseId, setBaseId] = useState(BASE_INICIAL)
   const [dataset, setDataset] = useState(null)
-  const [db, setDb] = useState(null)
   const [estado, setEstado] = useState('cargando')
   const [error, setError] = useState('')
 
@@ -47,12 +48,15 @@ export default function PlaygroundPage() {
     setResultado(null)
     setRetoAbierto(null)
 
+    /*
+     * Ya no se construye ninguna base acá: vive en el servidor, sembrada una
+     * sola vez para todo el curso. Del módulo del dataset solo se usan sus
+     * `tablas` (para el diagrama) y sus `retos`.
+     */
     cargarDataset(baseId)
-      .then(async ds => {
-        const base = await createDatabase(ds.seedSql)
+      .then(ds => {
         if (cancelado) return
         setDataset(ds)
-        setDb(base)
         setConsulta(consultaInicial(ds))
         setEstado('listo')
       })
@@ -65,27 +69,38 @@ export default function PlaygroundPage() {
     return () => { cancelado = true }
   }, [baseId])
 
+  const [corriendo, setCorriendo] = useState(false)
+
   const ejecutar = useCallback(async () => {
-    if (!db) return
     const sql = consulta.trim()
-    if (!sql) return
+    if (!sql || corriendo) return
+
+    setCorriendo(true)
 
     try {
-      const salida = await runQuery(db, sql)
-      const recortado = salida.rows.length > MAX_FILAS
+      // El recorte a MAX_FILAS lo hace el servidor, trayendo solo esas por la
+      // red en vez de mandar el resultado entero para cortarlo acá.
+      const salida = await ejecutarConsulta({ base: baseId, sql })
+
       setResultado({
-        ...salida,
-        rows: recortado ? salida.rows.slice(0, MAX_FILAS) : salida.rows,
-        totalFilas: salida.rows.length,
-        recortado,
-        error: null,
+        columns: salida.columns,
+        rows: salida.rows,
+        totalFilas: salida.filas,
+        recortado: salida.recortado,
+        ms: salida.ms,
+        error: salida.error,
       })
-      setHistorial(previo => [{ sql, filas: salida.rows.length, ok: true }, ...previo.filter(h => h.sql !== sql)].slice(0, 25))
+      setHistorial(previo =>
+        [{ sql, filas: salida.filas, ok: !salida.error }, ...previo.filter(h => h.sql !== sql)].slice(0, 25),
+      )
     } catch (err) {
+      // Acá solo caen fallas de red o de sesión, no errores de SQL.
       setResultado({ columns: [], rows: [], error: err.message })
       setHistorial(previo => [{ sql, filas: 0, ok: false }, ...previo.filter(h => h.sql !== sql)].slice(0, 25))
+    } finally {
+      setCorriendo(false)
     }
-  }, [db, consulta])
+  }, [baseId, consulta, corriendo])
 
   /*
    * Se analiza en cada tecla, no al ejecutar: la gracia es que el alumno vea

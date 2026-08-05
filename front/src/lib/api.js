@@ -72,6 +72,20 @@ export function cambiarClave({ actual, nueva }) {
   return pedir('/api/auth/clave', { method: 'POST', body: JSON.stringify({ actual, nueva }) })
 }
 
+// --- Consultas -------------------------------------------------------------
+
+/**
+ * Ejecuta SQL contra el Postgres del servidor.
+ *
+ * Devuelve la misma forma que devolvía el motor del navegador
+ * (`{ columns, rows }`), así que las páginas que la consumen no cambian. Un
+ * error de SQL del alumno viene DENTRO de la respuesta, no como excepción:
+ * equivocarse escribiendo una consulta es parte de aprender, no una falla.
+ */
+export async function ejecutarConsulta({ base, sql }) {
+  return pedir('/api/sql/consulta', { method: 'POST', body: JSON.stringify({ base, sql }) })
+}
+
 // --- Entregas --------------------------------------------------------------
 
 // Espejo de las reglas del backend (zod). Validamos aquí también para dar un

@@ -6,6 +6,7 @@ import { exigirAdmin, poolAdmin as pool } from './db/pools.js'
 import { motivoRol, rolListo } from './db/rolAlumno.js'
 import { cargarUsuario, exigirDocente, exigirSesion } from './auth/middleware.js'
 import { rutasAuth } from './auth/rutas.js'
+import { rutasSql } from './sql/rutas.js'
 
 const app = express()
 const adminToken = process.env.ADMIN_TOKEN ?? ''
@@ -89,6 +90,7 @@ app.use(express.json({ limit: '1mb' }))
 // Antes de cualquier ruta: deja `req.usuario` puesto (o null) para todas.
 app.use(cargarUsuario)
 app.use('/api/auth', rutasAuth())
+app.use('/api/sql', rutasSql())
 
 // Entra el rol 'docente' o el token de siempre, que se retira en la fase 4
 // cuando el panel pase a autenticarse con la cuenta.

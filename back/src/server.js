@@ -2,6 +2,7 @@ import app from './app.js'
 import { sincronizarDocentes } from './auth/rutas.js'
 import { migrar } from './db/migrar.js'
 import { asegurarRolAlumno } from './db/rolAlumno.js'
+import { sembrarBases } from './db/semillas.js'
 
 const port = process.env.PORT ?? 4000
 
@@ -22,6 +23,14 @@ try {
 
 await asegurarRolAlumno()
 await sincronizarDocentes()
+
+// Después del rol: las semillas le conceden permisos de lectura, y para eso el
+// rol tiene que existir.
+try {
+  await sembrarBases()
+} catch (err) {
+  console.error('[arranque] no se pudieron sembrar las bases del curso:', err.message)
+}
 
 app.listen(port, () => {
   console.log(`BI course API escuchando en http://localhost:${port}`)
