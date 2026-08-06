@@ -1687,9 +1687,14 @@ select,
   text-transform: uppercase;
 }
 
+/* Toma el alto de su fila para que la imagen de al lado se mida contra ella
+   y no contra si misma. */
 .relational-components-content {
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: 0.78fr 1fr;
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
   gap: 72px;
 }
@@ -1708,9 +1713,26 @@ select,
   margin-bottom: 12px;
 }
 
+/*
+ * Esta lista va aparte de .importance-list, que a 55px entra bien. Aca son
+ * SEIS items y el titulo se lleva dos lineas: 2x0.94x90 = 169 de titulo mas 38
+ * de separacion dejan 253px de los 460 del area util. A 55px la lista pedia
+ * 442 y se iba 189px afuera, por encima del pie. A 30px con 8 de separacion
+ * son 6x(1.12x30 + 8) = 250.
+ */
+.relational-components-content ul {
+  font-size: 30px;
+}
+
+.relational-components-content li {
+  margin-bottom: 8px;
+}
+
+/* `min(100%, ...)`: el px suelto le ganaba por especificidad al tope general
+   de .slide-content img y la imagen se pasaba de su fila. */
 .relational-components-content img {
   width: 100%;
-  max-height: 430px;
+  max-height: min(100%, 430px);
   object-fit: contain;
 }
 

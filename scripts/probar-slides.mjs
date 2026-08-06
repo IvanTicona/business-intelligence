@@ -60,7 +60,19 @@ for (const [w, h] of PANTALLAS) {
     await page.waitForTimeout(900)
 
     const malos = []
-    for (let i = 0; i < 46; i++) {
+    /*
+     * 46 pasos NO alcanzaban: el capitulo 1 tiene 25 laminas y ademas los
+     * focos del timeline se intercalan, asi que el recorrido termina antes de
+     * llegar al final y las ultimas cinco laminas nunca se median. Se recorre
+     * hasta que el numero del encabezado vuelve al del principio, que es
+     * cuando el capitulo dio la vuelta.
+     */
+    const primero = await page.evaluate(() => document.querySelectorAll('.slide-header span')[1]?.textContent)
+    for (let i = 0; i < 200; i++) {
+      if (i > 4) {
+        const ahora = await page.evaluate(() => document.querySelectorAll('.slide-header span')[1]?.textContent)
+        if (ahora === primero) break
+      }
       const m = await medir()
       if (m) {
         const clave = `${m.numero}|${m.culpables[0]?.texto}`

@@ -90,7 +90,18 @@ for (const [w, h] of PANTALLAS) {
     await page.waitForTimeout(1100)
 
     const malas = new Map()
-    for (let i = 0; i < 50; i++) {
+    /*
+     * Se recorre hasta que el capitulo da la vuelta, no una cantidad fija de
+     * pasos: con un tope fijo el capitulo 1 —25 laminas mas los focos del
+     * timeline intercalados— se cortaba en la 20 y las ultimas cinco nunca se
+     * miraban. Asi se colo una lamina rota.
+     */
+    const primero = await page.evaluate(() => document.querySelectorAll('.slide-header span')[1]?.textContent)
+    for (let i = 0; i < 200; i++) {
+      if (i > 4) {
+        const ahora = await page.evaluate(() => document.querySelectorAll('.slide-header span')[1]?.textContent)
+        if (ahora === primero) break
+      }
       const m = await medir(TOLERANCIA)
       if (m?.culpables.length) {
         // Se queda la peor pisada de cada lámina.
