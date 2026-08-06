@@ -3,6 +3,13 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:18742'
 const OUT = 'C:/Users/ivant/AppData/Local/Temp/claude/C--Users-ivant-Desktop-PersonalProjects-material-paul/36499da7-c6fa-4d92-bc2b-b9d0f8780086/scratchpad/pdf/'
 
+/*
+ * OJO: esto mide la PRIMERA lámina de cada capítulo, no todas. Para recorrer
+ * los slides uno por uno está scripts/probar-slides.mjs, que además dice QUÉ
+ * elemento causa el desborde. Este barrido dio limpio mientras 25 láminas
+ * desbordaban.
+ */
+
 // Lo que hay de verdad en un aula, no lo que uso yo para probar.
 const PANTALLAS = [
   [1920, 1080, 'monitor / laptop al 100%'],
