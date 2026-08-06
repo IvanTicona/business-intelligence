@@ -344,11 +344,13 @@
 
 /* Tope de alto para laminas que, a ancho completo, se comen el area util. La
    regla de arriba (solo titulo + imagen) sube a 410px y es mas especifica, asi
-   que este opt-out repite su forma para poder ganarle. El calc descuenta
-   cabecera, pie, titulo y gap: en pantallas bajas cede alto en vez de pisar. */
+   que este opt-out repite su forma para poder ganarle. El numero descuenta
+   cabecera, pie, titulo y gap del ALTO DE DISENO: 720 - 472 = 248. Antes era
+   `calc(100vh - 472px)`, pero dentro del lienzo `vh` mide la ventana y no la
+   lamina, asi que el tope se movia con la pantalla. */
 .title-text-image-layout:not(:has(.title-text-image-text)):not(:has(.title-text-image-list))
   .title-text-image-media.media-capped {
-  max-height: min(340px, calc(100vh - 472px));
+  max-height: 248px;
 }
 
 /* --- concept-pair: dos conceptos enfrentados con rótulo y definición --- */
@@ -474,20 +476,22 @@
 }
 
 /* El tope se calcula, no se adivina: el area visible entre el trazo dorado y
-   el pie mide 100vh - 381px, y se reparte entre las laminas descontando los
-   gaps. Un `max-height: 100%` porcentual NO sirve aqui: no se resuelve contra
-   la fila del grid y las tres tablas terminaban montadas una sobre otra. */
+   el pie mide 720 - 381 = 339px, y se reparte entre las laminas descontando los
+   gaps. Se descuenta del ALTO DE DISENO y no de `100vh`: dentro del lienzo
+   `vh` mide la ventana y no la lamina. Un `max-height: 100%` porcentual NO
+   sirve aqui: no se resuelve contra la fila del grid y las tres tablas
+   terminaban montadas una sobre otra. */
 .image-stack-1 img {
   width: 100%;
-  max-height: calc(100vh - 381px);
+  max-height: 339px;
 }
 
 .image-stack-2 img {
-  max-height: calc((100vh - 397px) / 2);
+  max-height: 161px;
 }
 
 .image-stack-3 img {
-  max-height: calc((100vh - 413px) / 3);
+  max-height: 102px;
 }
 
 /* --- quote: una definición citada ocupa el slide entero --- */

@@ -1515,8 +1515,42 @@ function routeForTimelineFocus(focusIndex, displayNumber) {
   ]
 }
 
+const LAMINA_ANCHO = 1280
+const LAMINA_ALTO = 720
+
+/*
+ * La lámina es una composición de tamaño fijo, como una diapositiva de
+ * proyector: no se reacomoda por pantalla, se escala entera. El factor tiene
+ * que salir de JS porque `scale()` pide un NÚMERO y CSS no sabe dividir una
+ * longitud por otra: no existe `calc(100% / 1280px)`.
+ *
+ * Se mide el marco, no la ventana: el marco ya descuenta el menú lateral y su
+ * propio `aspect-ratio`, así que un ResizeObserver sobre él acierta también en
+ * pantalla completa y cuando el menú se pliega.
+ */
+function useEscalaDeLamina(marcoRef) {
+  useEffect(() => {
+    const marco = marcoRef.current
+    if (!marco) return
+
+    const observador = new ResizeObserver(([entrada]) => {
+      const { width, height } = entrada.contentRect
+      if (!width || !height) return
+      // El mínimo de los dos ejes es lo que hace que en pantalla completa sobre
+      // una pantalla que no es 16:9 la lámina quede con banda en vez de cortada.
+      const escala = Math.min(width / LAMINA_ANCHO, height / LAMINA_ALTO)
+      marco.style.setProperty('--escala-lamina', escala)
+    })
+
+    observador.observe(marco)
+    return () => observador.disconnect()
+  }, [marcoRef])
+}
+
 function SlideCanvas({ slide, revealStep, focusIndex, displayNumber, chapterNumber, chapterLabel, onNext, onPrev }) {
   const slideRef = useRef(null)
+
+  useEscalaDeLamina(slideRef)
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -1549,33 +1583,36 @@ function SlideCanvas({ slide, revealStep, focusIndex, displayNumber, chapterNumb
 
   return (
     <section className="slide-shell" ref={slideRef}>
-      <header className="slide-header">
-        <span>{chapterLabel ?? `CAPÍTULO ${chapterNumber}`}</span>
-        <span>{displayNumber}</span>
-      </header>
+      {/* Todo lo que se ve va DENTRO del lienzo: es lo que se escala junto. */}
+      <div className="slide-lienzo">
+        <header className="slide-header">
+          <span>{chapterLabel ?? `CAPÍTULO ${chapterNumber}`}</span>
+          <span>{displayNumber}</span>
+        </header>
 
-      <motion.main
-        key={slide.id ?? `${displayNumber}-${slide.title}`}
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
-        className="slide-content"
-      >
-        <SlideBody slide={slide} revealStep={revealStep} focusIndex={focusIndex} />
-      </motion.main>
+        <motion.main
+          key={slide.id ?? `${displayNumber}-${slide.title}`}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+          className="slide-content"
+        >
+          <SlideBody slide={slide} revealStep={revealStep} focusIndex={focusIndex} />
+        </motion.main>
 
-      <footer className="slide-footer">
-        <span>Realizado por <strong>Paul Landaeta</strong><br />©2026</span>
-        <button type="button" className="fullscreen-button" aria-label="Pantalla completa" onClick={toggleFullscreen}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 9V5h4M19 9V5h-4M5 15v4h4M19 15v4h-4" />
-          </svg>
-        </button>
-        <span className="footer-brand">
-          <img src="/image1.png" alt="" />
-          Universidad Privada Boliviana
-        </span>
-      </footer>
+        <footer className="slide-footer">
+          <span>Realizado por <strong>Paul Landaeta</strong><br />©2026</span>
+          <button type="button" className="fullscreen-button" aria-label="Pantalla completa" onClick={toggleFullscreen}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 9V5h4M19 9V5h-4M5 15v4h4M19 15v4h-4" />
+            </svg>
+          </button>
+          <span className="footer-brand">
+            <img src="/image1.png" alt="" />
+            Universidad Privada Boliviana
+          </span>
+        </footer>
+      </div>
     </section>
   )
 }

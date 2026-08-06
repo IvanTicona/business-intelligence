@@ -804,6 +804,29 @@ select,
   cursor: default;
 }
 
+/*
+ * El lienzo de la lámina: 1280x720 SIEMPRE, en cualquier pantalla, y encogido
+ * entero con una transformación — igual que un proyector, que no recompone la
+ * diapositiva sino que la proyecta más chica.
+ *
+ * Por qué así y no reacomodando por pantalla: son 25 láminas con composiciones
+ * distintas; cada medida que se ajusta para que entre una descuadra otra. Con
+ * el lienzo hay UNA sola composición que verificar, y lo que se ve en un laptop
+ * es exactamente lo que se ve en el proyector del aula.
+ *
+ * El factor lo pone JS en `--escala-lamina` (useEscalaDeLamina): `scale()` pide
+ * un número y CSS no puede dividir una longitud por otra.
+ */
+.slide-lienzo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  transform: scale(var(--escala-lamina, 1));
+  transform-origin: top left;
+}
+
 .slide-shell .ant-typography,
 .slide-shell button,
 .slide-shell span {
@@ -854,45 +877,14 @@ select,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  /* Si el contenido no entra, que se pueda llegar a él. Antes quedaba recortado
-     y sin manera de verlo: medido, 69px ocultos a 1093x614. */
-  overflow-y: auto;
 }
 
 /*
- * El relleno del slide está pensado para una pantalla grande; en una baja se
- * come el contenido. Se achica por tramos, con los tamaños reales de un aula:
- * 1536 es 1920 al 125%, 1093 es 1366 al 125%.
+ * Acá vivían cuatro consultas de medio que achicaban el relleno, y el margen
+ * del logo, según el alto de la ventana. Con el lienzo sobran: el área útil ya
+ * mide 1280x720 en toda pantalla. Y además estorbaban, porque hacían que la
+ * composición cambiara de una pantalla a otra — justo lo que el lienzo evita.
  */
-@media (max-height: 900px) {
-  .slide-shell {
-    --slide-cabecera: 74px;
-    --slide-pie: 70px;
-    --slide-lado: 92px;
-  }
-}
-
-@media (max-height: 760px) {
-  .slide-shell {
-    --slide-cabecera: 62px;
-    --slide-pie: 58px;
-    --slide-lado: 68px;
-  }
-}
-
-@media (max-height: 640px) {
-  .slide-shell {
-    --slide-cabecera: 54px;
-    --slide-pie: 50px;
-    --slide-lado: 52px;
-  }
-}
-
-@media (max-height: 700px) {
-  .chapter-logo {
-    margin-bottom: 26px !important;
-  }
-}
 
 .chapter-logo {
   /* El alto entra en la cuenta, no solo el ancho: en una pantalla baja un logo
@@ -907,12 +899,10 @@ select,
   max-width: 980px;
   margin: 0;
   color: #000000;
-  /*
-   * El tamaño mira el ancho Y EL ALTO. Con un clamp que solo mira el ancho, su
-   * mínimo se aplica igual en una pantalla baja: medido, el título de portada
-   * ocupaba 272px de los 404 disponibles a 1093x614, y empujaba todo afuera.
-   */
-  font-size: clamp(34px, min(6vw, 9.5vh), 84px);
+  /* Tamaño de diseño, sin clamp: dentro del lienzo `vw`/`vh` medirían la
+     VENTANA y no la lámina, así que el título volvería a encogerse por
+     pantalla. El que ajusta ahora es el escalado del lienzo. */
+  font-size: 84px;
   font-weight: 400;
   line-height: 0.92;
 }
@@ -922,7 +912,7 @@ select,
   margin-inline: auto;
   text-align: center;
   color: #132B70;
-  font-size: clamp(40px, min(9vw, 10.5vh), 126px);
+  font-size: 126px;
   font-weight: 900;
 }
 
