@@ -889,7 +889,7 @@ select,
 .chapter-logo {
   /* El alto entra en la cuenta, no solo el ancho: en una pantalla baja un logo
      medido solo por ancho empuja el título y el texto fuera de la lámina. */
-  width: min(540px, 44%, 26vh);
+  width: min(540px, 44%, 187px);
   height: auto;
   margin: 0 auto 48px;
   display: block;
@@ -942,7 +942,7 @@ select,
 
 .question-title.ant-typography {
   color: #132B70;
-  font-size: clamp(82px, 8vw, 132px);
+  font-size: 102px;
   line-height: 0.92;
   text-align: center;
 }
@@ -966,7 +966,7 @@ select,
 
 .objectives-title.ant-typography {
   color: #132B70;
-  font-size: clamp(46px, 4.8vw, 72px);
+  font-size: 61px;
   margin-bottom: 22px;
   text-transform: uppercase;
 }
@@ -975,7 +975,7 @@ select,
   margin: 0;
   padding-left: 30px;
   color: #000000;
-  font-size: clamp(22px, 2.4vw, 34px);
+  font-size: 31px;
   line-height: 1.18;
 }
 
@@ -986,22 +986,35 @@ select,
 .title-image-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  /* `minmax(0, 1fr)` y no `1fr`: el mínimo automático de un `1fr` es su propio
+     contenido, así que la fila no bajaba de los 460px de la imagen y el
+     conjunto se iba 94px afuera del área útil. */
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 44px;
+}
+
+/* La fila ya sabe cuánto queda; esto se lo transmite a la imagen. */
+.title-image-layout > div:has(img) {
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
 }
 
 .title-image-title.ant-typography {
   max-width: none;
   color: #132B70;
-  font-size: clamp(76px, 8vw, 118px);
+  font-size: 102px;
   text-align: center;
   text-transform: uppercase;
 }
 
 .title-image-layout img {
   width: 100%;
-  max-height: 460px;
+  max-height: min(100%, 460px);
   object-fit: contain;
 }
 
@@ -1016,7 +1029,7 @@ select,
 .two-images-title.ant-typography {
   max-width: 650px;
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -1048,7 +1061,7 @@ select,
 .symbols-title.ant-typography,
 .data-title.ant-typography {
   color: #132B70;
-  font-size: clamp(82px, 8vw, 126px);
+  font-size: 102px;
   text-transform: uppercase;
 }
 
@@ -1056,7 +1069,7 @@ select,
 .data-copy.ant-typography {
   max-width: 600px;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 50px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1088,10 +1101,17 @@ select,
   max-width: 70%;
 }
 
+/*
+ * El texto manda y el ícono cede: `auto` para la fila del texto y
+ * `minmax(0, 1fr)` para la del ejemplo. Antes era `1fr auto` — al revés — y
+ * como el mínimo automático de un `1fr` es su propio contenido, la fila del
+ * texto no podía encoger y la del ícono tampoco: 276px + 330px de contenido
+ * dentro de un área de 460px, y el ícono terminaba pisando el pie.
+ */
 .data-definition-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   justify-items: center;
   gap: 34px;
@@ -1110,8 +1130,15 @@ select,
 }
 
 .data-example-row {
+  height: 100%;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 330px 1fr;
+  /* La columna se ajusta al ícono ya encogido en vez de reservarle 330px
+     fijos: si no, al ceder alto quedaba un hueco lateral del mismo ancho. */
+  grid-template-columns: auto 1fr;
+  /* Misma fila definida que en el lienzo: sin esto la fila se dimensiona al
+     ícono y el `max-height: 100%` de abajo se resuelve contra sí mismo. */
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
   gap: 34px;
   max-width: 1030px;
@@ -1119,14 +1146,15 @@ select,
 }
 
 .data-example-row img {
-  width: 330px;
-  height: auto;
+  width: auto;
+  max-width: 330px;
+  max-height: 100%;
   object-fit: contain;
 }
 
 .data-example-row span {
   color: #000000;
-  font-size: clamp(32px, 3.4vw, 48px);
+  font-size: 44px;
   line-height: 1.08;
 }
 
@@ -1146,7 +1174,7 @@ select,
 
 .side-title-image-title.ant-typography {
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1165,7 +1193,7 @@ select,
   max-width: 980px;
   margin: 0;
   color: #000000;
-  font-size: clamp(44px, 4.7vw, 68px);
+  font-size: 60px;
   line-height: 1.08;
 }
 
@@ -1191,7 +1219,7 @@ select,
 
 .text-image-title.ant-typography {
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1199,7 +1227,7 @@ select,
 .text-image-text.ant-typography {
   max-width: 650px;
   color: #000000;
-  font-size: clamp(38px, 4vw, 58px);
+  font-size: 51px;
   line-height: 1.12;
 }
 
@@ -1214,7 +1242,7 @@ select,
 .nosql-title.ant-typography {
   max-width: 650px;
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -1238,7 +1266,7 @@ select,
   max-width: 440px;
   margin: 0;
   color: #000000;
-  font-size: clamp(34px, 3.5vw, 52px);
+  font-size: 45px;
   line-height: 1.12;
 }
 
@@ -1260,7 +1288,7 @@ select,
 
 .stacked-image-title.ant-typography {
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 112px);
+  font-size: 96px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1268,7 +1296,7 @@ select,
 .stacked-image-text.ant-typography {
   max-width: 840px;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1291,7 +1319,7 @@ select,
 .image-title-heading.ant-typography {
   max-width: 1040px;
   color: #132B70;
-  font-size: clamp(70px, 7.2vw, 112px);
+  font-size: 92px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1306,51 +1334,74 @@ select,
   text-align: center;
 }
 
+/*
+ * Este div ES la fila `1fr`, así que ya sabe cuánto alto le queda al diagrama.
+ * `align-self: stretch` es lo que se lo hace saber a sus hijos: sin eso el
+ * `align-items: center` del padre lo encoge al contenido, su alto queda
+ * INDEFINIDO, y un `max-height: 100%` en la imagen se resuelve contra nada y
+ * colapsa a cero (la imagen desaparece). Con la fila estirada, el porcentaje
+ * tiene contra qué resolverse y la imagen cede alto en vez de pisar el pie.
+ */
 .title-image-static-layout > div {
   width: 100%;
+  height: 100%;
+  align-self: stretch;
+  min-height: 0;
   display: grid;
+  /*
+   * `minmax(0, 1fr)` y no la fila automática por defecto. El `max-height: 100%`
+   * de la imagen se resuelve contra su ÁREA DE GRID, no contra este div; con
+   * la fila automática el área la dictaba la propia imagen (medido: div de
+   * 334px con una fila de 587px), así que el tope se resolvía contra el alto
+   * que se quería limitar y no limitaba nada. El `0` de mínimo es lo que
+   * permite que la fila baje del tamaño de su contenido.
+   */
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
 }
 
 .title-image-static-title.ant-typography {
   max-width: 650px;
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-transform: uppercase;
   justify-self: center;
 }
 
+/* El tope es la fila, no un numero inventado: `100%` del div de arriba, que
+   mide exactamente el alto que sobra despues del titulo. Los px que siguen
+   son solo el techo de ampliacion de cada variante. */
 .title-image-static-layout img {
   width: min(100%, 920px);
-  max-height: 460px;
+  max-height: min(100%, 460px);
   object-fit: contain;
 }
 
 .title-image-static-layout img.large-slide-image {
   width: min(100%, 1080px);
-  max-height: 540px;
+  max-height: min(100%, 540px);
 }
 
 .title-image-static-layout img.extra-large-slide-image {
   width: min(100%, 1240px);
-  max-height: 640px;
+  max-height: min(100%, 640px);
 }
 
 .title-image-static-layout img.system-slide-image {
   width: min(100%, 1260px);
-  max-height: 660px;
+  max-height: min(100%, 660px);
 }
 
 .title-image-static-layout img.cycle-slide-image {
   width: min(100%, 1280px);
-  max-height: 660px;
+  max-height: min(100%, 660px);
 }
 
 .title-image-static-title.single-line-title.ant-typography {
   max-width: none;
   white-space: nowrap;
-  font-size: clamp(58px, 6.2vw, 94px);
+  font-size: 79px;
 }
 
 .image-list-layout,
@@ -1366,7 +1417,7 @@ select,
 .image-text-under-title-heading.ant-typography {
   max-width: 1120px;
   color: #132B70;
-  font-size: clamp(62px, 6.5vw, 100px);
+  font-size: 83px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1399,7 +1450,7 @@ select,
   margin: 0;
   padding-left: 34px;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1411,7 +1462,7 @@ select,
   max-width: 620px;
   margin: 0;
   color: #000000;
-  font-size: clamp(38px, 4vw, 58px);
+  font-size: 51px;
   line-height: 1.08;
   text-transform: uppercase;
 }
@@ -1427,7 +1478,7 @@ select,
 .abstraction-level-title.ant-typography {
   max-width: 980px;
   color: #132B70;
-  font-size: clamp(72px, 7.5vw, 116px);
+  font-size: 96px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1469,7 +1520,7 @@ select,
   max-width: 650px;
   margin: 0;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1483,7 +1534,7 @@ select,
 .lifecycle-list-title.ant-typography {
   max-width: 1120px;
   color: #132B70;
-  font-size: clamp(62px, 6.5vw, 100px);
+  font-size: 83px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1492,7 +1543,7 @@ select,
   margin: 0;
   padding-left: 36px;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1525,7 +1576,7 @@ select,
 .planning-resource-card h3 {
   margin: 0;
   color: #132B70;
-  font-size: clamp(36px, 3.8vw, 58px);
+  font-size: 49px;
   font-weight: 400;
   line-height: 0.95;
   text-align: center;
@@ -1541,7 +1592,7 @@ select,
 .planning-resources-title.ant-typography {
   max-width: none;
   color: #132B70;
-  font-size: clamp(62px, 6.5vw, 100px);
+  font-size: 83px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -1560,7 +1611,7 @@ select,
 .importance-title.ant-typography {
   max-width: 980px;
   color: #132B70;
-  font-size: clamp(68px, 7vw, 108px);
+  font-size: 90px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1577,7 +1628,7 @@ select,
   margin: 0;
   padding-left: 36px;
   color: #000000;
-  font-size: clamp(40px, 4.3vw, 62px);
+  font-size: 55px;
   line-height: 1.12;
 }
 
@@ -1611,7 +1662,7 @@ select,
   max-width: 620px;
   margin: 0;
   color: #000000;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 
@@ -1656,7 +1707,7 @@ select,
 .zoom-timeline-title.ant-typography {
   max-width: none;
   color: #132B70;
-  font-size: clamp(58px, 5.6vw, 86px);
+  font-size: 72px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -1703,7 +1754,7 @@ select,
 .timeline-overview-title.ant-typography {
   max-width: none;
   color: #132B70;
-  font-size: clamp(58px, 5.6vw, 86px);
+  font-size: 72px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -1727,7 +1778,7 @@ select,
 .placeholder-title.ant-typography {
   max-width: 980px;
   color: #132B70;
-  font-size: clamp(76px, 8vw, 118px);
+  font-size: 102px;
   line-height: 0.92;
   text-transform: uppercase;
 }
@@ -1736,7 +1787,7 @@ select,
   max-width: 740px;
   margin: 0;
   color: #475569;
-  font-size: clamp(34px, 3.6vw, 52px);
+  font-size: 46px;
   line-height: 1.12;
 }
 

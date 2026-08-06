@@ -21,7 +21,7 @@
   max-width: 1180px;
   margin: 0 auto;
   color: #132B70;
-  font-size: clamp(32px, 3.2vw, 46px);
+  font-size: 41px;
   line-height: 1.2;
   text-align: center;
 }
@@ -49,7 +49,7 @@
 
 .feature-card figcaption {
   color: #132B70;
-  font-size: clamp(22px, 2vw, 32px);
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-align: center;
@@ -69,7 +69,7 @@
 .symbol-list-title.ant-typography {
   max-width: 1180px;
   color: #132B70;
-  font-size: clamp(44px, 4.6vw, 70px);
+  font-size: 59px;
   line-height: 0.96;
   text-align: center;
 }
@@ -97,7 +97,7 @@
 
 .symbol-list-item span {
   color: #475569;
-  font-size: clamp(18px, 1.7vw, 26px);
+  font-size: 22px;
   line-height: 1.22;
 }
 
@@ -120,7 +120,7 @@
 .title-text-image-heading.ant-typography {
   max-width: 1180px;
   color: #132B70;
-  font-size: clamp(40px, 4.2vw, 64px);
+  font-size: 54px;
   line-height: 0.96;
   text-align: center;
   text-transform: uppercase;
@@ -129,7 +129,7 @@
 .title-text-image-text.ant-typography {
   max-width: 1080px;
   margin-top: 0;
-  font-size: clamp(22px, 2.1vw, 31px);
+  font-size: 27px;
   line-height: 1.2;
   text-align: center;
 }
@@ -182,7 +182,7 @@
    y cada pixel que cede se lo lleva el diagrama. */
 .title-text-image-layout:not(:has(.title-text-image-text)):not(:has(.title-text-image-list))
   .title-text-image-heading.ant-typography {
-  font-size: clamp(32px, 3.4vw, 50px);
+  font-size: 44px;
 }
 
 .title-text-image-list {
@@ -202,7 +202,7 @@
   position: relative;
   padding-left: 34px;
   color: #475569;
-  font-size: clamp(20px, 1.9vw, 30px);
+  font-size: 24px;
   line-height: 1.22;
 }
 
@@ -230,7 +230,7 @@
 
 .two-images-text-heading.ant-typography {
   color: #132B70;
-  font-size: clamp(58px, 6vw, 94px);
+  font-size: 77px;
   line-height: 0.94;
   text-align: center;
   text-transform: uppercase;
@@ -246,6 +246,24 @@
   min-height: 0;
 }
 
+/*
+ * RevealItem mete un <div> entre el grid y la imagen. Ese div es el item del
+ * grid, y con `min-width/min-height: auto` se dimensiona al tamano NATURAL de
+ * la imagen (medido: 1032px de ancho, el area entera, en una columna de 492px).
+ * La imagen entonces resolvia su `max-width: 100%` contra el wrapper, es decir
+ * contra su propio tamano, y el tope no topaba nada. Estirar el wrapper a su
+ * celda con los minimos en 0 es lo que corta el circulo.
+ */
+.two-images-text-grid > * {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+}
+
 .two-images-text-grid img {
   max-width: 100%;
   max-height: 100%;
@@ -255,7 +273,7 @@
 .two-images-text-copy.ant-typography {
   max-width: 1180px;
   margin-top: 0;
-  font-size: clamp(22px, 2.1vw, 32px);
+  font-size: 27px;
   line-height: 1.22;
   text-align: center;
 }
@@ -291,14 +309,14 @@
 
 /* Titulo mas contenido: en estos slides el protagonista es el diagrama. */
 .image-text-under-title-layout.media-wide .image-text-under-title-heading.ant-typography {
-  font-size: clamp(38px, 3.7vw, 56px);
+  font-size: 47px;
   text-align: center;
 }
 
 .image-text-under-title-layout.media-wide .image-text-under-title-text.ant-typography {
   max-width: 900px;
   margin-inline: auto;
-  font-size: clamp(22px, 2.1vw, 32px);
+  font-size: 27px;
   line-height: 1.2;
   text-align: center;
   text-transform: none;
@@ -309,12 +327,12 @@
    se desbordan por arriba y por abajo. --- */
 
 .importance-layout.compact .importance-title.ant-typography {
-  font-size: clamp(40px, 4.2vw, 64px);
+  font-size: 54px;
   line-height: 0.96;
 }
 
 .importance-layout.compact .importance-list {
-  font-size: clamp(24px, 2.4vw, 34px);
+  font-size: 31px;
   line-height: 1.2;
 }
 
@@ -330,12 +348,12 @@
 }
 
 .importance-layout.dense .importance-title.ant-typography {
-  font-size: clamp(28px, 3vw, 46px);
+  font-size: 38px;
   margin-bottom: 6px;
 }
 
 .importance-layout.dense .importance-list {
-  font-size: clamp(25px, 2.5vw, 36px);
+  font-size: 32px;
 }
 
 .importance-layout.dense .importance-list li {
@@ -366,7 +384,7 @@
 .concept-pair-heading.ant-typography {
   max-width: 1180px;
   color: #132B70;
-  font-size: clamp(44px, 4.6vw, 70px);
+  font-size: 59px;
   line-height: 0.96;
   text-align: center;
   text-transform: uppercase;
@@ -392,14 +410,14 @@
   display: block;
   margin-bottom: 14px;
   color: #132B70;
-  font-size: clamp(26px, 2.5vw, 38px);
+  font-size: 32px;
   letter-spacing: 0.02em;
 }
 
 .concept-pair-card p {
   margin: 0;
   color: #475569;
-  font-size: clamp(20px, 1.9vw, 29px);
+  font-size: 24px;
   line-height: 1.22;
 }
 
@@ -417,7 +435,7 @@
 .statement-title.ant-typography {
   max-width: 1320px;
   color: #132B70;
-  font-size: clamp(48px, 5.2vw, 82px);
+  font-size: 67px;
   font-weight: 700;
   line-height: 1.06;
   text-wrap: balance;
@@ -428,7 +446,7 @@
 .statement-copy.ant-typography {
   max-width: 1000px;
   margin-top: 0;
-  font-size: clamp(26px, 2.5vw, 38px);
+  font-size: 32px;
   line-height: 1.22;
 }
 
@@ -439,12 +457,12 @@
 }
 
 .statement-layout.compact .statement-title.ant-typography {
-  font-size: clamp(38px, 4vw, 60px);
+  font-size: 51px;
 }
 
 .statement-layout.compact .statement-copy.ant-typography {
   max-width: 1180px;
-  font-size: clamp(23px, 2.2vw, 33px);
+  font-size: 28px;
   line-height: 1.28;
   /* La fórmula va en su propio renglón dentro del mismo texto. */
   white-space: pre-line;
@@ -510,7 +528,7 @@
   padding-left: 40px;
   border-left: 6px solid #e8b22b;
   color: #132B70;
-  font-size: clamp(30px, 3.1vw, 46px);
+  font-size: 40px;
   font-weight: 600;
   line-height: 1.24;
   text-wrap: balance;
@@ -538,7 +556,7 @@
 
 .concept-flow-heading.ant-typography {
   color: #132B70;
-  font-size: clamp(38px, 4vw, 58px);
+  font-size: 51px;
   line-height: 1;
   text-align: center;
   text-transform: uppercase;
@@ -605,7 +623,7 @@
 
 .concept-flow-label {
   color: #132B70;
-  font-size: clamp(22px, 2.2vw, 32px);
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.12;
   text-align: center;
@@ -627,7 +645,7 @@
 .bullet-notes-heading.ant-typography {
   max-width: none;
   color: #132B70;
-  font-size: clamp(40px, 4.2vw, 64px);
+  font-size: 54px;
   line-height: 0.96;
   text-transform: uppercase;
 }
@@ -659,14 +677,14 @@
   padding-left: 26px;
   border-left: 5px solid #e8b22b;
   color: #132B70;
-  font-size: clamp(25px, 2.5vw, 37px);
+  font-size: 32px;
   line-height: 1.1;
   text-transform: uppercase;
 }
 
 .bullet-notes-list span {
   color: #334155;
-  font-size: clamp(22px, 2.2vw, 32px);
+  font-size: 28px;
   line-height: 1.2;
 }
 
@@ -688,14 +706,14 @@
 
 .speaker-name.ant-typography {
   color: #132B70;
-  font-size: clamp(44px, 4.6vw, 70px);
+  font-size: 59px;
   line-height: 0.98;
 }
 
 .speaker-roles.ant-typography {
   margin-top: 0;
   color: #334155;
-  font-size: clamp(21px, 2vw, 29px);
+  font-size: 26px;
   line-height: 1.26;
 }
 
@@ -712,7 +730,7 @@
   align-items: baseline;
   gap: 14px;
   color: #132B70;
-  font-size: clamp(20px, 1.9vw, 27px);
+  font-size: 24px;
 }
 
 .speaker-contacts span {
@@ -730,18 +748,13 @@
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
 }
 
-@media (max-width: 1180px) {
-  .feature-cards-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .symbol-list-grid,
-  .two-images-text-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .bullet-notes-list li {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-}
+/*
+ * Aca vivia una consulta de medio que a menos de 1180px de VENTANA reacomodaba
+ * estas grillas a menos columnas. Adentro del lienzo no tiene sentido: la
+ * lamina mide 1280px de ancho en toda pantalla, asi que el ancho de la ventana
+ * no dice nada sobre el espacio que hay.
+ *
+ * Y hacia dano: a 1093 las dos imagenes de "CLASES DE ENTIDAD" se apilaban en
+ * una columna y se iban 218px afuera, mientras que a 1366 entraban lado a lado
+ * sin desbordar. Misma lamina, dos composiciones distintas.
+ */
