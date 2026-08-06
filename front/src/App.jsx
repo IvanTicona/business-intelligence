@@ -191,19 +191,24 @@ const chapterOneSlides = [
     title: 'EVOLUCIÓN DE LAS BASES DE DATOS',
     image: '/slide13.png',
     /*
-     * El `y` baja la IMAGEN dentro del marco, no el recuadro rojo.
+     * El `y` mueve la IMAGEN dentro del marco, no el recuadro rojo.
      *
      * La cuenta: el marco mide 1032x368 y la imagen (763x303) al 130% queda en
      * 1342x533, asi que hay 165px de recorrido vertical. En un
      * `background-position` porcentual el desplazamiento es
      * (altoDelMarco - altoDeLaImagen) x P, o sea -165 x P: MAS porcentaje sube
-     * la imagen y menos la baja. De 42% (69px arriba) a -19% son 100px abajo.
+     * la imagen y menos la baja.
+     *
+     * 102% deja la imagen 100px MAS ARRIBA que el 42% original (offset -169px
+     * contra -69px). Roza el tope del recorrido: al 100% el borde inferior de
+     * la imagen coincide con el del marco, asi que estos 2% de mas dejan unos
+     * 4px sin imagen abajo.
      */
     focusPoints: [
-      { scale: 130, x: '-23%', y: '-19%', marker: { left: '12%', bottom: '4.5%', width: '34%', height: '18%', color: '#E11D48' } },
-      { scale: 130, x: '42%', y: '-19%', marker: { left: '22%', bottom: '4.5%', width: '38%', height: '18%', color: '#E11D48' } },
-      { scale: 130, x: '96%', y: '-19%', marker: { left: '34%', bottom: '4.5%', width: '40%', height: '18%', color: '#E11D48' } },
-      { scale: 130, x: '136%', y: '-19%', marker: { left: '51%', bottom: '4.5%', width: '36%', height: '18%', color: '#E11D48' } },
+      { scale: 130, x: '-23%', y: '102%', marker: { left: '12%', bottom: '4.5%', width: '34%', height: '18%', color: '#E11D48' } },
+      { scale: 130, x: '42%', y: '102%', marker: { left: '22%', bottom: '4.5%', width: '38%', height: '18%', color: '#E11D48' } },
+      { scale: 130, x: '96%', y: '102%', marker: { left: '34%', bottom: '4.5%', width: '40%', height: '18%', color: '#E11D48' } },
+      { scale: 130, x: '136%', y: '102%', marker: { left: '51%', bottom: '4.5%', width: '36%', height: '18%', color: '#E11D48' } },
     ],
   },
   {
