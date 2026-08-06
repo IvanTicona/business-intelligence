@@ -59,6 +59,53 @@ select,
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* Sin esto, un hijo flexible no puede achicarse por debajo de su contenido y
+     el desplazamiento del menú de más abajo no llega a activarse nunca. */
+  min-height: 0;
+}
+
+/*
+ * EL MENÚ SE DESPLAZA. La marca arriba y la identidad abajo se quedan fijas.
+ *
+ * Sin esto, en cuanto la ventana era más baja que el menú, los últimos ítems
+ * quedaban fuera y no había forma de llegar a ellos: "Playground", que es el
+ * último, no existía. Medido: a 1536x864 —una pantalla de 1920x1080 al 125%,
+ * que es la configuración más común de un laptop— sobran 56px, y a 1093x614
+ * sobran 257px. Es decir, le pasaba a la mayoría.
+ */
+.course-sider .course-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Una barra discreta: la de por defecto en Windows es ancha y ruidosa al lado
+   de un menú blanco. */
+.course-sider .course-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.course-sider .course-menu::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: rgba(15, 23, 42, 0.18);
+}
+
+.course-sider .course-menu::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(15, 23, 42, 0.32);
+}
+
+/*
+ * En pantallas angostas el menú de 320px se comía un cuarto del ancho. Los
+ * tamaños salen de lo que hay en un aula, no de números redondos: 1536 es una
+ * pantalla de 1920 al 125%, y 1093 una de 1366 al 125%.
+ */
+@media (max-width: 1560px) {
+  .course-sider.ant-layout-sider {
+    padding: 14px 10px;
+  }
 }
 
 .course-sider,
@@ -70,6 +117,7 @@ select,
 }
 
 .sidebar-header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -277,6 +325,7 @@ select,
 
 .sidebar-footer {
   margin-top: auto;
+  flex: 0 0 auto;
   padding: 14px 10px 6px;
   border-top: 1px solid rgba(15, 23, 42, 0.06);
   display: grid;
@@ -796,10 +845,39 @@ select,
   display: flex;
   flex-direction: column;
   justify-content: center;
+  /* Si el contenido no entra, que se pueda llegar a él. Antes quedaba recortado
+     y sin manera de verlo: medido, 69px ocultos a 1093x614. */
+  overflow-y: auto;
+}
+
+/*
+ * El relleno del slide está pensado para una pantalla grande; en una baja se
+ * come el contenido. Se achica por tramos, con los tamaños reales de un aula:
+ * 1536 es 1920 al 125%, 1093 es 1366 al 125%.
+ */
+@media (max-height: 900px) {
+  .slide-content {
+    padding: 92px 92px 88px;
+  }
+}
+
+@media (max-height: 760px) {
+  .slide-content {
+    padding: 74px 64px 70px;
+  }
+}
+
+@media (max-height: 640px) {
+  .slide-content {
+    padding: 62px 48px 58px;
+    justify-content: flex-start;
+  }
 }
 
 .chapter-logo {
-  width: min(540px, 44%);
+  /* El alto entra en la cuenta, no solo el ancho: en una pantalla baja un logo
+     medido solo por ancho empuja el título y el texto fuera de la lámina. */
+  width: min(540px, 44%, 46vh);
   height: auto;
   margin: 0 auto 48px;
   display: block;
