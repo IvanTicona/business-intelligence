@@ -788,6 +788,15 @@ select,
   aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
+  /*
+   * La cabecera y el pie están POSICIONADOS ENCIMA del contenido, así que lo
+   * único que evita que se pisen es el relleno del contenido. Cuando eso son
+   * dos números sueltos en dos reglas distintas, achicar uno en una consulta de
+   * medio pisa el otro: pasó, y el título quedó encima del pie.
+   */
+  --slide-cabecera: 92px;
+  --slide-pie: 88px;
+  --slide-lado: 124px;
   border: 1px solid rgba(15, 23, 42, 0.18);
   border-radius: 0;
   background: #ffffff;
@@ -814,11 +823,11 @@ select,
   top: 0;
   left: 0;
   right: 0;
-  height: 92px;
+  height: var(--slide-cabecera);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 76px;
+  padding: 0 calc(var(--slide-lado) - 48px);
   /* Trazo dorado que cruza el slide de lado a lado: el header ya va de
      left:0 a right:0, asi que el borde llega hasta los bordes del slide. */
   border-bottom: 4px solid #e8b22b;
@@ -841,7 +850,7 @@ select,
 
 .slide-content {
   height: 100%;
-  padding: 128px 124px 120px;
+  padding: calc(var(--slide-cabecera) + 36px) var(--slide-lado) calc(var(--slide-pie) + 44px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -856,28 +865,39 @@ select,
  * 1536 es 1920 al 125%, 1093 es 1366 al 125%.
  */
 @media (max-height: 900px) {
-  .slide-content {
-    padding: 92px 92px 88px;
+  .slide-shell {
+    --slide-cabecera: 74px;
+    --slide-pie: 70px;
+    --slide-lado: 92px;
   }
 }
 
 @media (max-height: 760px) {
-  .slide-content {
-    padding: 74px 64px 70px;
+  .slide-shell {
+    --slide-cabecera: 62px;
+    --slide-pie: 58px;
+    --slide-lado: 68px;
   }
 }
 
 @media (max-height: 640px) {
-  .slide-content {
-    padding: 62px 48px 58px;
-    justify-content: flex-start;
+  .slide-shell {
+    --slide-cabecera: 54px;
+    --slide-pie: 50px;
+    --slide-lado: 52px;
+  }
+}
+
+@media (max-height: 700px) {
+  .chapter-logo {
+    margin-bottom: 26px !important;
   }
 }
 
 .chapter-logo {
   /* El alto entra en la cuenta, no solo el ancho: en una pantalla baja un logo
      medido solo por ancho empuja el título y el texto fuera de la lámina. */
-  width: min(540px, 44%, 46vh);
+  width: min(540px, 44%, 26vh);
   height: auto;
   margin: 0 auto 48px;
   display: block;
@@ -887,7 +907,12 @@ select,
   max-width: 980px;
   margin: 0;
   color: #000000;
-  font-size: clamp(54px, 6vw, 84px);
+  /*
+   * El tamaño mira el ancho Y EL ALTO. Con un clamp que solo mira el ancho, su
+   * mínimo se aplica igual en una pantalla baja: medido, el título de portada
+   * ocupaba 272px de los 404 disponibles a 1093x614, y empujaba todo afuera.
+   */
+  font-size: clamp(34px, min(6vw, 9.5vh), 84px);
   font-weight: 400;
   line-height: 0.92;
 }
@@ -897,7 +922,7 @@ select,
   margin-inline: auto;
   text-align: center;
   color: #132B70;
-  font-size: clamp(81px, 9vw, 126px);
+  font-size: clamp(40px, min(9vw, 10.5vh), 126px);
   font-weight: 900;
 }
 
@@ -1730,12 +1755,12 @@ select,
   left: 0;
   right: 0;
   bottom: 0;
-  min-height: 88px;
+  min-height: var(--slide-pie);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 24px;
-  padding: 0 76px 28px;
+  padding: 0 calc(var(--slide-lado) - 48px) 28px;
   color: #000000;
   font-size: 27px;
   font-weight: 400;

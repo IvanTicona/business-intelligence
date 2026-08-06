@@ -74,6 +74,28 @@ const medir = alto => page.evaluate(h => {
     }
   }
 
+  /*
+   * SUPERPOSICIONES. La cabecera y el pie del slide van posicionados ENCIMA del
+   * contenido, así que nada se "desborda": simplemente se pisan y el texto queda
+   * ilegible. Medir desbordes no lo detecta — se escapó exactamente así, y solo
+   * apareció mirando una captura.
+   */
+  const contenido = document.querySelector('.slide-content')
+  for (const sel of ['.slide-header', '.slide-footer']) {
+    const chrome = document.querySelector(sel)
+    if (!chrome || !contenido) continue
+    const c = chrome.getBoundingClientRect()
+
+    for (const n of contenido.querySelectorAll('h1, h2, p, img, li')) {
+      const r = n.getBoundingClientRect()
+      if (r.height === 0) continue
+      const solapa = Math.min(r.bottom, c.bottom) - Math.max(r.top, c.top)
+      if (solapa > 4 && r.left < c.right && r.right > c.left) {
+        problemas.push(`${n.tagName} se PISA con ${sel} (${Math.round(solapa)}px)`)
+      }
+    }
+  }
+
   // El menú: si no entra, tiene que poder desplazarse.
   const menu = document.querySelector('.course-sider')
   if (menu && menu.scrollHeight > menu.clientHeight + 4) {
