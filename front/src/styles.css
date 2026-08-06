@@ -825,6 +825,19 @@ select,
   height: 720px;
   transform: scale(var(--escala-lamina, 1));
   transform-origin: top left;
+  /*
+   * TRES FILAS REALES: cabecera, contenido y pie. Antes la cabecera y el pie
+   * estaban POSICIONADOS ENCIMA del contenido y lo unico que evitaba que se
+   * pisaran era el relleno de .slide-content — un acuerdo de caballeros que
+   * nada hacia cumplir. Medido: 7 laminas por pantalla metian una imagen o un
+   * titulo adentro de esas bandas, y ninguna medicion de desborde lo veia,
+   * porque el contenido seguia adentro de la caja de relleno.
+   *
+   * Con filas de verdad, el contenedor del contenido MIDE lo que le toca
+   * (720 - 92 - 88 = 540) y es contra eso que se resuelven los hijos.
+   */
+  display: grid;
+  grid-template-rows: var(--slide-cabecera) minmax(0, 1fr) var(--slide-pie);
 }
 
 .slide-shell .ant-typography,
@@ -842,11 +855,8 @@ select,
 }
 
 .slide-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--slide-cabecera);
+  /* Fila del grid, ya no una capa flotante sobre el contenido. */
+  height: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -871,9 +881,47 @@ select,
   font-weight: 400;
 }
 
+/*
+ * ESTE es el contenedor contra el que se miden los hijos: la banda entre la
+ * cabecera y el pie. El relleno ya no descuenta la cabecera ni el pie —de eso
+ * se ocupan las filas del lienzo—, solo deja aire. El area util sigue siendo
+ * la misma de antes: 540 - 36 - 44 = 460px.
+ *
+ * `min-height: 0` es lo que permite que la fila `minmax(0, 1fr)` de arriba
+ * mande de verdad: sin eso el minimo automatico seria el contenido y la fila
+ * volveria a crecer hasta empujar al pie.
+ */
+/*
+ * DOS REGLAS DE FONDO, para no repetir el mismo parche en cada maquetacion.
+ *
+ * 1. RevealItem envuelve su contenido en un <div> SIN CLASE. Ese div es
+ *    invisible en el diseno pero opaco para la maquetacion: con los minimos
+ *    automaticos se dimensiona a su contenido —al tamano natural de la
+ *    imagen— y la fila de arriba deja de mandar. Medido: un envoltorio de
+ *    218px adentro de una fila de 150px, seis veces, en seis maquetaciones
+ *    distintas. Estirarlo a su celda y dejarlo encoger devuelve el control a
+ *    la fila.
+ *
+ * 2. Ninguna imagen puede pasar del alto de su fila. Con la cadena de arriba
+ *    ya definida, `100%` por fin se resuelve contra algo real.
+ */
+.slide-content div:not([class]):has(img) {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+}
+
+.slide-content img {
+  max-height: 100%;
+}
+
 .slide-content {
   height: 100%;
-  padding: calc(var(--slide-cabecera) + 36px) var(--slide-lado) calc(var(--slide-pie) + 44px);
+  min-height: 0;
+  padding: 36px var(--slide-lado) 44px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1021,7 +1069,7 @@ select,
 .two-images-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 44px;
 }
@@ -1182,7 +1230,7 @@ select,
 .text-over-image-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   justify-items: center;
   gap: 44px;
@@ -1207,6 +1255,9 @@ select,
   height: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* La fila es implicita (solo se declaran columnas), asi que se dimensionaba
+     al contenido y crecia por encima de los 460px del area util. */
+  grid-auto-rows: minmax(0, 1fr);
   align-items: center;
   gap: 76px;
 }
@@ -1217,9 +1268,12 @@ select,
   object-fit: contain;
 }
 
+/* Titulo y texto entran juntos en los 460px del area util: el peor caso es
+   "BASE DE DATOS JERARQUICAS" con cinco lineas de texto, que a 96/51 pedia
+   494px. A 88/45 son 165 + 252 + 28 de separacion = 445. */
 .text-image-title.ant-typography {
   color: #132B70;
-  font-size: 96px;
+  font-size: 88px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1227,14 +1281,14 @@ select,
 .text-image-text.ant-typography {
   max-width: 650px;
   color: #000000;
-  font-size: 51px;
+  font-size: 45px;
   line-height: 1.12;
 }
 
 .nosql-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 44px;
 }
@@ -1273,7 +1327,7 @@ select,
 .stacked-image-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   justify-items: center;
   align-items: center;
   gap: 22px;
@@ -1303,7 +1357,7 @@ select,
 .image-title-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   justify-items: center;
   align-items: center;
   gap: 34px;
@@ -1327,7 +1381,7 @@ select,
 .title-image-static-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
   align-items: center;
   gap: 36px;
@@ -1408,7 +1462,7 @@ select,
 .image-text-under-title-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 38px;
 }
@@ -1423,9 +1477,15 @@ select,
 }
 
 .image-list-content,
+/* Contenedor intermedio entre la fila de la maquetacion y la imagen: si no
+   toma el alto de su fila, la imagen se mide contra el y la fila deja de
+   mandar (medido: 420px adentro de una fila de 344px). */
 .image-text-under-title-content {
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
   gap: 68px;
 }
@@ -1434,10 +1494,13 @@ select,
   width: 100%;
 }
 
+/* `min(100%, ...)` y no 420px a secas: el px suelto le ganaba por
+   especificidad al tope general de .slide-content img y la imagen volvia a
+   pasarse de su fila. El 420 queda como techo de ampliacion. */
 .image-list-content img,
 .image-text-under-title-content img {
   width: 100%;
-  max-height: 420px;
+  max-height: min(100%, 420px);
   object-fit: contain;
 }
 
@@ -1470,7 +1533,7 @@ select,
 .abstraction-level-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 38px;
 }
@@ -1531,10 +1594,18 @@ select,
   gap: 42px;
 }
 
+/*
+ * Estos tres tamanos no son de gusto, son de cuenta. El area util son 460px y
+ * la maquetacion gasta 42 de separacion, asi que al titulo y a la lista les
+ * quedan 418. Con los valores de antes —83px de titulo a dos lineas y siete
+ * items a 46px— pedian 587 y el titulo terminaba 48px adentro de la cabecera.
+ * Ahora: 2x0.94x58 = 109 de titulo, 7x(1.12x32 + 6) = 293 de lista, 42 de
+ * separacion: 444 de 460.
+ */
 .lifecycle-list-title.ant-typography {
   max-width: 1120px;
   color: #132B70;
-  font-size: 83px;
+  font-size: 58px;
   line-height: 0.94;
   text-transform: uppercase;
 }
@@ -1543,18 +1614,18 @@ select,
   margin: 0;
   padding-left: 36px;
   color: #000000;
-  font-size: 46px;
+  font-size: 32px;
   line-height: 1.12;
 }
 
 .lifecycle-list li {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .planning-resources-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: center;
   gap: 38px;
 }
@@ -1601,7 +1672,7 @@ select,
 .relational-components-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 38px;
 }
@@ -1646,7 +1717,7 @@ select,
 .dbms-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   gap: 34px;
 }
@@ -1745,7 +1816,7 @@ select,
 .timeline-overview-layout {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: center;
   justify-items: center;
   gap: 34px;
@@ -1792,11 +1863,8 @@ select,
 }
 
 .slide-footer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  min-height: var(--slide-pie);
+  /* Fila del grid, ya no una capa flotante sobre el contenido. */
+  height: 100%;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
