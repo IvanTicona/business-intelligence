@@ -1314,7 +1314,13 @@
   padding: 16px 18px;
   border: 0;
   font-family: "JetBrains Mono", "Cascadia Code", "Consolas", "Courier New", monospace !important;
-  font-size: 15px;
+  /*
+   * UNA sola variable para las dos capas. El editor es un <pre> coloreado con
+   * un <textarea> transparente encima: si sus tipografías se separan aunque sea
+   * un píxel, el color deja de caer sobre las letras y queda ilegible. Que
+   * compartan esta regla es lo que lo vuelve imposible por construcción.
+   */
+  font-size: var(--sql-fuente, 15px);
   line-height: 1.65;
   letter-spacing: 0.01em;
   white-space: pre-wrap;

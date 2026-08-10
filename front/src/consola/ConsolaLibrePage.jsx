@@ -18,6 +18,17 @@ const CLAVE_GUARDADO = 'bi-course-consola-libre'
 
 const MAX_FILAS = 500
 
+/*
+ * El tamaño de la fuente se recuerda POR DISPOSITIVO y no en el servidor: es
+ * una preferencia de esta pantalla y este par de ojos, no del alumno. Quien
+ * agranda la letra en la laptop del laboratorio no quiere encontrársela
+ * agrandada en su monitor de casa.
+ */
+const CLAVE_FUENTE = 'bi-course-consola-fuente'
+const FUENTE_MIN = 11
+const FUENTE_MAX = 24
+const FUENTE_BASE = 15
+
 const SCRIPT_INICIAL = `-- Playground · PostgreSQL 18
 --
 -- Esto es una base vacia y tuya. No hay consigna ni correccion: crea lo que
@@ -69,6 +80,21 @@ export default function ConsolaLibrePage() {
   const sello = useRef(0)
 
   const [mudanza, setMudanza] = useState(null)
+  const [seleccion, setSeleccion] = useState('')
+  const [fuente, setFuente] = useState(() => {
+    const guardada = Number(window.localStorage.getItem(CLAVE_FUENTE))
+
+    return guardada >= FUENTE_MIN && guardada <= FUENTE_MAX ? guardada : FUENTE_BASE
+  })
+
+  function cambiarFuente(delta) {
+    setFuente(previa => {
+      const nueva = Math.min(FUENTE_MAX, Math.max(FUENTE_MIN, previa + delta))
+      window.localStorage.setItem(CLAVE_FUENTE, String(nueva))
+
+      return nueva
+    })
+  }
 
   useEffect(() => {
     let viva = true
@@ -168,7 +194,16 @@ export default function ConsolaLibrePage() {
     setCorriendo(true)
 
     try {
-      const salida = await ejecutarEspacio({ espacio: 'libre', sql: script, reiniciar })
+      /*
+       * Con texto seleccionado se ejecuta SOLO eso, como en cualquier cliente
+       * SQL. Es lo que permite tener un script largo e ir probando una consulta
+       * a la vez sin borrar el resto ni volver a correrlo entero.
+       *
+       * Reiniciar la base siempre corre el script COMPLETO: vaciar y ejecutar
+       * un fragmento suelto dejaría una base que no se parece a nada.
+       */
+      const aEjecutar = !reiniciar && seleccion.trim() ? seleccion : script
+      const salida = await ejecutarEspacio({ espacio: 'libre', sql: aEjecutar, reiniciar })
       const falla = salida.registro?.find(l => !l.ok)
 
       sello.current += 1
@@ -185,7 +220,7 @@ export default function ConsolaLibrePage() {
     } finally {
       setCorriendo(false)
     }
-  }, [motor, script, corriendo])
+  }, [motor, script, seleccion, corriendo])
 
   /** Deja la base vacía sin ejecutar nada. Distinto de "Vaciar", que borra el editor. */
   async function vaciarLaBase() {
@@ -240,6 +275,26 @@ export default function ConsolaLibrePage() {
                 <div className="pg-editor-bloque">
                   <div className="pg-editor-barra">
                     <span className="practice-panel-label">Tu script</span>
+                    <span className="libre-fuente" role="group" aria-label="Tamaño de la letra">
+                      <button
+                        type="button"
+                        onClick={() => cambiarFuente(-1)}
+                        disabled={fuente <= FUENTE_MIN}
+                        aria-label="Achicar la letra"
+                        title="Achicar la letra"
+                      >
+                        A<small>−</small>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => cambiarFuente(1)}
+                        disabled={fuente >= FUENTE_MAX}
+                        aria-label="Agrandar la letra"
+                        title="Agrandar la letra"
+                      >
+                        A<small>+</small>
+                      </button>
+                    </span>
                     <div className="pg-editor-acciones">
                       <button type="button" className="pg-boton pg-boton-fantasma" onClick={() => setScript('')}>
                         Vaciar
@@ -270,7 +325,7 @@ export default function ConsolaLibrePage() {
                         onClick={() => correr(false)}
                         disabled={corriendo}
                       >
-                        {corriendo ? 'Ejecutando…' : 'Ejecutar'}
+                        {corriendo ? 'Ejecutando…' : seleccion.trim() ? 'Ejecutar selección' : 'Ejecutar'}
                       </button>
                     </div>
                   </div>
@@ -278,12 +333,15 @@ export default function ConsolaLibrePage() {
                   <SqlEditor
                     value={script}
                     onChange={setScript}
+                    onSeleccion={setSeleccion}
+                    estilo={{ '--sql-fuente': `${fuente}px` }}
                     rows={13}
                     placeholder="-- Escribe SQL. Ctrl + Enter también ejecuta."
                     onSubmit={() => correr(false)}
                   />
 
                   <p className="taller-nota-editor">
+                    Si seleccionas un fragmento, se ejecuta solo ese.{' '}
                     <strong>Ejecutar</strong> aplica el script sobre tu base, así que un{' '}
                     <code>CREATE TABLE</code> repetido falla igual que en Postgres.{' '}
                     <strong>Empezar de cero</strong> la vacía primero.

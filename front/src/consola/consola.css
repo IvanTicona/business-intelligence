@@ -89,3 +89,43 @@
   opacity: 0.85;
   font-size: 12.5px;
 }
+
+/* Tamaño de la letra de la consola. Dos botones chicos junto a la etiqueta:
+   no merecen más sitio que eso, pero tienen que estar a la vista de quien no
+   ve bien la letra por defecto. */
+.libre-fuente {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.libre-fuente button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 6px;
+  background: #fff;
+  color: #4a5573;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.libre-fuente button small {
+  font-size: 9px;
+  margin-left: 1px;
+}
+
+.libre-fuente button:hover:not(:disabled) {
+  border-color: #132b70;
+  color: #132b70;
+}
+
+.libre-fuente button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

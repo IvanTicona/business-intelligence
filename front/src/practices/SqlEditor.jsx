@@ -51,8 +51,11 @@ export default function SqlEditor({
   rows = 7,
   placeholder = 'Escribe aquí tu consulta SQL...',
   onSubmit,
+  onSeleccion,
+  estilo,
 }) {
   const capaRef = useRef(null)
+  const areaRef = useRef(null)
 
   // Ctrl+Enter ejecuta, que es lo que todo el mundo intenta en un editor SQL.
   function atajos(event) {
@@ -65,6 +68,23 @@ export default function SqlEditor({
   const piezas = tokenizar(value ?? '')
   const vacio = !value
 
+  /*
+   * Avisa qué hay seleccionado, para que quien use el editor pueda ejecutar
+   * solo ese fragmento. Se escucha `select` y también teclado y ratón: en
+   * Chrome, mover el cursor con las flechas sin seleccionar nada no dispara
+   * `select`, y sin eso la selección anterior quedaría marcada como vigente
+   * después de que el alumno ya la deshizo.
+   */
+  function avisarSeleccion() {
+    if (!onSeleccion) return
+
+    const area = areaRef.current
+    if (!area) return
+
+    const { selectionStart: desde, selectionEnd: hasta } = area
+    onSeleccion(hasta > desde ? (value ?? '').slice(desde, hasta) : '')
+  }
+
   function sincronizar(event) {
     if (!capaRef.current) return
     capaRef.current.scrollTop = event.target.scrollTop
@@ -72,7 +92,7 @@ export default function SqlEditor({
   }
 
   return (
-    <div className="sql-editor-shell">
+    <div className="sql-editor-shell" style={estilo}>
       <pre className="sql-editor-layer" ref={capaRef} aria-hidden="true">
         {vacio
           ? <span className="sql-editor-placeholder">{placeholder}</span>
@@ -82,14 +102,22 @@ export default function SqlEditor({
       </pre>
 
       <textarea
+        ref={areaRef}
         className="sql-editor"
         spellCheck={false}
         rows={rows}
         disabled={disabled}
         value={value}
-        onChange={event => onChange(event.target.value)}
+        onChange={event => {
+          onChange(event.target.value)
+          avisarSeleccion()
+        }}
         onScroll={sincronizar}
         onKeyDown={atajos}
+        onSelect={avisarSeleccion}
+        onKeyUp={avisarSeleccion}
+        onMouseUp={avisarSeleccion}
+        onBlur={avisarSeleccion}
       />
     </div>
   )
